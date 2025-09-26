@@ -8,6 +8,7 @@ import { z } from "zod"
 import { Interop, ObterPecaType } from "../interop/interop"
 import { InteropProcessoType } from "../interop/interop-types"
 import { getPrecedentTool } from "./tools-juris"
+import { getPangeaTool } from "./tools-pangea"
 import { cookies } from "next/headers"
 import { anonymizeText } from "../anonym/anonym"
 import { isAllowedUser } from "../utils/env"
@@ -171,6 +172,7 @@ export const getTools = async (pUser: Promise<UserType>) => {
     const toools = {
         getProcessMetadata: getProcessMetadataTool(pUser),
         getPiecesText: getPieceContentTool(pUser),
+        getPangea: getPangeaTool(pUser), // sempre disponível (fase 1)
     }
     try {
         // Check if the user is allowed to access the precedent tool, must be TRF2 and have a specific CPF
