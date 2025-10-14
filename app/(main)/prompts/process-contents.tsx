@@ -99,7 +99,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
         }
         setPieceContent(contents)
         setLoadingPiecesProgress(-1)
-        setRequests(buildRequests(prompt, selectedLibraryDocuments.map(d => d.id.toString()), dadosDoProcesso.numeroDoProcesso, selectedPieces, contents))
+        setRequests(buildRequests(prompt, selectedLibraryDocuments?.map(d => d.id.toString()), dadosDoProcesso.numeroDoProcesso, selectedPieces, contents))
     }
 
     const LoadingPieces = () => {
@@ -173,6 +173,8 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             setReadyToStartAI(true)
         }
     }, [choosingPieces, choosingLibrary, requests])
+
+    console.log('vou iniciar', readyToStartAI, choosingPieces, choosingLibrary, requests?.length)
 
     return <div>
         <Subtitulo dadosDoProcesso={dadosDoProcesso} />
