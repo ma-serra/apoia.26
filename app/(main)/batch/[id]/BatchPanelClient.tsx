@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Container, Nav, ProgressBar } from 'react-bootstrap'
+import { Alert, Button, ButtonGroup, Container, Dropdown, Nav, ProgressBar } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlay, faPause, faPlus, faTrash, faFileArrowDown, faClock, faSpinner, faCheck, faTriangleExclamation, faEye, faList, faMinus, faArrowLeft } from '@fortawesome/free-solid-svg-icons'
+import { faPlay, faPause, faPlus, faTrash, faFileArrowDown, faClock, faSpinner, faCheck, faTriangleExclamation, faEye, faList, faMinus, faArrowLeft, faRotateRight } from '@fortawesome/free-solid-svg-icons'
 import Fetcher from '@/lib/utils/fetcher'
 import { useConfirm } from '@/components/confirm/ConfirmationProvider'
 import CsvNumbersModal from '@/components/modals/CsvNumbersModal'
@@ -126,6 +126,25 @@ export default function BatchPanelClient({ id, initialSummary, usdBrl, promptNam
       playLoopRef.current = false
       await Fetcher.post(`/api/v1/batch/${id}/pause`, {})
       await refreshSummary()
+    } catch (e: any) {
+      setErr(e?.message || String(e))
+    }
+  }
+
+  const retryAllErrors = async () => {
+    setErr('')
+    setInfo('')
+    try {
+      const res = await Fetcher.post(`/api/v1/batch/${id}/jobs`, { action: 'retry-all-errors' })
+      const retried = Number(res?.retried || 0)
+      await Promise.all([refreshSummary(), refreshJobs()])
+      if (retried > 0) {
+        setInfo(`${retried} item(ns) com erro foram colocados na fila para reprocessamento.`)
+        // Automatically start processing after retrying errors
+        await startPlay()
+      } else {
+        setInfo('Nenhum item com erro encontrado.')
+      }
     } catch (e: any) {
       setErr(e?.message || String(e))
     }
@@ -276,9 +295,14 @@ export default function BatchPanelClient({ id, initialSummary, usdBrl, promptNam
             <Button variant="secondary" onClick={pause}><FontAwesomeIcon icon={faPause} className="me-2" />Pause</Button>
           )
         )}
+        {error > 0 && !playLoopRef.current && (
+          <Button variant="warning" onClick={retryAllErrors} className="ms-2">
+            <FontAwesomeIcon icon={faRotateRight} className="me-2" />Reprocessar Erros
+          </Button>
+        )}
         {summary?.name && ready > 0 && (
           <a className="btn btn-outline-secondary ms-2" href={`/api/v1/batch/${id}/html`} target="_blank" rel="noopener noreferrer">
-            <FontAwesomeIcon icon={faEye} className="me-2" />Visualizar Relatório
+              <FontAwesomeIcon icon={faEye} className="me-2" />Visualizar Relatório
           </a>
         )}
         {error > 0 && (

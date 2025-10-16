@@ -40,6 +40,9 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
   } else if (action === 'retry' && body.jobId) {
     await Dao.retryJob(batchId, Number(body.jobId))
     return Response.json({ status: 'OK' })
+  } else if (action === 'retry-all-errors') {
+    const count = await Dao.retryAllErrors(batchId)
+    return Response.json({ status: 'OK', retried: count })
   } else if (action === 'stop' && body.jobId) {
     await Dao.stopJob(batchId, Number(body.jobId))
     return Response.json({ status: 'OK' })

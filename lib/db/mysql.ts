@@ -741,16 +741,16 @@ export class Dao {
 
     static async retrieveByBatchIdAndEnumId(batch_id: number, enum_id: number): Promise<mysqlTypes.AIBatchIdAndEnumId[]> {
         if (!knex) return
-        const result = await knex('ia_batch as b')
+        const query = knex('ia_batch as b')
             .select<mysqlTypes.AIBatchIdAndEnumId[]>(
-                'd.code as dossier_code',
-                'd.class_code as dossier_class_code',
-                'd.filing_at as dossier_filing_at',
-                'ei.id as enum_item_id',
-                'ei.descr as enum_item_descr',
-                'ei2.descr as enum_item_descr_main',
-                'bd.id as batch_dossier_id',
-                'bd.footer as batch_dossier_footer',
+            'd.code as dossier_code',
+            'd.class_code as dossier_class_code',
+            'd.filing_at as dossier_filing_at',
+            'ei.id as enum_item_id',
+            'ei.descr as enum_item_descr',
+            'ei2.descr as enum_item_descr_main',
+            'bd.id as batch_dossier_id',
+            'bd.footer as batch_dossier_footer',
             )
             .innerJoin('ia_batch_dossier as bd', 'bd.batch_id', 'b.id')
             .innerJoin('ia_dossier as d', 'd.id', 'bd.dossier_id')
@@ -758,9 +758,13 @@ export class Dao {
             .leftJoin('ia_enum_item as ei', 'ei.id', 'bdei.enum_item_id')
             .leftJoin('ia_enum as e', 'e.id', 'ei.enum_id')
             .leftJoin('ia_enum_item as ei2', 'ei2.id', 'ei.enum_item_id_main')
-            .where({ 'b.id': batch_id, 'e.id': enum_id })
+            .where('b.id', batch_id)
+            .andWhere(function () {
+            this.where('e.id', enum_id).orWhereNull('e.id')
+            })
             .orderBy('ei.descr')
             .orderBy('d.code')
+        const result = await query
         return result
 
     }
@@ -1531,6 +1535,13 @@ export class Dao {
 
     static async retryJob(batch_id: number, job_id: number): Promise<void> {
         await knex('ia_batch_job').update({ status: 'PENDING', error_msg: null, started_at: null, finished_at: null, duration_ms: null }).where({ id: job_id, batch_id })
+    }
+
+    static async retryAllErrors(batch_id: number): Promise<number> {
+        const result = await knex('ia_batch_job')
+            .update({ status: 'PENDING', error_msg: null, started_at: null, finished_at: null, duration_ms: null })
+            .where({ batch_id, status: 'ERROR' })
+        return result || 0
     }
 
     static async stopJob(batch_id: number, job_id: number): Promise<void> {
