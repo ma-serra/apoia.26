@@ -455,9 +455,7 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         status: StatusDeLancamento.PUBLICO,
         sort: 7,
         nome: 'Chat',
-        padroes: [
-            [ANY({ capture: [] })],
-        ],
+        padroes: padroesBasicos,
         // tipos: [
         //     [T.PETICAO_INICIAL],
         // ],

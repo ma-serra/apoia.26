@@ -11,16 +11,17 @@ import NonCorporateUserWarning from "@/components/non-corporate-user-warning"
 import { Suspense } from "react"
 
 export default async function RootLayoutWithTheme({
-  children, theme
+  children, theme, sidekick = false
 }: {
   children: React.ReactNode;
   theme: 'light' | 'dark';
+  sidekick?: boolean;
 }) {
   return (
     <html lang="pt-BR" data-theme={theme}>
-      <body suppressHydrationWarning={true} className={theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark'}>
+      <body suppressHydrationWarning={true} className={sidekick ? 'bg-chat': theme === 'dark' ? 'bg-dark text-light' : 'bg-light text-dark'}>
         <ImportBsJS />
-        <Navbar
+        {!sidekick && <Navbar
           bg={theme}
           variant={theme === 'dark' ? 'dark' : 'light'}
           data-bs-theme={theme}
@@ -38,10 +39,10 @@ export default async function RootLayoutWithTheme({
             </button>
             <Suspense fallback={null}><UserMenu /></Suspense>
           </Container>
-        </Navbar>
+        </Navbar>}
         <Suspense fallback={null}><NonCorporateUserWarning /></Suspense>
         <GlobalProviders>
-          <div className="content">
+          <div>
             {children}
           </div>
         </GlobalProviders>

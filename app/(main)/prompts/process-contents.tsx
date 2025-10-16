@@ -20,7 +20,7 @@ import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
 import { devLog } from "@/lib/utils/log";
 
-export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children }: {
+export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons }: {
     prompt: IAPrompt,
     dadosDoProcesso: DadosDoProcessoType,
     pieceContent: any,
@@ -28,7 +28,9 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     apiKeyProvided: boolean,
     model?: string,
     allLibraryDocuments?: IALibrary[],
-    children?: ReactNode
+    children?: ReactNode,
+    sidekick?: boolean
+    promptButtons?: ReactNode
 }) {
     const [selectedPieces, setSelectedPieces] = useState<PecaType[] | null>(null)
     const [defaultPieceIds, setDefaultPieceIds] = useState<string[] | null>(null)
@@ -100,6 +102,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
         setPieceContent(contents)
         setLoadingPiecesProgress(-1)
         setRequests(buildRequests(prompt, selectedLibraryDocuments?.map(d => d.id.toString()), dadosDoProcesso.numeroDoProcesso, selectedPieces, contents))
+        if (prompt.name === 'Chat') setChoosingPieces(false)
     }
 
     const LoadingPieces = () => {
@@ -177,7 +180,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     console.log('vou iniciar', readyToStartAI, choosingPieces, choosingLibrary, requests?.length)
 
     return <div>
-        <Subtitulo dadosDoProcesso={dadosDoProcesso} />
+        {!sidekick && <Subtitulo dadosDoProcesso={dadosDoProcesso} />}
         {children}
         {allLibraryDocuments && Array.isArray(allLibraryDocuments) && allLibraryDocuments.length > 0 && selectedLibraryDocuments !== null && <>
             <ChooseLibrary
@@ -191,20 +194,22 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             />
         </>}
         {selectedPieces && <>
-            <ChoosePieces allPieces={dadosDoProcesso.pecas} selectedPieces={selectedPieces} onSave={(pieces) => { setRequests([]); changeSelectedPieces(pieces) }} onStartEditing={() => { setChoosingPieces(true) }} onEndEditing={() => setChoosingPieces(false)} dossierNumber={dadosDoProcesso.numeroDoProcesso} readyToStartAI={readyToStartAI} baselineDefaultIds={defaultPieceIds || []} />
+            <ChoosePieces allPieces={dadosDoProcesso.pecas} selectedPieces={selectedPieces} onSave={(pieces) => { setRequests([]); changeSelectedPieces(pieces) }} onStartEditing={() => { setChoosingPieces(true) }} onEndEditing={() => setChoosingPieces(false)} dossierNumber={dadosDoProcesso.numeroDoProcesso} readyToStartAI={readyToStartAI} baselineDefaultIds={defaultPieceIds || []} startEditing={!sidekick} />
             <LoadingPieces />
             <ErrorMsg dadosDoProcesso={dadosDoProcesso} />
-            <div className="mb-4"></div>
+            {/* <div className="mb-4"></div> */}
             {readyToStartAI && requests?.length > 0 && (
                 apiKeyProvided
                     ? <>
-                        <ListaDeProdutos dadosDoProcesso={dadosDoProcesso} requests={requests} model={model} />
-                        <Print numeroDoProcesso={dadosDoProcesso.numeroDoProcesso} />
+                        <ListaDeProdutos dadosDoProcesso={dadosDoProcesso} requests={requests} model={model} sidekick={sidekick} promptButtons={promptButtons} />
+                        {!sidekick && <Print numeroDoProcesso={dadosDoProcesso.numeroDoProcesso} />}
                     </>
                     : <PromptParaCopiar dadosDoProcesso={dadosDoProcesso} requests={requests} />
             )}</>}
-        <hr className="mt-5" />
-        <p style={{ textAlign: 'center' }}>Este documento foi gerado pela Apoia, ferramenta de inteligência artificial desenvolvida exclusivamente para facilitar a triagem de acervo, e não substitui a elaboração de relatório específico em cada processo, a partir da consulta manual aos eventos dos autos. Textos gerados por inteligência artificial podem conter informações imprecisas ou incorretas.</p>
-        <p style={{ textAlign: 'center' }} dangerouslySetInnerHTML={{ __html: `O prompt ${prompt.name} (${prompt.id}), em ${formatDateTime(new Date().toISOString())}, ${buildFooterFromPieces(model, (selectedPieces || []).map(p => ({ ...p, conteudo: pieceContent[p.id] })))?.toLowerCase()}` }} />
+        {!sidekick && <>
+            <hr className="mt-5" />
+            <p style={{ textAlign: 'center' }}>Este documento foi gerado pela Apoia, ferramenta de inteligência artificial desenvolvida exclusivamente para facilitar a triagem de acervo, e não substitui a elaboração de relatório específico em cada processo, a partir da consulta manual aos eventos dos autos. Textos gerados por inteligência artificial podem conter informações imprecisas ou incorretas.</p>
+            <p style={{ textAlign: 'center' }} dangerouslySetInnerHTML={{ __html: `O prompt ${prompt.name} (${prompt.id}), em ${formatDateTime(new Date().toISOString())}, ${buildFooterFromPieces(model, (selectedPieces || []).map(p => ({ ...p, conteudo: pieceContent[p.id] })))?.toLowerCase()}` }} />
+        </>}
     </div >
 }

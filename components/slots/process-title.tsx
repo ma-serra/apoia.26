@@ -5,11 +5,9 @@ export default function ProcessTitle(params) {
     const id = (params?.id?.toString() || '').replace(/[^0-9]/g, '')
 
     return (
-        <Container fluid={false}>
-            <h1 className="text-center mt-4 mb-0">
-                Processo {envString('NAVIGATE_TO_PROCESS_URL') ? (<a href={envString('NAVIGATE_TO_PROCESS_URL').replace('{numero}', id)} style={{color: 'rgb(33, 37, 41)', textDecoration: 'none'}}>{id}</a>) : id}
-            </h1>
-        </Container>
+        <h1 className="text-center mt-4 mb-0">
+            Processo {envString('NAVIGATE_TO_PROCESS_URL') ? (<a href={envString('NAVIGATE_TO_PROCESS_URL').replace('{numero}', id)} style={{ color: 'rgb(33, 37, 41)', textDecoration: 'none' }}>{id}</a>) : id}
+        </h1>
     )
     // return (
     //     <Navbar bg="primary" expand="lg" className="mb-3">

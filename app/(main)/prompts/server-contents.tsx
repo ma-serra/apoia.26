@@ -11,7 +11,7 @@ import { StatusDeLancamento } from '@/lib/proc/process-types'
 import { IAPromptList } from '@/lib/db/mysql-types'
 import { fixPromptList } from '@/lib/prompt-list'
 
-export default async function ServerContents() {
+export default async function ServerContents( params: { sidekick?: boolean } ) {
     const user = await assertCurrentUser()
     const isModerator = await isUserModerator(user)
     if (!(await isUserCorporativo(user)))
@@ -25,6 +25,6 @@ export default async function ServerContents() {
 
     const prompts = await fixPromptList(basePrompts)
 
-    return <Contents prompts={prompts} user={user} user_id={user_id} apiKeyProvided={!!apiKey} model={model} isModerator={isModerator} />
+    return <Contents prompts={prompts} user={user} user_id={user_id} apiKeyProvided={!!apiKey} model={model} isModerator={isModerator} sidekick={params.sidekick} />
 }
 

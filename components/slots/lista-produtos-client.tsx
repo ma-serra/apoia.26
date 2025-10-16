@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { ReactNode, Suspense, useState } from 'react'
 import { maiusculasEMinusculas, slugify } from '@/lib/utils/utils'
 import { ResumoDePecaLoading } from '@/components/loading'
 import { calcMd5 } from '@/lib/utils/hash'
@@ -39,7 +39,7 @@ const onReady = (Frm: FormHelper, requests: GeneratedContent[], idx: number, con
     }
 }
 
-function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string) {
+function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string, sidekick?: boolean, promptButtons?: ReactNode) {
     const request = requests[idx]
 
     const informationExtractionVariableName = `_information_extraction_${idx}`
@@ -76,7 +76,7 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
             i++
         }
 
-        return <Chat definition={request.internalPrompt} data={data} model={(request.internalPrompt as any)?.model || 'unknown'} key={dataHash} />
+        return <Chat definition={request.internalPrompt} data={data} model={(request.internalPrompt as any)?.model || 'unknown'} key={dataHash} sidekick={sidekick} promptButtons={promptButtons} />
     }
 
     return <div key={idx}>
@@ -88,7 +88,7 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
     </div>
 }
 
-export const ListaDeProdutos = ({ dadosDoProcesso, requests, model }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string }) => {
+export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode }) => {
     const [data, setData] = useState({ pending: 0 } as any)
 
     if (!dadosDoProcesso || dadosDoProcesso.errorMsg) return ''
@@ -101,7 +101,7 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model }: { dadosDoP
 
     return <>{requests.map((request, idx) => {
         if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) return null
-        return requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model)
+        return requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons)
     })}
 
         {/* <p>{JSON.stringify(data)}</p> */}

@@ -52,13 +52,13 @@ export const ChoosePiecesLoading = () => {
 }
 
 
-export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStartEditing, onEndEditing, dossierNumber, readyToStartAI, baselineDefaultIds }: {
-    allPieces: PecaType[], selectedPieces: PecaType[], onSave: (pieces: string[]) => void, onStartEditing: () => void, onEndEditing: () => void, dossierNumber: string, readyToStartAI: boolean, baselineDefaultIds: string[]
+export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStartEditing, onEndEditing, dossierNumber, readyToStartAI, baselineDefaultIds, startEditing = true }: {
+    allPieces: PecaType[], selectedPieces: PecaType[], onSave: (pieces: string[]) => void, onStartEditing: () => void, onEndEditing: () => void, dossierNumber: string, readyToStartAI: boolean, baselineDefaultIds: string[], startEditing?: boolean
 }) {
     const pathname = usePathname(); // let's get the pathname to make the component reusable - could be used anywhere in the project
     const router = useRouter();
     const currentSearchParams = useSearchParams()
-    const [editing, setEditing] = useState(true)
+    const [editing, setEditing] = useState(!!startEditing)
     // Removed unused reloading/ref/flags
 
     const PIECES_PARAM = 'pieces' // stores hyphen-separated 1-based indices (1..N) in original allPieces order
@@ -73,7 +73,7 @@ export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStar
         return uniq
     }
 
-    const canonicalNumbers = (numbers: number[]) => Array.from(new Set(numbers.filter(n => Number.isInteger(n) && n >= 1)) ).sort((a,b)=>a-b).join('-')
+    const canonicalNumbers = (numbers: number[]) => Array.from(new Set(numbers.filter(n => Number.isInteger(n) && n >= 1))).sort((a, b) => a - b).join('-')
 
     const replacePiecesParam = (numbersOrNull: number[] | null) => {
         // Build new query string preserving other params

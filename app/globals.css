@@ -118,7 +118,7 @@
     .pdf-viewer {
         width: 100%;
         border: 1px solid black;
-        heigth: 450px;
+        height: 450px;
     }
     
     .topic-caption {
@@ -373,7 +373,19 @@
         max-width: 50% !important;
     }
     
-    .chat-box div div p {
+    .bg-chat {
+        background-color: rgb(247, 245, 243);
+    }
+    
+    .sidekick-controls {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+    
+    .chat-content p {
         margin-bottom: 0.5rem;
     }
     
@@ -388,8 +400,22 @@
         background-color: rgb(14, 87, 53)
     }
     
+    .chat-user-sidekick {
+        background-color: rgb(217, 253, 211);
+        border-width: 1px;
+        border-style: solid;
+        border-color: rgba(255, 255, 255, 0.85) rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.15) rgba(255, 255, 255, 0.85);
+    }
+    
     .chat-ai {
         background-color: rgb(65, 71, 77)
+    }
+    
+    .chat-ai-sidekick {
+        background-color: rgb(255, 255, 255);
+        border-width: 1px;
+        border-style: solid;
+        border-color: rgba(255, 255, 255, 0.85) rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.15) rgba(255, 255, 255, 0.85);
     }
     
     .chat-user-container:hover .icon-container {
