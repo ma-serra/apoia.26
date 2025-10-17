@@ -6,9 +6,10 @@ import { redirect } from 'next/navigation'
 import { headers } from "next/headers"
 import { verifyJweToken, verifyJwkSignedToken } from './utils/jwt'
 import { envString } from './utils/env'
+import { UnauthorizedError } from './utils/api-error'
 
 export type UserType = {
-    id?: number, name: string, email: string, preferredUsername?: string, iss?: string, image: { password: string, system: string }, accessToken?: string, corporativo?: any[], roles?: string[]
+    id?: number, name: string, email: string, preferredUsername?: string, iss?: string, encryptedPassword: string, system: string, accessToken?: string, corporativo?: any[], roles?: string[]
 }
 
 export const getCurrentUser = async (): Promise<UserType | undefined> => {
@@ -44,7 +45,8 @@ export const getCurrentUser = async (): Promise<UserType | undefined> => {
                 accessToken: pdpjAuthorization,
                 corporativo: seqTribunal ? [{ seq_tribunal_pai: seqTribunal }] : undefined,
                 roles,
-                image: { password: undefined as any, system: undefined as any }
+                encryptedPassword: undefined,
+                system: undefined,
             }
         } catch (error) {
             console.error('Invalid pdpj-authorization token:', error)
@@ -54,7 +56,7 @@ export const getCurrentUser = async (): Promise<UserType | undefined> => {
 
     if (authorization) {
         const claims: any = await verifyJweToken(authorization)
-        return { name: claims.name, email: claims.name, image: { password: claims.password, system: claims.system } }
+        return { name: claims.name, email: claims.name, encryptedPassword: claims.password, system: claims.system }
     }
 
     const session = await getServerSession(authOptions)
@@ -72,7 +74,7 @@ export const assertCurrentUser = async () => {
 }
 
 export const assertSystemCode = async (user: UserType) => {
-    const systemCode = user?.image?.system || 'PDPJ'
+    const systemCode = user?.system || 'PDPJ'
     if (!systemCode) throw new Error('System code not found')
     return systemCode
 }
@@ -82,7 +84,7 @@ export const isUserStaging = async (user: UserType) => {
 }
 
 export const isUserCorporativo = async (user: UserType) => {
-    return !!user.corporativo || !!user.image?.system || process.env.NODE_ENV === 'development' || isUserStaging(user)
+    return !!user.corporativo || !!user.system || process.env.NODE_ENV === 'development' || isUserStaging(user)
 }
 
 export const isUserModerator = async (user: UserType): Promise<boolean> => {
@@ -90,6 +92,13 @@ export const isUserModerator = async (user: UserType): Promise<boolean> => {
 }
 
 export const assertCourtId = async (user: UserType): Promise<number> => {
+    const mapping = envString('SYSTEM_MAPPING') // e.g. TRF2:4,TRF1:1
+    if (mapping) {
+        const map = mapping.split(',').map(m => m.split(':')).reduce((acc, [k, v]) => ({ ...acc, [k]: Number(v) }), {} as Record<string, number>)
+        if (user?.system && map[user.system]) {
+            return map[user.system]
+        }
+    }
     if (user?.corporativo?.[0]?.seq_tribunal_pai) {
         return user.corporativo[0].seq_tribunal_pai
     }
@@ -106,6 +115,13 @@ export const assertCurrentUserCorporativo = async () => {
     const user = await assertCurrentUser()
     if (!await isUserCorporativo(user))
         throw new Error('Usuário não é corporativo')
+    return user
+}
+
+// Helper padronizado para rotas API: lança UnauthorizedError ao invés de redirecionar
+export const assertApiUser = async () => {
+    const user = await getCurrentUser()
+    if (!user) throw new UnauthorizedError('Usuário não autenticado')
     return user
 }
 

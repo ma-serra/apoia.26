@@ -6,12 +6,16 @@ import EvaluationModal from './ai-evaluation'
 import { evaluate } from '../lib/ai/generate'
 import { preprocess, Visualization, VisualizationEnum } from '@/lib/ui/preprocess'
 import { ResumoDePecaLoading } from '@/components/loading'
-import { InfoDeProduto, P } from '@/lib/proc/combinacoes'
 import { ContentType, PromptConfigType, PromptDataType, PromptDefinitionType, PromptOptionsType } from '@/lib/ai/prompt-types'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faThumbsDown } from '@fortawesome/free-regular-svg-icons'
 import { faRefresh } from '@fortawesome/free-solid-svg-icons'
 import { Form } from 'react-bootstrap'
+import devLog from '@/lib/utils/log'
+import { readUIMessageStream, UIMessage } from 'ai'
+import { parseSSEToUIMessageChunkStream } from '@/lib/ai/message-stream'
+import ErrorMessage from './error-message'
+import MessageStatus from './message-status'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -33,6 +37,7 @@ export const spinner = (s: string, complete: boolean): string => {
     return s
 }
 
+
 export default function AiContent(params: { definition: PromptDefinitionType, data: PromptDataType, options?: PromptOptionsType, config?: PromptConfigType, visualization?: VisualizationEnum, dossierCode: string, diffSource?: string, onBusy?: () => void, onReady?: (content: ContentType) => void }) {
     const [current, setCurrent] = useState('')
     const [complete, setComplete] = useState(false)
@@ -41,8 +46,46 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const [evaluated, setEvaluated] = useState(false)
     const [visualizationId, setVisualizationId] = useState<number>(params.visualization)
     const [showTemplateTable, setShowTemplateTable] = useState(false)
+    const [currentMessage, setCurrentMessage] = useState<UIMessage>({ id: null, role: 'assistant', parts: [] })
     const initialized = useRef(false)
 
+    const reportError = (err: any, payload: any) => {
+        if (err && typeof err === 'object' && 'message' in err && (err as Error).message === 'NEXT_REDIRECT') throw err
+        const message =
+            typeof err === 'string'
+                ? err
+                : (err && typeof err === 'object' && 'message' in err && (err as Error).message) || 'Erro desconhecido'
+        setErrormsg(message);
+        trackAIError({
+            kind: payload.kind,
+            model: payload.modelSlug,
+            prompt: payload.promptSlug,
+            dossier_code: payload.dossierCode,
+            error_message: message
+        })
+    }
+
+    const reportReady = (text: string, payload: any) => {
+        let json: any = undefined
+        try {
+            json = JSON.parse(text)
+        } catch (e) { }
+        if (params.onReady)
+            params.onReady({
+                raw: text,
+                formated: preprocess(text, params.definition, params.data, complete, visualizationId, params.diffSource).text,
+                json
+            })
+
+        trackAIComplete({
+            kind: payload.kind,
+            model: payload.modelSlug,
+            prompt: payload.promptSlug,
+            dossier_code: payload.dossierCode,
+            bytes: text.length,
+            json: text?.startsWith('{') ? '1' : '0'
+        })
+    }
     const handleClose = async (evaluation_id: number, descr: string | null) => {
         setShow(false)
         if (evaluation_id) setEvaluated(await evaluate(params.definition, params.data, evaluation_id, descr))
@@ -78,7 +121,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
         let response: Response
         try {
-            response = await fetch('/api/v1/ai', {
+            response = await fetch('/api/v1/ai?uiMessageStream=true', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             })
@@ -93,66 +136,60 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                         msg = await response.text()
                     } catch (e) { }
                 }
-                setErrormsg(msg || `HTTP error: ${response.status}`)
-                trackAIError({
-                    kind: payload.kind,
-                    model: payload.modelSlug,
-                    prompt: payload.promptSlug,
-                    dossier_code: payload.dossierCode,
-                    http_status: response.status,
-                    error_message: msg || `HTTP error: ${response.status}`
-                })
+                reportError(msg || `HTTP error: ${response.status}`, payload)
                 return
             }
         } catch (err) {
-            setErrormsg(err.message)
-            trackAIError({
-                kind: payload.kind,
-                model: payload.modelSlug,
-                prompt: payload.promptSlug,
-                dossier_code: payload.dossierCode,
-                error_message: err.message
-            })
+            reportError(err, payload)
             return
         }
-        const reader = response.body?.getReader()
-
-        if (reader) {
-            const chunks: Uint8Array[] = []
-            // const decoder = new TextDecoder('utf-8')
-            while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
-                    setComplete(true)
-                    const text = Buffer.concat(chunks).toString("utf-8")
-                    let json: any = undefined
+        if (response.headers.get('Content-Type') === 'text/event-stream') {
+            try {
+                const chunkStream = parseSSEToUIMessageChunkStream(response.body!);
+                const uiMessageStream = readUIMessageStream({
+                    stream: chunkStream, onError: (err) => { reportError(err, payload); }
+                });
+                const assistantMessageId = Date.now().toString();
+                let parts: UIMessage['parts'] = [];
+                let text: string = ''
+                // Iterate over the stream and process each chunk
+                for await (const message of uiMessageStream) {
+                    setCurrentMessage(message)
+                    devLog('Received message parts:', message.parts);
+                    parts = message.parts;
+                    if (parts?.find(p => p.type === 'text')) {
+                        const textPart = parts.find(p => p.type === 'text');
+                        text = textPart?.text || '';
+                        setCurrent(text);
+                    }
+                }
+                reportReady(text, payload)
+            } catch (error) {
+                console.error('Error fetching stream:', error);
+            } finally {
+                setComplete(true)
+            }
+        } else {
+            const reader = response.body?.getReader()
+            if (reader) {
+                const chunks: Uint8Array[] = []
+                // const decoder = new TextDecoder('utf-8')
+                while (true) {
+                    const { done, value } = await reader.read()
+                    if (done) {
+                        setComplete(true)
+                        const text = Buffer.concat(chunks).toString("utf-8")
+                        reportReady(text, payload)
+                        break
+                    }
+                    chunks.push(value)
                     try {
-                        json = JSON.parse(text)
-                    } catch (e) { }
-                    if (params.onReady)
-                        params.onReady({
-                            raw: text,
-                            formated: preprocess(text, params.definition, params.data, complete, visualizationId, params.diffSource).text,
-                            json
-                        })
-                    // Evento de conclusão (sucesso)
-                    trackAIComplete({
-                        kind: payload.kind,
-                        model: payload.modelSlug,
-                        prompt: payload.promptSlug,
-                        dossier_code: payload.dossierCode,
-                        bytes: text.length,
-                        json: json ? '1' : '0'
-                    })
-                    break
-                }
-                chunks.push(value)
-                try {
-                    const text = Buffer.concat(chunks).toString("utf-8")
-                    setCurrent(text)
-                }
-                catch (e) {
-                    console.log(e.message)
+                        const text = Buffer.concat(chunks).toString("utf-8")
+                        setCurrent(text)
+                    }
+                    catch (e) {
+                        devLog(e.message)
+                    }
                 }
             }
         }
@@ -183,6 +220,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
 
     return <>
+        <MessageStatus message={currentMessage} />
         {current || errormsg
             ? <>
                 <div className={`alert alert-${color} ai-content`}>
@@ -193,7 +231,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                             : <button className="btn btn-sm bt float-end d-print-none" onClick={() => { handleShow() }}><FontAwesomeIcon icon={faThumbsDown} /></button>
                         : null}
                     {errormsg
-                        ? <span>{errormsg}</span>
+                        ? <ErrorMessage message={errormsg} />
                         : <div dangerouslySetInnerHTML={{ __html: spinner(preprocessed.text, complete) }} />}
                     <EvaluationModal show={show} onClose={handleClose} />
                 </div>

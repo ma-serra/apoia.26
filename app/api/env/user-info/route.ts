@@ -1,13 +1,10 @@
-import { getSelectedModelParams } from "@/lib/ai/model-server"
-import { Dao } from "@/lib/db/mysql"
-import { CargaDeConteudoEnum, obterDadosDoProcesso2 } from "@/lib/proc/process"
-import { getCurrentUser } from "@/lib/user"
-import { paramsList } from "@/lib/utils/env"
+import { getCurrentUser, assertApiUser } from "@/lib/user"
+import { UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
 
-export async function GET(req: Request) {
-    const pUser = getCurrentUser()
-    const user = await pUser
-    if (!user) return Response.json({ errormsg: 'Usuário não autenticado' }, { status: 401 })
-    delete user.image
+async function GET_HANDLER(_req: Request) {
+    const user = await assertApiUser()
+    delete user.encryptedPassword
     return Response.json(user)
 }
+
+export const GET = withErrorHandler(GET_HANDLER as any)

@@ -19,7 +19,7 @@ const clientMap = new Map<string, soap.Client>()
 const getClient = async (system: string | undefined) => {
     if (system === undefined) {
         const user = await assertCurrentUser()
-        system = user.image.system
+        system = user.system
     }
     let client = clientMap.get(system as string)
     if (client !== undefined)
@@ -71,7 +71,7 @@ const criarHash = (senha: string) => {
 //     if (!numero.match(/^\d{20}$/))
 //         throw new Error('Número de processo inválido')
 //     const user = await assertCurrentUser()
-//     const system = systems.find(s => s.system === user.image.system)
+//     const system = systems.find(s => s.system === user.system)
 //     if (system?.hashable) {
 //         password = criarHash(password)
 //     }
@@ -92,7 +92,7 @@ const criarHash = (senha: string) => {
 const obterPecaSemLimite = async (numeroDoProcesso, idDaPeca, username: string, password: string): Promise<ObterPecaType> => {
     const client = await getClient(undefined)
     const user = await assertCurrentUser()
-    const system = systems.find(s => s.system === user.image.system)
+    const system = systems.find(s => s.system === user.system)
     if (system?.hashable) {
         password = criarHash(password)
     }
@@ -149,7 +149,7 @@ export class InteropMNI implements Interop {
         if (!numeroDoProcesso.match(/^\d{20}$/))
             throw new Error('Número de processo inválido')
         const user = await assertCurrentUser()
-        const system = systems.find(s => s.system === user.image.system)
+        const system = systems.find(s => s.system === user.system)
         let senhaConsultante = this.password
         if (system?.hashable) {
             senhaConsultante = criarHash(this.password)
@@ -169,7 +169,6 @@ export class InteropMNI implements Interop {
         const sigilo = '' + dadosBasicos.attributes.nivelSigilo
         assertNivelDeSigilo(sigilo)
         const dataAjuizamento = dadosBasicos.attributes.dataAjuizamento
-        // console.log('dadosBasicos', dadosBasicos)
         const nomeOrgaoJulgador = dadosBasicos.orgaoJulgador.attributes.nomeOrgao
         const ajuizamento = parseYYYYMMDDHHMMSS(dataAjuizamento)
         // ajuizamentoDate.setTime(ajuizamentoDate.getTime() - ajuizamentoDate.getTimezoneOffset() * 60 * 1000)
@@ -177,7 +176,6 @@ export class InteropMNI implements Interop {
 
         let pecas: PecaType[] = []
         const documentos = respQuery[0].processo.documento
-        // console.log('documentos', JSON.stringify(documentos, null, 2))
         for (const doc of documentos) {
             // if (!Object.values(T).includes(doc.attributes.descricao)) continue
             pecas.unshift({

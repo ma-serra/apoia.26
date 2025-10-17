@@ -1,18 +1,16 @@
 'use client'
 
-import { IAPrompt } from "@/lib/db/mysql-types";
+import { IALibrary, IALibraryInclusion, IAPrompt } from "@/lib/db/mysql-types";
 import { DadosDoProcessoType, PecaType, TEXTO_PECA_COM_ERRO } from "@/lib/proc/process-types";
 import { ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { InfoDeProduto, P, PieceStrategy, selecionarPecasPorPadraoComFase, T, TipoDeSinteseMap } from "@/lib/proc/combinacoes";
-import { infoDeProduto } from "@/lib/proc/info-de-produto";
-import { GeneratedContent, PromptDataType, PromptDefinitionType, TextoType } from "@/lib/ai/prompt-types";
-import { slugify } from "@/lib/utils/utils";
-import { getInternalPrompt } from "@/lib/ai/prompt";
+import { PieceStrategy, selecionarPecasPorPadraoComFase, T, TipoDeSinteseMap } from "@/lib/proc/combinacoes";
+import { GeneratedContent } from "@/lib/ai/prompt-types";
 import { ProgressBar } from "react-bootstrap";
 import Print from "@/components/slots/print";
 import Subtitulo from "@/components/slots/subtitulo";
 import ChoosePieces from "./choose-pieces";
+import ChooseLibrary from "./choose-library";
 import ErrorMsg from "./error-msg";
 import { ListaDeProdutos } from "@/components/slots/lista-produtos-client";
 import { PromptParaCopiar } from "./prompt-to-copy";
@@ -20,18 +18,35 @@ import { buildFooterFromPieces } from "@/lib/utils/footer";
 import { nivelDeSigiloPermitido } from "@/lib/proc/sigilo";
 import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
+import { devLog } from "@/lib/utils/log";
 
-export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, children }: { prompt: IAPrompt, dadosDoProcesso: DadosDoProcessoType, pieceContent: any, setPieceContent: (pieceContent: any) => void, apiKeyProvided: boolean, model?: string, children?: ReactNode }) {
+export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children }: {
+    prompt: IAPrompt,
+    dadosDoProcesso: DadosDoProcessoType,
+    pieceContent: any,
+    setPieceContent: (pieceContent: any) => void,
+    apiKeyProvided: boolean,
+    model?: string,
+    allLibraryDocuments?: IALibrary[],
+    children?: ReactNode
+}) {
     const [selectedPieces, setSelectedPieces] = useState<PecaType[] | null>(null)
     const [defaultPieceIds, setDefaultPieceIds] = useState<string[] | null>(null)
+    const [selectedLibraryDocuments, setSelectedLibraryDocuments] = useState<IALibrary[] | null>(null)
+    const [defaultLibraryDocumentIds, setDefaultLibraryDocumentIds] = useState<string[] | null>(null)
     const [loadingPiecesProgress, setLoadingPiecesProgress] = useState(-1)
     const [requests, setRequests] = useState<GeneratedContent[]>([])
     const [readyToStartAI, setReadyToStartAI] = useState(false)
     const [choosingPieces, setChoosingPieces] = useState(true)
+    const [choosingLibrary, setChoosingLibrary] = useState(false)
     const searchParams = useSearchParams()
 
     const changeSelectedPieces = (pieces: string[]) => {
         setSelectedPieces(dadosDoProcesso.pecas.filter(p => pieces.includes(p.id)))
+    }
+
+    const changeSelectedLibraryDocuments = (documentIds: string[]) => {
+        setSelectedLibraryDocuments((allLibraryDocuments || []).filter(d => documentIds.includes(d.id.toString())))
     }
 
     const chooseSelectedPieces = (allPieces: PecaType[], pieceStrategy: string, pieceDescr: string[]) => {
@@ -71,7 +86,9 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             setLoadingPiecesProgress(Object.keys(contents).length)
             const resp = await loading[id]
             if (!resp.ok) {
-                contents[id] = TEXTO_PECA_COM_ERRO
+                const data = await resp.json().catch(() => ({}))
+                if (data.errormsg)
+                    contents[id] = `${TEXTO_PECA_COM_ERRO}${data.errormsg ? ` ${data.errormsg}` : ''}`
                 continue
             }
             const json = await resp.json()
@@ -82,7 +99,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
         }
         setPieceContent(contents)
         setLoadingPiecesProgress(-1)
-        setRequests(buildRequests(prompt, dadosDoProcesso.numeroDoProcesso, selectedPieces, contents))
+        setRequests(buildRequests(prompt, selectedLibraryDocuments?.map(d => d.id.toString()), dadosDoProcesso.numeroDoProcesso, selectedPieces, contents))
     }
 
     const LoadingPieces = () => {
@@ -121,6 +138,29 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     }, [prompt, dadosDoProcesso.pecas, searchParams])
 
     useEffect(() => {
+        if (!allLibraryDocuments || !Array.isArray(allLibraryDocuments) || allLibraryDocuments.length === 0) return
+
+        // Compute automatic default selection for baseline (documents with inclusion === SIM)
+        const autoDefault = allLibraryDocuments.filter(d => d.inclusion === IALibraryInclusion.SIM)
+        setDefaultLibraryDocumentIds(autoDefault.map(d => d.id.toString()))
+
+        // If URL has explicit 'library' IDs (hyphen-separated), prefer them over automatic selection
+        const libraryParam = searchParams.get('library')
+
+        if (libraryParam !== null) {
+            const ids = (libraryParam || '').split(/[,-]/).map(s => s.trim()).filter(id => id)
+            const uniqueIds = Array.from(new Set(ids))
+            const sel = allLibraryDocuments.filter(d => uniqueIds.includes(d.id.toString()))
+            setSelectedLibraryDocuments(sel)
+            return
+        }
+
+        // Always set the auto default (either autoDefault or empty array if no documents with inclusion=SIM)
+        setSelectedLibraryDocuments(autoDefault)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [allLibraryDocuments, searchParams])
+
+    useEffect(() => {
         setLoadingPiecesProgress(0)
         // Clear previous requests to avoid proceeding with stale results
         setRequests([])
@@ -129,14 +169,27 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     }, [selectedPieces])
 
     useEffect(() => {
-        if (requests && requests.length && !choosingPieces) {
+        if (requests && requests.length && !choosingPieces && !choosingLibrary) {
             setReadyToStartAI(true)
         }
-    }, [choosingPieces, requests])
+    }, [choosingPieces, choosingLibrary, requests])
+
+    console.log('vou iniciar', readyToStartAI, choosingPieces, choosingLibrary, requests?.length)
 
     return <div>
         <Subtitulo dadosDoProcesso={dadosDoProcesso} />
         {children}
+        {allLibraryDocuments && Array.isArray(allLibraryDocuments) && allLibraryDocuments.length > 0 && selectedLibraryDocuments !== null && <>
+            <ChooseLibrary
+                allDocuments={allLibraryDocuments}
+                selectedDocuments={selectedLibraryDocuments}
+                onSave={(documentIds) => { setRequests([]); changeSelectedLibraryDocuments(documentIds) }}
+                onStartEditing={() => { setChoosingLibrary(true) }}
+                onEndEditing={() => setChoosingLibrary(false)}
+                readyToStartAI={readyToStartAI}
+                baselineDefaultIds={defaultLibraryDocumentIds || []}
+            />
+        </>}
         {selectedPieces && <>
             <ChoosePieces allPieces={dadosDoProcesso.pecas} selectedPieces={selectedPieces} onSave={(pieces) => { setRequests([]); changeSelectedPieces(pieces) }} onStartEditing={() => { setChoosingPieces(true) }} onEndEditing={() => setChoosingPieces(false)} dossierNumber={dadosDoProcesso.numeroDoProcesso} readyToStartAI={readyToStartAI} baselineDefaultIds={defaultPieceIds || []} />
             <LoadingPieces />

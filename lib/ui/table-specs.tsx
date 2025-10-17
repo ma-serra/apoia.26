@@ -1,7 +1,6 @@
 import { formatBrazilianDateTime, formatDate } from "@/lib/utils/utils"
-import { faStar, faUser } from "@fortawesome/free-regular-svg-icons"
-import { faClock, faRotateRight, faSpinner, faStar as faStarSolid, faStop, faTriangleExclamation, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
-import { faCheck, faPlay } from "@fortawesome/free-solid-svg-icons"
+import { faPenToSquare, faStar, faUser } from "@fortawesome/free-regular-svg-icons"
+import { faCheck, faPlay, faRotateRight, faStar as faStarSolid, faStop, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import Link from 'next/link'
 import { Button, ButtonGroup, Dropdown, DropdownButton, Form } from "react-bootstrap"
@@ -125,6 +124,70 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 { header: 'Modelo', accessorKey: 'model_name', enableSorting: true },
                 { header: 'Nota %', accessorKey: 'score', enableSorting: true, style: { textAlign: "right" }, cell: data => <a href={`${pathname}/../test/${data.row.original.testset_id}/${data.row.original.prompt_id}/${data.row.original.model_id}`}>{(data.row.original.score).toFixed(1)}</a> },
             ]
+        },
+        ChooseLibrary: {
+            columns: [
+                {
+                    id: 'select-col',
+                    header: ({ table }) => (
+                        <Form.Check
+                            checked={table.getIsAllRowsSelected()}
+                            onChange={table.getToggleAllRowsSelectedHandler()}
+                        />
+                    ),
+                    cell: ({ row }) => (
+                        <Form.Check
+                            checked={row.getIsSelected()}
+                            onChange={row.getToggleSelectedHandler()}
+                        />
+                    ),
+                },
+                { 
+                    header: 'Título', 
+                    accessorKey: 'title', 
+                    enableSorting: true,
+                    cell: data => data.row.original.title
+                },
+                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, cell: data => {
+                    const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
+                    return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
+                } },
+                { header: 'Contexto', accessorKey: 'context', enableSorting: true, cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
+            ],
+            tableClassName: 'table table-sm table-striped table-info',
+            pageSizes: [10, 20, 50, 100],
+        },
+        Library: {
+            columns: [
+                { 
+                    header: 'Título', 
+                    accessorKey: 'title', 
+                    enableSorting: true,
+                    cell: data => {
+                        const title = data.row.original.title;
+                        return title ? (
+                            <Link href={`${pathname}/${data.row.original.id}/edit`} className="text-primary">
+                                {title}
+                            </Link>
+                        ) : (
+                            <Link href={`${pathname}/${data.row.original.id}/edit`} className="text-primary" title="Editar">
+                                <FontAwesomeIcon icon={faPenToSquare} />
+                            </Link>
+                        );
+                    }
+                },
+                /*{ header: 'Tipo', accessorKey: 'kind', enableSorting: true, cell: data => {
+                    const { IALibraryKindLabels } = require('@/lib/db/mysql-types');
+                    return IALibraryKindLabels[data.row.original.kind];
+                } },*/
+                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, cell: data => {
+                    const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
+                    return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
+                } },
+                { header: 'Contexto', accessorKey: 'context', enableSorting: true, cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
+            ],
+            tableClassName: 'table table-bordered table-hover',
+            pageSizes: [10, 20, 50, 100],
         },
 
         Batch: {

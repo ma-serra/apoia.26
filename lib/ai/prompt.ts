@@ -5,6 +5,7 @@ import { buildFormatter } from "@/lib/ai/format"
 import { DadosDoProcessoType } from "@/lib/proc/process-types"
 import { fixPromptForAutoJson, promptJsonSchemaFromPromptMarkdown } from "./auto-json"
 import { formatDateDDMMYYYY } from "../utils/date"
+import { LibraryDocumentsType } from "./library"
 
 export const formatText = (txt: TextoType, limit?: number) => {
     let s: string = txt.descr
@@ -12,7 +13,7 @@ export const formatText = (txt: TextoType, limit?: number) => {
     return s
 }
 
-export const applyTextsAndVariables = (text: string, data: PromptDataType, jsonSchema?: string, template?: string): string => {
+export const applyTextsAndVariables = (text: string, data: PromptDataType, jsonSchema?: string, template?: string, libraryPrompt?: string): string => {
     if (!text) return ''
 
     const allTexts = `${data.textos.reduce((acc, txt) => acc + formatText(txt), '')}`
@@ -32,6 +33,8 @@ export const applyTextsAndVariables = (text: string, data: PromptDataType, jsonS
     text = text.replace('{{jsonSchema}}', jsonSchema || 'JSON Schema não definido')
 
     text = text.replace('{{textos}}', allTexts)
+
+    text = text.replace('{{biblioteca}}', libraryPrompt)
 
     text = text.replace('{{numeroDoProcesso}}', data.numeroDoProcesso || 'Número do processo não definido')
 
@@ -71,7 +74,6 @@ export async function getPiecesWithContent(dadosDoProcesso: DadosDoProcessoType,
     let pecasComConteudo: TextoType[] = []
     for (const peca of dadosDoProcesso.pecasSelecionadas) {
         if (peca.pConteudo === undefined && peca.conteudo === undefined && !skipError) {
-            // console.log('peca', peca)
             throw new Error(`Conteúdo não encontrado no processo ${dossierNumber}, peça ${peca.id}, rótulo ${peca.rotulo}`)
         }
         const slug = await slugify(peca.descr)
@@ -80,11 +82,17 @@ export async function getPiecesWithContent(dadosDoProcesso: DadosDoProcessoType,
     return pecasComConteudo
 }
 
-export const promptExecuteBuilder = (definition: PromptDefinitionType, data: PromptDataType): PromptExecuteType => {
+export const promptExecuteBuilder = (definition: PromptDefinitionType, data: PromptDataType, libraryPrompt?: string): PromptExecuteType => {
     const message: ModelMessage[] = []
+    if (definition?.kind !== 'chat' && definition?.kind !== 'chat_standalone') {
+        sistema.split('\n---\n').forEach(part => {
+            message.push({ role: 'system', content: applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt) })
+        })
+    }
+
     if (definition.systemPrompt) {
         definition.systemPrompt.split('\n---\n').forEach(part => {
-            message.push({ role: 'system', content: applyTextsAndVariables(part, data, definition.jsonSchema, definition.template) })
+            message.push({ role: 'system', content: applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt) })
         })
     }
 
@@ -110,6 +118,7 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
         params.structuredOutputs = { schemaName: 'structuredOutputs', schemaDescription: 'Structured Outputs', schema: jsonSchema(JSON.parse(definition.jsonSchema)) }
     if (definition.format)
         params.format = buildFormatter(definition.format)
+
     return { message, params, fixedPrompt: promptContent }
 }
 
@@ -170,13 +179,6 @@ export const promptDefinitionFromMarkdown = (slug, md: string): PromptDefinition
     return { kind: slug, prompt, systemPrompt: system_prompt, jsonSchema: json_schema, format, template, cacheControl: true }
 }
 
-
-export const promptExecutionFromMarkdown = (md: string): (data: PromptDataType) => PromptExecuteType => {
-    const definition = promptDefinitionFromMarkdown('md', md)
-
-    return (data) => promptExecuteBuilder(definition, data)
-}
-
 export function getPromptIdentifier(prompt: string) {
     let promptUnderscore = prompt.replace(/-/g, '_')
     let buildPrompt = internalPrompts[promptUnderscore]
@@ -190,6 +192,7 @@ export function getInternalPrompt(slug: string): PromptDefinitionType {
     return internalPrompts[getPromptIdentifier(slug)]
 }
 
+import sistema from '@/prompts/sistema.md'
 import ementa from '@/prompts/ementa.md'
 import int_testar from "@/prompts/int-testar.md"
 import int_gerar_perguntas from "@/prompts/int-gerar-perguntas.md"

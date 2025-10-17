@@ -92,6 +92,7 @@ export enum IADocumentContentSource {
     VIDEO = 5,
     OCR_VAZIO = 6,
     OCR_ERRO = 7,
+    // AUDIO = 8,
 }
 
 export type IADocument = {
@@ -373,6 +374,78 @@ export type IAUsageDetailRow = {
     prompt?: string | null
 }
 
+// --- Library ---
+export enum IALibraryKind {
+    ARQUIVO = 'ARQUIVO',
+    MODELO = 'MODELO',
+    MARKDOWN = 'MARKDOWN'
+}
+
+export const IALibraryKindLabels: Record<IALibraryKind, string> = {
+    [IALibraryKind.ARQUIVO]: 'Arquivo',
+    [IALibraryKind.MODELO]: 'Modelo de Documento',
+    [IALibraryKind.MARKDOWN]: 'Texto Markdown'
+}
+
+export enum IALibraryInclusion {
+    NAO = 'NAO',
+    SIM = 'SIM',
+    CONTEXTUAL = 'CONTEXTUAL'
+}
+
+export const IALibraryInclusionLabels: Record<IALibraryInclusion, string> = {
+    [IALibraryInclusion.NAO]: 'Nunca',
+    [IALibraryInclusion.SIM]: 'Sempre',
+    [IALibraryInclusion.CONTEXTUAL]: 'Contextual'
+}
+
+export type IAModelSubtype = 'PRIMEIRO_DESPACHO' | 'SENTENCA' | 'VOTO'
+
+export const IAModelSubtypeLabels: Record<IAModelSubtype, string> = {
+    'PRIMEIRO_DESPACHO': 'Primeiro Despacho',
+    'SENTENCA': 'Sentença',
+    'VOTO': 'Voto'
+}
+
+export type IALibrary = {
+    id: number
+    user_id: number
+    kind: IALibraryKind
+    model_subtype: IAModelSubtype | null
+    title: string
+    content_type: string | null
+    content_markdown: string | null
+    content_binary: Buffer | null
+    inclusion: IALibraryInclusion | null
+    context: string | null
+    created_at: Date | null
+    created_by: number | null
+}
+
+export type IALibraryToInsert = {
+    kind: IALibraryKind
+    title: string
+    content_type?: string | null
+    content_markdown?: string | null
+    content_binary?: Buffer | null
+    model_subtype?: IAModelSubtype | null
+    inclusion?: IALibraryInclusion | null
+    context?: string | null
+}
+
+export type IALibraryExample = {
+    id: number
+    library_id: number
+    process_number: string
+    event_number?: string | null
+    piece_type: 'DESPACHO_DECISAO' | 'SENTENCA' | 'VOTO' | null
+    piece_id: string | null
+    piece_title: string | null
+    piece_date: Date | null
+    content_markdown: string | null
+    created_at: Date | null
+    created_by: number | null
+}
 // New: Batch and Job types
 export type IABatch = {
     id: number

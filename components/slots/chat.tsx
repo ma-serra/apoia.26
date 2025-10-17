@@ -18,6 +18,7 @@ const converter = new showdown.Converter({ tables: true })
 import { getAllSuggestions, resolveSuggestion } from '@/components/suggestions/registry'
 import type { SuggestionContext } from '@/components/suggestions/context'
 import { Suggestion } from '../suggestions/base';
+import MessageStatus from '../message-status';
 
 function preprocessar(mensagem: UIMessage, role: string) {
     const texto = mensagem.parts.reduce((acc, part) => {
@@ -32,64 +33,6 @@ function preprocessar(mensagem: UIMessage, role: string) {
 
 function hasText(mensagem: UIMessage) {
     return mensagem.parts.some(part => part.type === 'text' && part.text && part.text.trim() !== '')
-}
-
-function toolMessage(part: any): ReactElement {
-    const regexPiece = /^(.+):$\n<[a-z\-]+ event="([^"]+)"/gm
-    if (!part) return null
-    switch (part.type) {
-        case 'tool-getProcessMetadata':
-            switch (part.state) {
-                case 'input-streaming':
-                    return <span className="text-secondary">Acessando dados de processo...</span>
-                case 'input-available':
-                    return (<span className="text-secondary">Obtendo dados do processo: {part.input?.processNumber}...</span>)
-                case 'output-available':
-                    return (<span className="text-secondary">Consultei dados do processo: {part.input?.processNumber}</span>)
-                case 'output-error':
-                    return <div>Error: {part.errorText}</div>;
-            }
-        case 'tool-getPiecesText':
-            switch (part.state) {
-                case 'input-streaming':
-                    return <span className="text-secondary">Acessando peças...</span>
-                case 'input-available':
-                    if (part.input.pieceIdArray?.length === 1)
-                        return <span className="text-secondary">Obtendo conteúdo da peça: {part.input.pieceIdArray[0]}...</span>
-                    else if (part.input.pieceIdArray?.length > 1)
-                        return <span className="text-secondary">Obtendo conteúdo das peças: {part.input.pieceIdArray.join(', ')}...</span>
-                    else
-                        return <span className="text-secondary">Obtendo conteúdo das peças...</span>
-                case 'output-available':
-                    const matches = []
-                    let match
-                    regexPiece.lastIndex = 0 // Reset regex state
-                    while ((match = regexPiece.exec(part.output)) !== null) {
-                        const kind = match[1].trim()
-                        const eventNumber = match[2]
-                        matches.push(`${kind} (${eventNumber})`)
-                    }
-                    if (matches.length === 1)
-                        return <span className="text-secondary">Consultei conteúdo da peça: {matches[0]}</span>
-                    else
-                        return <span className="text-secondary">Consultei conteúdo das peças: {matches.join(', ')}</span>
-                case 'output-error':
-                    return <div>Error: {part.errorText}</div>;
-            }
-        case 'tool-getPrecedent':
-            switch (part.state) {
-                case 'input-streaming':
-                    return <span className="text-secondary">Acessando dados de precedentes...</span>
-                case 'input-available':
-                    return <span className="text-secondary">Obtendo dados de precedentes: {part.input?.searchQuery}...</span>
-                case 'output-available':
-                    return <span className="text-secondary">Consultei dados de precedentes: {part.input?.searchQuery}</span>
-                case 'output-error':
-                    return <div>Error: {part.errorText}</div>;
-            }
-        default:
-            return <span className="text-secondary">Ferramenta desconhecida: {part.type}</span>
-    }
 }
 
 const getCookie = (name: string) => {
@@ -131,6 +74,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const [activeModalInitial, setActiveModalInitial] = useState<any>(null)
     const [activeModalSubmitHandler, setActiveModalSubmitHandler] = useState<((values: any, ctx: SuggestionContext) => void) | null>(null)
     const [modalDrafts, setModalDrafts] = useState<Record<string, any>>({})
+    const [showReasoning, setShowReasoning] = useState(false)
 
 
     const handleProcessNumberChange = (number: string) => {
@@ -284,10 +228,6 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
         setActiveModalSubmitHandler(() => result.onSubmit || null)
     }
 
-    // console.log('Chat messages:', messages)
-
-    // (efeitos de analytics agora vivem em useChatAnalytics)
-
     return (
         <div className={messages.find(m => m.role === 'assistant') ? '' : 'd-print-none h-print'}>
 
@@ -318,19 +258,13 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                             </div>
                             : m.role === 'assistant' &&
                             <div className="row justify-content-start me-5" key={m.id}>
-                                {m?.parts?.find((part) => part.type.startsWith('tool-')) && <div className="mb-1">
-                                    {m?.parts?.filter((part) => part.type.startsWith('tool-'))?.map((part, index) => (
-                                        <div key={index} className="mb-0">
-                                            <div className={`text-wrap mb-0 chat-tool`}>
-                                                {toolMessage(part)}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>}
-                                {hasText(m) &&
+                                <MessageStatus message={m} />
+                                {
+                                    hasText(m) &&
                                     <div className={`col col-auto mb-0`}>
                                         <div className={`text-wrap mb-3 rounded chat-content chat-ai`} dangerouslySetInnerHTML={{ __html: preprocessar(m, m.role) }} />
-                                    </div>}
+                                    </div>
+                                }
                             </div>
                     ))}
 

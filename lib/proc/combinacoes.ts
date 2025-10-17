@@ -257,6 +257,21 @@ export const padraoAgravoForcado = [
     ANY(),
 ]
 
+export const padraoAgravoSemConhecimento = [
+    ANY(),
+    PHASE('Agravo Aberto'),
+    OR(...pecasQueRepresentamAgravoPara2aInstancia),
+    ANY({
+        capture: pecasRelevantes2aInstanciaRecursos, greedy: true, except: pecasQueFinalizamFases
+    }),
+]
+
+export const padraoAgravoForcadoSemConhecimento = [
+    ...padraoAgravoSemConhecimento,
+    PHASE('Agravo Fechada'),
+    EXACT(T.ACORDAO),
+    ANY(),
+]
 
 export const padraoApelacaoAberta = [
     ANY({ capture: [T.PETICAO_INICIAL, ...pecasRelevantesDaFaseDeConhecimentoPara2aInstancia] }),
@@ -382,7 +397,7 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         relatorioDeAcervo: true,
         sort: 1,
         nome: 'Relatório de Apelação e Triagem',
-        padroes: [...padroesBasicosSegundaInstancia, padraoAgravoForcado, padraoApelacaoForcado],
+        padroes: [...padroesBasicosSegundaInstancia, padraoAgravoForcado, padraoApelacaoForcado, padraoAgravoSemConhecimento, padraoAgravoForcadoSemConhecimento],
         produtos: [P.RELATORIO_DE_APELACAO_E_TRIAGEM, P.CHAT]
     },
 
@@ -398,14 +413,14 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         sort: 3,
         nome: 'Minuta de Sentença',
         padroes: [...padroesConhecimento, padraoConhecimentoForcado],
-        produtos: [P.RESUMOS, P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.SENTENCA, P.CHAT]
+        produtos: [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.SENTENCA, P.CHAT]
     },
     MINUTA_DE_VOTO: {
         status: StatusDeLancamento.PUBLICO,
         sort: 3,
         nome: 'Minuta de Voto',
         padroes: [...padroesBasicosSegundaInstancia, padraoApelacaoForcado],
-        produtos: [P.RESUMOS, P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT],
+        produtos: [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT],
         instance: [Instance.SEGUNDO_GRAU.name]
     },
     RESUMOS: {
@@ -589,9 +604,6 @@ export const PieceStrategy: PieceStrategyType = PieceStrategyArray.reduce((acc, 
     return acc
 }, {} as PieceStrategyType)
 
-// console.log('PieceStrategy', PieceStrategy)
-
-
 export type PieceDescrValueType = EnumOfObjectsValueType & { descr: string }
 export type PieceDescrType = { [key: string]: PieceDescrValueType }
 export const PieceDescr: PieceDescrType = Object.keys(T).filter(x => x !== 'TEXTO').reduce((acc, cur, idx) => {
@@ -625,9 +637,6 @@ export const selecionarPecasPorPadraoComFase = (pecas: PecaType[], padroes: Matc
         }
     }
     if (matches.length === 0) return { pecas: null }
-
-    console.log(matches[0].phasesMatched.map(p => p.phase))
-    console.log(matches[0].lastPhase?.phase)
 
     // Seleciona o match cuja última peça em uma operação de EXACT ou OR é a mais recente
     let matchSelecionado: MatchFullResult | null = null
@@ -694,7 +703,6 @@ const isPJeOriginId = (idOriginal: string | undefined | null): boolean => {
 // Deve haver um PDF logo em seguida, e no mesmo evento
 // O idOriginal da peça não deve ser um número muito grande (não é uma peça do PJe)
 const acrescentarAnexosDoPJe = (pecas: PecaType[], pecasSelecionadas: PecaType[], indexById: any) => {
-    // console.log('acrescentarAnexosDoPJe', pecasSelecionadas.map(p => p.id))
     // Use a Set to keep track of IDs in pecasSelecionadas for efficient lookup and to manage additions.
     const allSelectedPecaIds = new Set(pecasSelecionadas.map(p => p.id))
     const newlyAddedPecas: PecaType[] = []

@@ -3,19 +3,17 @@ import { GeneratedContent, PromptDataType, PromptDefinitionType, TextoType } fro
 import { CargaDeConteudoEnum, obterDadosDoProcesso } from '@/lib/proc/process'
 import { assertCurrentUser } from '@/lib/user'
 import { T, P, ProdutosValidos, Plugin, ProdutoCompleto, InfoDeProduto, PieceStrategy, selecionarPecasPorPadraoComFase } from '@/lib/proc/combinacoes'
-import { slugify } from '@/lib/utils/utils'
 import { IAGenerated, IAPrompt } from '@/lib/db/mysql-types'
 import { Dao } from '@/lib/db/mysql'
 import { getTriagem, getNormas, getPalavrasChave } from '@/lib/fix'
 import { generateContent } from '@/lib/ai/generate'
 import { infoDeProduto } from '../proc/info-de-produto'
-import { envString } from '../utils/env'
-import { DadosDoProcessoType } from '../proc/process-types'
+import { DadosDoProcessoType, identificarSituacaoDaPeca } from '../proc/process-types'
 import { buildFooter } from '../utils/footer'
 import { clipPieces } from './clip-pieces'
-import { th } from 'zod/v4/locales'
-import { nivelDeSigiloPermitido } from '../proc/sigilo'
 import { buildRequests } from './build-requests'
+import devLog from '../utils/log'
+import { getTools } from './tools'
 
 export async function summarize(dossierNumber: string, pieceNumber: string): Promise<{ dossierData: any, generatedContent: GeneratedContent }> {
     const pUser = assertCurrentUser()
@@ -38,7 +36,7 @@ export async function summarize(dossierNumber: string, pieceNumber: string): Pro
     }
 
     // Retrieve from cache or generate
-    req.result = generateContent(definition, data)
+    req.result = generateContent(definition, data, getTools(pUser))
     const result = await req.result as IAGenerated
     req.generated = result.generation
     req.id = result.id
@@ -88,7 +86,7 @@ export function buildRequestsForAnalysis(dossierNumber: string, produtos: InfoDe
 }
 
 export async function analyze(batchName: string | undefined, dossierNumber: string, kind: string | number | undefined, complete: boolean): Promise<{ dossierData: any, generatedContent: GeneratedContent[] }> {
-    console.log('analyze', batchName, dossierNumber)
+    devLog('analyze', batchName, dossierNumber)
     try {
         const pUser = assertCurrentUser()
 
@@ -128,8 +126,8 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
                         const selecao = selecionarPecasPorPadraoComFase(allPieces, strategy.pattern)
                         if (selecao?.pecas?.length) selectedIds = selecao.pecas.map(p => p.id)
                     } else if (key === 'TIPOS_ESPECIFICOS' && pieceDescr?.length) {
-                        // Seleciona todas as peças dos tipos especificados
-                        selectedIds = allPieces.filter(p => pieceDescr.includes(p.descr as any)).map(p => p.id)
+                        const pieceDescrValues = pieceDescr.map(d => T[d])
+                        selectedIds = allPieces.filter(p => pieceDescrValues.includes(p.descr)).map(p => p.id)
                     } else {
                         throw new Error(`Estratégia de peça inválida: ${pieceStrategy}`)
                     }
@@ -144,15 +142,16 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
         }
 
         let pecasComConteudo = await getPiecesWithContent(dadosDoProcesso, dossierNumber, true)
-
+      
         if (pecasComConteudo.length === 0) throw new Error(`${dossierNumber}: Nenhuma peça com conteúdo`)
-
-        // console.log('pecasComConteudo', pecasComConteudo)
+            
+        if (!pecasComConteudo.find(p => !identificarSituacaoDaPeca(p.texto).problematica))
+            throw new Error(`${dossierNumber}: Todas as peças estão com problemas (sigilosas, inacessíveis, vazias ou parciais)`)
 
         let requests: GeneratedContent[]
         if (isNumericKind) {
-            requests = buildRequests(promptFromDB, dossierNumber, dadosDoProcesso.pecasSelecionadas, undefined).filter(r => r && r.promptSlug !== 'chat')
-            
+            requests = buildRequests(promptFromDB, undefined, dossierNumber, dadosDoProcesso.pecasSelecionadas).filter(r => r && r.promptSlug !== 'chat')
+
             // Acrescenta o Plugins conforme o conteúdo do prompt
             for (const req of requests) {
                 if (!req.plugins) req.plugins = []
@@ -173,7 +172,7 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
 
         // Retrieve from cache or generate
         for (const req of requests) {
-            req.result = generateContent(req.internalPrompt, req.data)
+            req.result = generateContent(req.internalPrompt, req.data, getTools(pUser))
         }
 
         let model: string | undefined = undefined
@@ -190,7 +189,7 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
 
         if (batchName) {
             const user = await pUser
-            const systemCode = user?.image?.system || 'PDPJ'
+            const systemCode = user?.system || 'PDPJ'
             const systemId = await Dao.assertSystemId(systemCode)
             const textosParaClipagem = JSON.parse(JSON.stringify(pecasComConteudo))
             const textosClipados = clipPieces(model, textosParaClipagem)

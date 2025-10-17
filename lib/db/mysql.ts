@@ -8,6 +8,7 @@ import { envNumber, envString } from "../utils/env"
 import { dailyLimits } from "../utils/limits"
 import { IS_APPLE } from "@mdxeditor/editor"
 import type { IABatch, IABatchJob, IABatchSummary } from './mysql-types'
+import { PublicError } from "../utils/public-error"
 
 function getId(returning: number | { id: number }): number {
     return typeof returning === 'number' ? returning : returning.id
@@ -19,6 +20,104 @@ async function getCurrentUserId() {
 }
 
 export class Dao {
+    // --- Library DAO ---
+    static async listLibrary(): Promise<mysqlTypes.IALibrary[]> {
+        const userId = await getCurrentUserId()
+        const rows = await knex('ia_library').select('*').where({ user_id: userId }).orderBy('created_at', 'desc')
+        return rows
+    }
+
+    static async getLibraryById(id: number): Promise<mysqlTypes.IALibrary | undefined> {
+        const userId = await getCurrentUserId()
+        const row = await knex('ia_library').select('*').where({ id, user_id: userId }).first()
+        return row
+    }
+
+    static async getLibrariesByIds(ids: number[]): Promise<mysqlTypes.IALibrary[]> {
+        const userId = await getCurrentUserId()
+        const rows = await knex('ia_library').select('*').where({ user_id: userId }).whereIn('id', ids)
+        return rows
+    }
+
+    static async insertLibrary(data: mysqlTypes.IALibraryToInsert): Promise<number> {
+        const userId = await getCurrentUserId()
+        const [ret] = await knex('ia_library').insert({
+            user_id: userId,
+            kind: data.kind,
+            title: data.title,
+            content_type: data.content_type ?? null,
+            content_markdown: data.content_markdown ?? null,
+            content_binary: data.content_binary ?? null,
+            model_subtype: data.model_subtype ?? null,
+            inclusion: data.inclusion ?? mysqlTypes.IALibraryInclusion.NAO,
+            context: data.context ?? null,
+            created_by: userId,
+        }).returning('id')
+        return getId(ret)
+    }
+
+    static async updateLibrary(id: number, patch: Partial<mysqlTypes.IALibraryToInsert>): Promise<boolean> {
+        const userId = await getCurrentUserId()
+        const upd = await knex('ia_library').update({
+            ...(patch.kind ? { kind: patch.kind } : {}),
+            ...(patch.title !== undefined ? { title: patch.title } : {}),
+            ...(patch.content_type !== undefined ? { content_type: patch.content_type } : {}),
+            ...(patch.content_markdown !== undefined ? { content_markdown: patch.content_markdown } : {}),
+            ...(patch.content_binary !== undefined ? { content_binary: patch.content_binary } : {}),
+            ...(patch.model_subtype !== undefined ? { model_subtype: patch.model_subtype } : {}),
+            ...(patch.inclusion !== undefined ? { inclusion: patch.inclusion } : {}),
+            ...(patch.context !== undefined ? { context: patch.context } : {}),
+        }).where({ id, user_id: userId })
+        return upd > 0
+    }
+
+    static async deleteLibrary(id: number): Promise<boolean> {
+        const userId = await getCurrentUserId()
+        const del = await knex('ia_library').delete().where({ id, user_id: userId })
+        return del > 0
+    }
+
+    static async listLibraryExamples(library_id: number): Promise<mysqlTypes.IALibraryExample[]> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return []
+        const rows = await knex('ia_library_example').select('*').where({ library_id }).orderBy('created_at', 'desc')
+        return rows
+    }
+
+    static async upsertLibraryExample(library_id: number, example: Omit<mysqlTypes.IALibraryExample, 'id' | 'created_at' | 'created_by' | 'library_id'>): Promise<void> {
+        const userId = await getCurrentUserId()
+        const insertData: any = {
+            library_id,
+            process_number: example.process_number,
+            event_number: ('event_number' in (example as any)) ? (example as any).event_number ?? null : null,
+            piece_type: example.piece_type,
+            piece_id: example.piece_id,
+            piece_title: example.piece_title,
+            piece_date: example.piece_date,
+            content_markdown: example.content_markdown,
+            created_by: userId,
+        }
+        const mergeData: any = {
+            piece_type: example.piece_type,
+            piece_id: example.piece_id,
+            piece_title: example.piece_title,
+            piece_date: example.piece_date,
+            content_markdown: example.content_markdown,
+        }
+        if ('event_number' in (example as any)) mergeData.event_number = (example as any).event_number ?? null
+        await knex('ia_library_example').insert(insertData).onConflict(['library_id', 'process_number']).merge(mergeData)
+    }
+
+    static async deleteLibraryExample(library_id: number, process_number: string): Promise<boolean> {
+        const userId = await getCurrentUserId()
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return false
+        const del = await knex('ia_library_example').delete().where({ library_id, process_number })
+        return del > 0
+    }
+    
     // Rewrite all mappings for a batch: delete existing and insert the new set
     static async rewriteBatchFixIndexMap(batch_id: number, pairs: { descr_from: string, descr_to: string }[]): Promise<number> {
         if (!knex) return 0
@@ -238,7 +337,6 @@ export class Dao {
             )
             .leftJoin('ia_testset as t', 't.kind', '=', 'p.kind')
             .groupBy('k.kind');  // Group by 'kind' from the union
-        // console.log('***counters', sql.toString());
         const result = await sql
 
         if (!result || result.length === 0) return []
@@ -295,7 +393,6 @@ export class Dao {
             .from('t2');
 
         // Exibe a consulta SQL gerada
-        // console.log('***prompts', finalQuery.toString());
         const result = await finalQuery
         if (!result || result.length === 0) return []
         const records = result.map((record: any) => ({ ...record }))
@@ -354,7 +451,7 @@ export class Dao {
             .from('t2');
 
         // Ou para ver a consulta SQL gerada:
-        // console.log('***testsets', finalQuery.toString());
+        // devLog('***testsets', finalQuery.toString());
         const result = await finalQuery
         if (!result || result.length === 0) return []
         const records = result.map((record: any) => ({ ...record }))
@@ -681,7 +778,6 @@ export class Dao {
             .groupBy('ei.descr', 'ei.hidden')
         // .orderBy(knex.raw('count(distinct bd.id)'), 'desc');
         result.sort((a, b) => a.count - b.count)
-        // console.log('result', result)
         return result
     }
 
@@ -804,6 +900,7 @@ export class Dao {
 
     static async updateDocumentContent(document_id: number, content_source_id: number, content: string) {
         if (!knex) return
+        if (envString('DISABLE_DOCUMENT_CACHE') === '1') return
         await knex('ia_document').update({
             content_source_id,
             content: content?.replace(/\u0000/g, ''), // Remove null characters
@@ -1142,7 +1239,6 @@ export class Dao {
             g.orderBy('u.name').orderBy('d.code')
         }
 
-        // console.log('SQL:', g.toQuery())
         const rows: any[] = await g
 
         return rows.map(r => ({

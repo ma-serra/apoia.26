@@ -3,11 +3,9 @@
 import { signIn } from "next-auth/react"
 import { useEffect } from 'react'
 
-import { useSession } from "next-auth/react"
-
-const AutoLogin = () => {
+const AutoLogin = (props: { callbackUrl: string }) => {
     useEffect(() => {
-        signIn('keycloak')
+        signIn('keycloak', { callbackUrl: props.callbackUrl })
     }, [])
 
     return (

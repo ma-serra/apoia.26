@@ -13,9 +13,14 @@ import { getModel } from './model-server'
 import { modelCalcUsage, Model, FileTypeEnum } from './model-types'
 import { cookies } from 'next/headers';
 import { clipPieces } from './clip-pieces'
-import { assert } from 'console'
 import { pdfToText } from '../pdf/pdf'
 import { assertAnonimizacaoAutomatica } from '../proc/sigilo'
+import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google'
+import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
+import devLog, { isDev } from '../utils/log'
+import * as Sentry from '@sentry/nextjs'
+import { getLibraryDocumentsForPrompt } from './library'
+import { getTools } from './tools'
 
 export async function retrieveFromCache(sha256: string, model: string, prompt: string, attempt: number | null): Promise<IAGenerated | undefined> {
     const cached = await Dao.retrieveIAGeneration({ sha256, model, prompt, attempt })
@@ -52,14 +57,17 @@ function writeResponseToFile(kind: string, messages: ModelMessage[], text: strin
     if (envString('NODE_ENV') === 'development' && path) {
         const fs = require('fs')
         const currentDate = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').split('.')[0]
-        fs.writeFileSync(`${path}/${currentDate}-${kind}.txt`, `${messages[0].content}${messages[1]?.content ? `\n\n${messages[1].content}` : ''}\n\n---\n\n${text}`)
+        let s = ''
+        for (const m of messages) s += `${m.role === 'system' ? '# SYSTEM PROMPT' : m.role === 'user' ? '# PROMPT' : `# ROLE: ${m.role}`}\n\n${m.content}\n\n`
+        s += `\n\n---\n\n${text}`
+        fs.writeFileSync(`${path}/${currentDate}-${kind}.txt`, s)
     }
 }
 
-export async function generateContent(definition: PromptDefinitionType, data: PromptDataType): Promise<IAGenerated> {
+export async function generateContent(definition: PromptDefinitionType, data: PromptDataType, tools?: Record<string, any>): Promise<IAGenerated> {
     const results: PromptExecutionResultsType = {}
-    const pResult = await streamContent(definition, data, results)
-    const stream = await pResult
+    const ret = await streamContent(definition, data, results, undefined, tools)
+    const stream = ret.textStream ? await ret.textStream : ret.objectStream ? await ret.objectStream : ret.cached ? ret.cached : undefined
 
     let text: string
     if (typeof stream === 'string') {
@@ -67,8 +75,9 @@ export async function generateContent(definition: PromptDefinitionType, data: Pr
     } else {
         try {
             text = ''
+            const dev = isDev()
             for await (const textPart of stream.textStream) {
-                process.stdout.write(textPart)
+                if (dev) process.stdout.write(textPart)
                 text += textPart
             }
         } catch (error) {
@@ -97,11 +106,19 @@ export async function writeUsage(usage, model: string, user_id: number | undefin
     if (user_id && court_id)
         await Dao.addToIAUserDailyUsage(user_id, court_id, calculedUsage.input_tokens, calculedUsage.output_tokens, calculedUsage.approximate_cost)
 }
-export async function streamContent(definition: PromptDefinitionType, data: PromptDataType, results?: PromptExecutionResultsType, additionalInformation?: PromptAdditionalInformationType):
-    Promise<StreamTextResult<ToolSet, Partial<any>> | StreamObjectResult<DeepPartial<any>, any, never> | string> {
+
+export type PromptReturnType = {
+    messages?: string
+    cached?: string
+    textStream?: Promise<StreamTextResult<ToolSet, any>>
+    objectStream?: Promise<StreamObjectResult<DeepPartial<any>, any, never>>
+}
+
+export async function streamContent(definition: PromptDefinitionType, data: PromptDataType, results?: PromptExecutionResultsType, additionalInformation?: PromptAdditionalInformationType, tools?: Record<string, any>):
+    Promise<PromptReturnType> {
     // const user = await getCurrentUser()
     // if (!user) return Response.json({ errormsg: 'Usuário não autenticado' }, { status: 401 })
-    console.log('will build prompt', definition.kind)
+    devLog('will build prompt', definition.kind)
     await waitForTexts(data)
 
     // Anonymize text if the cookie is set
@@ -109,7 +126,7 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const anonymize = cookiesList.get('anonymize')?.value === 'true'
     data.textos = data.textos.map((texto: TextoType) => {
         if (anonymize || assertAnonimizacaoAutomatica(texto.sigilo)) {
-            console.log(`Anonymizing piece ${texto.id} (${texto.descr}) with confidentiality level ${texto.sigilo}`)
+            devLog(`Anonymizing piece ${texto.id} (${texto.descr}) with confidentiality level ${texto.sigilo}`)
             return { ...texto, texto: anonymizeText(texto.texto).text }
         } else {
             return texto
@@ -120,7 +137,8 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const { model: modelPreSelected } = await getModel({ structuredOutputs: false, overrideModel: definition.model })
     data.textos = clipPieces(modelPreSelected, data.textos)
 
-    const exec = promptExecuteBuilder(definition, data)
+    const libraryPrompt = await getLibraryDocumentsForPrompt(data.documentosDaBiblioteca)
+    const exec = promptExecuteBuilder(definition, data, libraryPrompt)
     const messages = exec.message
     const structuredOutputs = exec.params?.structuredOutputs
     const { model, modelRef, apiKeyFromEnv } = await getModel({ structuredOutputs: !!structuredOutputs, overrideModel: definition.model })
@@ -131,7 +149,7 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const attempt = definition?.cacheControl !== true && definition?.cacheControl || null
 
     if (results?.messagesOnly) {
-        return JSON.stringify(messages)
+        return { messages: JSON.stringify(messages) }
     }
 
     // try to retrieve cached generations
@@ -143,18 +161,18 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
                 results.generationId = cached.id
                 results.model = cached.model || model
             }
-            return cached.generation
+            return { cached: cached.generation }
         }
     }
 
     // writeResponseToFile(definition, messages, "antes de executar")
     // if (1 == 1) throw new Error('Interrupted')
 
-    return generateAndStreamContent(model, structuredOutputs, definition?.cacheControl, definition?.kind, modelRef, messages, sha256, additionalInformation, results, attempt, apiKeyFromEnv)
+    return generateAndStreamContent(model, structuredOutputs, definition?.cacheControl, definition?.kind, modelRef, messages, sha256, additionalInformation, results, attempt, apiKeyFromEnv, tools)
 }
 
 export async function generateAndStreamContent(model: string, structuredOutputs: any, cacheControl: number | boolean, kind: string, modelRef: LanguageModel, messages: ModelMessage[], sha256: string, additionalInformation: PromptAdditionalInformationType, results?: PromptExecutionResultsType, attempt?: number | null, apiKeyFromEnv?: boolean, tools?: Record<string, any>):
-    Promise<StreamTextResult<ToolSet, Partial<any>> | StreamObjectResult<DeepPartial<any>, any, never> | string> {
+    Promise<PromptReturnType> {
     const pUser = assertCurrentUser()
     const user = await pUser
     const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
@@ -215,7 +233,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     }
 
     if (!structuredOutputs) { // text streaming branch
-        console.log('streaming text', kind) //, messages, modelRef)
+        devLog('streaming text', kind) //, messages, modelRef)
         if (apiKeyFromEnv) {
             await Dao.assertIAUserDailyUsageId(user_id, court_id)
         }
@@ -240,9 +258,10 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
             messages: processedMessagesModel,
             maxRetries: 0,
             onStepFinish: ({ text, usage }) => {
-                process.stdout.write(text)
+                // if (isDev()) process.stdout.write(text)
             },
             onError: (error) => {
+                Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
                 console.error('Error during streaming:', error)
             },
             onFinish: async ({ text, usage }) => {
@@ -255,13 +274,23 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                 writeResponseToFile(kind, processedMessagesLog, text)
             },
             tools,
-            stopWhen: stepCountIs(10)
-            // maxSteps: tools ? 10 : undefined, // Limit the number of steps to avoid infinite loops
+            stopWhen: stepCountIs(10),
+            providerOptions: {
+                google: {
+                    thinkingConfig: {
+                        // thinkingBudget: 2024, // Set a budget (0 to disable, up to 24576 for Flash)
+                        includeThoughts: true, // Crucial to include the thinking process in the response
+                    },
+                } satisfies GoogleGenerativeAIProviderOptions,
+                openai: {
+                    reasoningSummary: 'auto',
+                } satisfies OpenAIResponsesProviderOptions,
+            },
         })
-        return pResult as any
+        return { textStream: pResult as any }
         // }
     } else {
-        console.log('streaming object', kind) //, messages, modelRef, structuredOutputs.schema)
+        devLog('streaming object', kind) //, messages, modelRef, structuredOutputs.schema)
         if (apiKeyFromEnv) {
             await Dao.assertIAUserDailyUsageId(user_id, court_id)
         }
@@ -269,6 +298,10 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
             model: modelRef as LanguageModel,
             messages: processedMessagesModel,
             maxRetries: 1,
+            onError: (error) => {
+                Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
+                console.error('Error during streaming:', error)
+            },
             onFinish: async ({ object, usage }) => {
                 if (apiKeyFromEnv)
                     writeUsage(usage, model, user_id, court_id)
@@ -283,7 +316,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
             schema: structuredOutputs.schema,
         })
         // @ts-ignore-next-line
-        return pResult
+        return { objectStream: pResult }
     }
 }
 
@@ -296,7 +329,8 @@ export async function evaluate(definition: PromptDefinitionType, data: PromptDat
 
     const { model } = await getModel()
     await waitForTexts(data)
-    const exec = promptExecuteBuilder(definition, data)
+    const libraryPrompt = await getLibraryDocumentsForPrompt(data.documentosDaBiblioteca)
+    const exec = promptExecuteBuilder(definition, data, libraryPrompt)
     const messages = exec.message
     const sha256 = calcSha256(messages)
 

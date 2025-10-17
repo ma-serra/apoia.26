@@ -5,8 +5,13 @@ import { PromptDefinitionType, PromptExecutionResultsType, PromptOptionsType } f
 import { getInternalPrompt, promptDefinitionFromDefinitionAndOptions } from '@/lib/ai/prompt'
 import { Dao } from '@/lib/db/mysql'
 import { IAPrompt } from '@/lib/db/mysql-types'
-import { getCurrentUser } from '@/lib/user'
+import { getCurrentUser, assertApiUser } from '@/lib/user'
 import { preprocessTemplate } from '@/lib/ai/template'
+import { StreamTextResult, ToolSet } from 'ai'
+import * as Sentry from '@sentry/nextjs'
+import { devLog } from '@/lib/utils/log'
+import { ApiError, UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
+import { getTools } from '@/lib/ai/tools'
 
 export const maxDuration = 60
 
@@ -125,118 +130,122 @@ async function getPromptDefinition(kind: string, promptSlug?: string, promptId?:
  *       405:
  *         description: Erro durante a execução do prompt ou comunicação com o provedor.
  */
-export async function POST(request: Request) {
-    try {
-        const { searchParams } = new URL(request.url)
-        const messagesOnly = searchParams.get('messagesOnly') === 'true'
+async function POST_HANDLER(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const messagesOnly = searchParams.get('messagesOnly') === 'true'
 
-        const user = await getCurrentUser()
-        if (!user) return Response.json({ errormsg: 'Usuário não autenticado' }, { status: 401 })
+    const pUser = assertApiUser()
+    const user = await pUser
 
-        // Update user details
-        const userFields = user.corporativo?.length ? {
-            name: user.corporativo?.[0]?.nom_usuario || null,
-            cpf: user.corporativo?.[0]?.num_cpf || null,
-            email: user.corporativo?.[0]?.dsc_email || null,
-            unit_id: user.corporativo?.[0]?.seq_orgao || null,
-            unit_name: user.corporativo?.[0]?.dsc_orgao || null,
-            court_id: user.corporativo?.[0]?.seq_tribunal_pai || null,
-            court_name: user.corporativo?.[0]?.dsc_tribunal_pai || null,
-            state_abbreviation: user.corporativo?.[0]?.sig_uf || null,
-        } : undefined
-        const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name, userFields)
+    // Update user details
+    const userFields = user.corporativo?.length ? {
+        name: user.corporativo?.[0]?.nom_usuario || null,
+        cpf: user.corporativo?.[0]?.num_cpf || null,
+        email: user.corporativo?.[0]?.dsc_email || null,
+        unit_id: user.corporativo?.[0]?.seq_orgao || null,
+        unit_name: user.corporativo?.[0]?.dsc_orgao || null,
+        court_id: user.corporativo?.[0]?.seq_tribunal_pai || null,
+        court_name: user.corporativo?.[0]?.dsc_tribunal_pai || null,
+        state_abbreviation: user.corporativo?.[0]?.sig_uf || null,
+    } : undefined
+    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name, userFields)
 
-        // const body = JSON.parse(JSON.stringify(request.body))
-        const body = await request.json()
-        // console.log('body', JSON.stringify(body))
-        const kind: string = body.kind
-        const promptSlug: string | undefined = body.promptSlug
-        let promptId: number | undefined = body.promptId
-        if (!promptId && kind.startsWith('prompt-')) {
-            const parts = kind.split('-')
-            if (parts.length === 2) {
-                promptId = parseInt(parts[1])
-            }
+    const body = await request.json()
+    const kind: string = body.kind
+    const promptSlug: string | undefined = body.promptSlug
+    let promptId: number | undefined = body.promptId
+    if (!promptId && kind.startsWith('prompt-')) {
+        const parts = kind.split('-')
+        if (parts.length === 2) {
+            promptId = parseInt(parts[1])
         }
-
-        // Get context to be submitted to the streamContent function and be used in the logs
-        const dossierCode = body.dossierCode
-        const documentId = body.documentId
-
-        const definition = await getPromptDefinition(kind, promptSlug, promptId)
-        const data: any = body.data
-        const options: PromptOptionsType = {
-            overrideSystemPrompt: body.overrideSystemPrompt,
-            overridePrompt: body.overridePrompt,
-            overrideJsonSchema: body.overrideJsonSchema,
-            overrideFormat: body.overrideFormat,
-            overrideTemplate: body.overrideTemplate,
-            cacheControl: body.cacheControl,
-        }
-
-        const definitionWithOptions = promptDefinitionFromDefinitionAndOptions(definition, options)
-
-        if (definitionWithOptions.template) {
-            definitionWithOptions.template = preprocessTemplate(definitionWithOptions.template)
-        }
-
-        if (body.modelSlug)
-            definitionWithOptions.model = body.modelSlug
-
-        if (body.extra)
-            definitionWithOptions.prompt += '\n\n' + body.extra
-
-        const executionResults: PromptExecutionResultsType = { messagesOnly }
-        const result = await streamContent(definitionWithOptions, data, executionResults, { dossierCode })
-
-        if (typeof result === 'string') {
-            return new Response(result, { status: 200 })
-        }
-        if (result) {
-            const reader: ReadableStreamDefaultReader = (result as any).fullStream.getReader()
-            const { value, done } = await reader.read()
-            if (value?.type === 'error') {
-                const error = value.error;
-                throw new Error(`Erro na comunicação com o provedor de inteligência artificial: ${error}`)
-            }
-            const feederStream = new ReadableStream({
-                start(controller) {
-                    if (value?.type === 'text')
-                        controller.enqueue(value)
-                    function pump() {
-                        reader.read().then(({ done, value }) => {
-                            if (done) {
-                                controller.close()
-                                return
-                            }
-                            switch (value.type) {
-                                case 'text-delta': {
-                                    controller.enqueue(value.text || value.textDelta)
-                                    break;
-                                }
-                                case 'error': {
-                                    const error = value.error;
-                                    controller.enqueue(`Erro na comunicação com o provedor de inteligência artificial: ${error}`)
-                                }
-                            }
-                            pump()
-                        })
-                    }
-                    pump()
-                },
-            })
-            return new Response(feederStream, {
-                status: 200,
-                headers: {
-                    'Content-Type': definitionWithOptions.jsonSchema ? 'application/json' : 'text/plain; charset=utf-8',
-                },
-            })
-        } else {
-            throw new Error('Invalid response')
-        }
-    } catch (error) {
-        console.log('error', error)
-        const message = Fetcher.processError(error)
-        return NextResponse.json({ errormsg: `${message}` }, { status: 405 })
     }
+
+    // Get context to be submitted to the streamContent function and be used in the logs
+    const dossierCode = body.dossierCode
+    const documentId = body.documentId
+
+    const definition = await getPromptDefinition(kind, promptSlug, promptId)
+    const data: any = body.data
+    const options: PromptOptionsType = {
+        overrideSystemPrompt: body.overrideSystemPrompt,
+        overridePrompt: body.overridePrompt,
+        overrideJsonSchema: body.overrideJsonSchema,
+        overrideFormat: body.overrideFormat,
+        overrideTemplate: body.overrideTemplate,
+        cacheControl: body.cacheControl,
+    }
+
+    const definitionWithOptions = promptDefinitionFromDefinitionAndOptions(definition, options)
+
+    if (definitionWithOptions.template) {
+        definitionWithOptions.template = preprocessTemplate(definitionWithOptions.template)
+    }
+
+    if (body.modelSlug)
+        definitionWithOptions.model = body.modelSlug
+
+    if (body.extra)
+        definitionWithOptions.prompt += '\n\n' + body.extra
+
+    const executionResults: PromptExecutionResultsType = { messagesOnly }
+    const ret = await streamContent(definitionWithOptions, data, executionResults, { dossierCode }, await getTools(pUser))
+
+    if (ret.messages && messagesOnly) {
+        return new Response(ret.messages, { status: 200 })
+    }
+
+    if (ret.cached) {
+        return new Response(ret.cached, { status: 200 })
+    }
+
+    if (ret.textStream && searchParams.get('uiMessageStream') === 'true') {
+        return ((await ret.textStream) as StreamTextResult<ToolSet, any>).toUIMessageStreamResponse();
+    }
+
+    if (ret.textStream || ret.objectStream) {
+        const result = ret.textStream ? await ret.textStream : ret.objectStream ? await ret.objectStream : null
+        const reader: ReadableStreamDefaultReader = (result as any).fullStream.getReader()
+        const { value, done } = await reader.read()
+        if (value?.type === 'error') {
+            const error = value.error;
+            throw new Error(`Erro na comunicação com o provedor de inteligência artificial: ${error}`)
+        }
+        const feederStream = new ReadableStream({
+            start(controller) {
+                if (value?.type === 'text')
+                    controller.enqueue(value)
+                function pump() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            controller.close()
+                            return
+                        }
+                        switch (value.type) {
+                            case 'text-delta': {
+                                controller.enqueue(value.text || value.textDelta)
+                                break;
+                            }
+                            case 'error': {
+                                const error = value.error;
+                                controller.enqueue(`Erro na comunicação com o provedor de inteligência artificial: ${error}`)
+                            }
+                        }
+                        pump()
+                    })
+                }
+                pump()
+            },
+        })
+        return new Response(feederStream, {
+            status: 200,
+            headers: {
+                'Content-Type': definitionWithOptions.jsonSchema ? 'application/json' : 'text/plain; charset=utf-8',
+            },
+        })
+    }
+
+    throw new ApiError(`Resposta inválida do provedor de IA (${JSON.stringify(ret)})`, 500)
 }
+
+export const POST = withErrorHandler(POST_HANDLER as any)

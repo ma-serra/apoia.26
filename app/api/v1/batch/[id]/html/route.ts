@@ -4,9 +4,12 @@ import { formatBrazilianDate, maiusculasEMinusculas, slugify } from "@/lib/utils
 import { preprocess } from "@/lib/ui/preprocess"
 import { fixText } from "@/lib/fix"
 import { tua } from "@/lib/proc/tua"
-import { getCurrentUser } from "@/lib/user"
+import { getCurrentUser, assertApiUser } from "@/lib/user"
 import mapping from './mapping.json'
 import mappingByUnit from './mapping-by-unit.json'
+import devLog from "@/lib/utils/log"
+import { UnauthorizedError, ForbiddenError, withErrorHandler } from '@/lib/utils/api-error'
+import { NextRequest, NextResponse } from "next/server"
 
 export const maxDuration = 60
 
@@ -52,10 +55,9 @@ const preprocessAgrupamento = (text: string) => {
  *       200:
  *         description: Relatório em HTML
  */
-export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
-    const user = await getCurrentUser()
-    if (!user) return Response.json({ errormsg: 'Usuário não autenticado' }, { status: 401 })
+    const user = await assertApiUser()
 
     const { searchParams } = new URL(req.url)
     const ungrouped = searchParams.get('ungrouped') === 'true'
@@ -65,7 +67,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 
     const batch_id = Number(params.id)
     const owns = await Dao.assertBatchOwnership(batch_id)
-    if (!owns) return Response.json({ errormsg: 'Forbidden' }, { status: 403 })
+    if (!owns) throw new ForbiddenError()
 
     const batch = await Dao.getBatchSummary(batch_id)
 
@@ -74,8 +76,6 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     let html = ''
 
     const items = await Dao.retrieveByBatchIdAndEnumId(batch_id, enum_id)
-
-    // console.log('items', items.length)
 
     // use main item if available
     for (const item of items)
@@ -106,7 +106,6 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             acc.push(i.enum_item_descr)
         return acc
     }, [] as string[])
-    // console.log('enumDescrs', enumDescrs)
     if (!enumDescrs[0]) {
         const firstEnumDescr = enumDescrs.shift() as string
         if (ungrouped)
@@ -171,24 +170,20 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     // index
     if (false && triageItems.length === 1 && triageItems[0].descr === '') {
         const originalTriageItems = triageItems
-        // console.log('originalIndex', JSON.stringify(originalTriageItems.map(ti => ({ descr: ti.descr, count: ti.items.length }))))
         const mappedTriageItems = mapping.map(m => ({ ...m, items: [] }))
         for (const ti of originalTriageItems) {
             const mappedBy = mappedTriageItems.find(m => m.groupedItems.find(g => g === ti.descr))
             if (mappedBy) {
                 mappedBy.items = [...mappedBy.items, ...ti.items]
             } else {
-                // console.log('mapping not found', ti.descr)
                 mappedTriageItems.push({ descr: ti.descr, items: ti.items, groupedItems: [ti.descr] })
             }
         }
         triageItems = mappedTriageItems //.filter(ti => ti.items.length > 0)
-        // console.log('\n\nmappedTriageItems', JSON.stringify(mappedTriageItems.map(ti => ({ descr: ti.descr, count: ti.items.length }))))
     }
 
     // index by unit
     if (false) {
-        // console.log('originalIndex', JSON.stringify(originalTriageItems.map(ti => ({ descr: ti.descr, count: ti.items.length }))))
         const units = [...new Set(Object.values(mappingByUnit))] as string[]
         const preprocessUnitToSort = (unit: string) => {
             return unit.replace(/\d+/g, (n) => n.padStart(2, '0'));
@@ -202,7 +197,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
                     throw new Error(`Mapping unit not found for ${ti.dossier_code} (${ti.enum_item_descr})`)
                 found.items.push(ti)
             } else {
-                console.log(`Mapping not found for ${ti.dossier_code} (${ti.enum_item_descr})`)
+                devLog(`Mapping not found for ${ti.dossier_code} (${ti.enum_item_descr})`)
             }
         }
         triageItems = mappedItems //.filter(ti => ti.items.length > 0)
@@ -257,7 +252,6 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 
         for (const item of ti.items) {
             const nomeDaClasse = tua[item.dossier_class_code]
-            // console.log('nomeDaClasse', nomeDaClasse)
             html += `<div class="page"><h1 class="titulo">Processo ${item.dossier_code}</h1>`
             html += `<div class="subtitulo">`
             if (nomeDaClasse) html += nomeDaClasse
@@ -304,10 +298,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             count++
         }
     }
-    // console.log('count', count)
-    console.log('globalCount', globalCount)
-
-    return new Response(formated(html, slugPrintTitle), { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    return new NextResponse(formated(html, slugPrintTitle), { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 }
 
 const buildPDF = async (html: string, filename: string, disposition) => {
@@ -333,7 +324,7 @@ const buildPDF = async (html: string, filename: string, disposition) => {
     headers.append("Content-Type", "application/pdf")
     headers.append("Content-Length", pdf.length.toString())
 
-    return new Response(pdf, { headers })
+    return new NextResponse(pdf, { headers })
 }
 
 const formated = (html: string, title?: string) => {
@@ -446,3 +437,4 @@ ${html}
 </html>`
 }
 
+export const GET = withErrorHandler(GET_HANDLER)

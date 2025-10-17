@@ -8,6 +8,8 @@ import { infoDeProduto, TiposDeSinteseValido } from './info-de-produto'
 import { getInterop, Interop } from '../interop/interop'
 import { DadosDoProcessoType, PecaType, StatusDeLancamento, TEXTO_PECA_COM_ERRO, TEXTO_PECA_SIGILOSA } from './process-types'
 import { UserType } from '../user'
+import devLog from '../utils/log'
+import * as Sentry from '@sentry/nextjs'
 
 const selecionarPecas = (pecas: PecaType[], descricoes: string[]) => {
     const pecasRelevantes = pecas.filter(p => descricoes.includes(p.descr))
@@ -53,7 +55,6 @@ const iniciarObtencaoDeConteudo = async (dossier_ids: { [key: string]: number },
     for (const peca of pecas) {
         // const current_dossier_id = numeroDoProcesso === peca.numeroDoProcesso ? dossier_id : await Dao.assertIADossierId(peca.numeroDoProcesso || numeroDoProcesso)
         if (peca.conteudo) continue
-        // console.log('obtendo conteúdo de peça', peca.numeroDoEvento, peca.id, peca.descr)
         const np = peca.numeroDoProcesso || numeroDoProcesso
         if (!dossier_ids[np]) throw new Error(`Dossier_id não encontrado para o processo ${np}`)
         peca.pConteudo = obterConteudoDaPeca(dossier_ids[np], np, peca.id, peca.descr, peca.sigilo, interop)
@@ -90,8 +91,8 @@ export type ObterDadosDoProcessoType = {
 
 export const getInteropFromUser = async (user: UserType): Promise<Interop> => {
     const username = user?.email
-    const password = user?.image?.password ? decrypt(user?.image.password) : undefined
-    const system = user?.image?.system
+    const password = user?.encryptedPassword ? decrypt(user?.encryptedPassword) : undefined
+    const system = user?.system
 
     const interop = getInterop(system, username, password)
     await interop.init()
@@ -99,7 +100,7 @@ export const getInteropFromUser = async (user: UserType): Promise<Interop> => {
 }
 
 export const getSystemIdAndDossierId = async (user: UserType, numeroDoProcesso: string): Promise<{ system_id: number, dossier_id: number }> => {
-    const system_id = await Dao.assertSystemId(user?.image?.system || 'PDPJ')
+    const system_id = await Dao.assertSystemId(user?.system || 'PDPJ')
     const dossier_id = await Dao.assertIADossierId(numeroDoProcesso, system_id, undefined, undefined)
     return { system_id, dossier_id }
 }
@@ -125,14 +126,12 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         // localiza a tramitação que contém a peça solicitada
         if (apenasPecasEspecificas.length > 0) {
             dadosDoProcesso = arrayDadosDoProcesso.find(d => d.pecas.map(p => p.id).includes(apenasPecasEspecificas[0]))
-            if (!dadosDoProcesso) throw new Error(`Peças específicas ${apenasPecasEspecificas.join(', ')} não encontradas no processo ${numeroDoProcesso}`)
+            if (!dadosDoProcesso) {
+                throw new Error(`Peças específicas ${apenasPecasEspecificas.join(', ')} não encontradas no processo ${numeroDoProcesso}`)
+            }
         }
 
         pecas = [...dadosDoProcesso.pecas]
-
-        // for (const peca of pecas) {
-        //     console.log('peca', peca.id, peca.numeroDoEvento, peca.descr, peca.rotulo)
-        // }
 
         // grava os dados do processo no banco
         const { system_id, dossier_id } = await getSystemIdAndDossierId(user, numeroDoProcesso)
@@ -168,12 +167,11 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
             const pecasOutros = pecas.filter(p => p.descr === 'OUTROS')
             if (pecasOutros.length > 0 && conteudoDasPecasSelecionadas !== CargaDeConteudoEnum.NAO) {
                 if (await Dao.verifyIfDossierHasDocumentsWithPredictedCategories(numeroDoProcesso)) {
-                    console.log(`Carregando tipos documentais de ${pecasOutros.length} peças marcadas com "OUTROS"`)
+                    devLog(`Carregando tipos documentais de ${pecasOutros.length} peças marcadas com "OUTROS"`)
                     const pecasComDocumento = iniciarObtencaoDeDocumentoGravado(dossier_id, numeroDoProcesso, pecasOutros)
                     for (const peca of pecasComDocumento) {
                         if (peca.pDocumento) {
                             peca.documento = await peca.pDocumento
-                            // console.log('peca recuperada', peca.id, peca.documento.id)
                             if (peca.documento.predicted_category && peca.documento.predicted_category !== '') {
                                 peca.descr = peca.documento.predicted_category
                             }
@@ -185,7 +183,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
             // Localiza pecas with descricao == 'OUTROS' e usa IA para determinar quais são os tipos destas peças
             const pecasOutros2 = pecas.filter(p => p.descr === 'OUTROS')
             if (pecasOutros2.length > 0) {
-                console.log(`Identificando tipos documentais de ${pecasOutros2.length} peças marcadas com "OUTROS"`)
+                devLog(`Identificando tipos documentais de ${pecasOutros2.length} peças marcadas com "OUTROS"`)
                 const pecasComConteudo = await iniciarObtencaoDeConteudo(dossier_ids, numeroDoProcesso, pecasOutros2, interop, true)
                 for (const peca of pecasComConteudo) {
                     if (peca.pConteudo) {
@@ -201,10 +199,9 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
 
                         const categoria = await inferirCategoriaDaPeca(dossier_id, peca.documento?.id, conteudo, anteriores)
                         if (categoria) {
-                            // console.log(peca.id, peca.documento)
                             if (!peca.documento)
                                 throw new Error(`Documento ${peca.id} do processo ${numeroDoProcesso} não encontrado`)
-                            console.log(`Peça ${peca.id} do processo ${numeroDoProcesso}, originalmente categorizada como ${peca.descr}, identificada como ${categoria}`)
+                            devLog(`Peça ${peca.id} do processo ${numeroDoProcesso}, originalmente categorizada como ${peca.descr}, identificada como ${categoria}`)
                             if (peca.descr !== 'OUTROS')
                                 throw new Error(`Peça ${peca.id} do processo ${numeroDoProcesso} não é do tipo 'OUTROS'`)
                             await Dao.updateDocumentCategory(peca.documento.id, peca.descr, categoria)
@@ -213,7 +210,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
                     }
                 }
             }
-            console.log('Identificação concluída')
+            devLog('Identificação concluída')
         }
 
         let selecao: SelecionarPecasResultado = { pecas: null }
@@ -251,42 +248,29 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         // Se a peça for sigilosa, remove o conteúdo
         for (const peca of pecas)
             if (!nivelDeSigiloPermitido(peca.sigilo)) {
-                console.log('removendo conteúdo de peca com sigilo', peca.id, peca.sigilo)
+                devLog('removendo conteúdo de peca com sigilo', peca.id, peca.sigilo)
                 peca.pConteudo = undefined
                 peca.conteudo = TEXTO_PECA_SIGILOSA
             }
 
         if (completo) pecasSelecionadas = pecas
 
-        // } else if (pecasSelecionadas !== null) {
-        //     for (const peca of pecasSelecionadas)
-        //         assertNivelDeSigilo(peca.sigilo, `${peca.descr} (${peca.id})`)
-        // }
-
-        // console.log('tipo de síntese', `${tipoDeSinteseSelecionado}`)
-        // console.log('peças selecionadas', pecasSelecionadas?.map(p => p.id))
-        // console.log('fase atual (matcher)', selecao.faseAtual)
-        // console.log('produtos', TipoDeSinteseMap[`${tipoDeSinteseSelecionado}`]?.produtos)
-
         let pecasComConteudo: PecaType[] = []
         if (pecasSelecionadas)
             pecasComConteudo = conteudoDasPecasSelecionadas === CargaDeConteudoEnum.NAO ? pecasSelecionadas : await iniciarObtencaoDeConteudo(dossier_ids, numeroDoProcesso, pecasSelecionadas, interop)
         if (pecasComConteudo?.length > 0 && conteudoDasPecasSelecionadas === CargaDeConteudoEnum.SINCRONO) {
-            console.log(`\n\nProcessando ${pecasComConteudo.length} peças selecionadas para o processo ${numeroDoProcesso}`)
+            devLog(`Processando ${pecasComConteudo.length} peças selecionadas para o processo ${numeroDoProcesso}`)
             let i = 0
             for (const peca of pecasComConteudo) {
                 i++
-                console.log(`processando peça ${i}`, peca.id, peca.descr)
+                devLog(`processando peça ${i}`, peca.id, peca.descr)
                 if (!peca.conteudo && peca.pConteudo) {
                     const c = await peca.pConteudo
                     if (c?.errorMsg) {
-                        // if (completo) {
                         peca.conteudo = `${TEXTO_PECA_COM_ERRO} - ${c.errorMsg}`
-                        // } else {
-                        //     throw new Error(c.errorMsg)
-                        // }
+                    } else {
+                        peca.conteudo = c?.conteudo
                     }
-                    peca.conteudo = c?.conteudo
                 }
                 delete peca.pConteudo
             }
@@ -295,7 +279,8 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         // return { ...dadosDoProcesso, pecas: [] as PecaType[], pecasSelecionadas: [] as PecaType[], tipoDeSintese: tipoDeSinteseSelecionado, produtos: TipoDeSinteseMap[tipoDeSinteseSelecionado]?.produtos }
     } catch (error) {
         if (error?.message === 'NEXT_REDIRECT') throw error
-        console.error(`Erro ao obter dados do processo ${numeroDoProcesso}: ${error.stack}`)
+        Sentry.captureException(error, { tags: { function: 'obterDadosDoProcesso', numeroDoProcesso } })
+        devLog(`Erro ao obter dados do processo ${numeroDoProcesso}: ${error.stack}`)
         errorMsg = `${error.message}`
         return { pecas, poloAtivo: '', poloPassivo: '', errorMsg }
     }
@@ -307,8 +292,8 @@ export const obterDadosDoProcesso2 = async ({ numeroDoProcesso, pUser, pieces, c
     try {
         const user = await pUser
         const username = user?.email
-        const password = user?.image?.password ? decrypt(user?.image.password) : undefined
-        const system = user?.image?.system
+        const password = user?.encryptedPassword ? decrypt(user?.encryptedPassword) : undefined
+        const system = user?.system
 
         const interop = getInterop(system, username, password)
         await interop.init()
@@ -317,14 +302,15 @@ export const obterDadosDoProcesso2 = async ({ numeroDoProcesso, pUser, pieces, c
         // pecas = [...dadosDoProcesso.pecas]
 
         // // grava os dados do processo no banco
-        // const system_id = await Dao.assertSystemId(user?.image?.system || 'PDPJ')
+        // const system_id = await Dao.assertSystemId(user?.system || 'PDPJ')
         // const dossier_id = await Dao.assertIADossierId(numeroDoProcesso, system_id, dadosDoProcesso.codigoDaClasse, dadosDoProcesso.ajuizamento)
 
         return { arrayDeDadosDoProcesso: [...dadosDoProcesso] }
         // return { ...dadosDoProcesso, pecas: [] as PecaType[], pecasSelecionadas: [] as PecaType[], tipoDeSintese: tipoDeSinteseSelecionado, produtos: TipoDeSinteseMap[tipoDeSinteseSelecionado]?.produtos }
     } catch (error) {
         if (error?.message === 'NEXT_REDIRECT') throw error
-        console.error(`Erro ao obter dados do processo ${numeroDoProcesso}: ${error.stack}`)
+        Sentry.captureException(error, { tags: { function: 'obterDadosDoProcesso2', numeroDoProcesso } })
+        devLog(`Erro ao obter dados do processo ${numeroDoProcesso}: ${error.stack}`)
         errorMsg = `${error.message}`
         return { errorMsg }
     }
