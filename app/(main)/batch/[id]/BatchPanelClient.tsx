@@ -38,7 +38,7 @@ export default function BatchPanelClient({ id, initialSummary, usdBrl, promptNam
       setInfo('Otimizando índice, aguarde...')
       const res = await Fetcher.post<any, any>(`/api/v1/batch/${id}/fix-index`, {})
       if (res?.status !== 'OK') throw new Error(res?.errormsg || 'Falha ao otimizar índice')
-      setInfo('Índice otimizado com sucesso')
+      setInfo(res?.message || 'Índice otimizado com sucesso.')
     } catch (e: any) {
       setErr(e?.message || String(e))
       setInfo('')

@@ -52,6 +52,8 @@ async function POST_HANDLER(_req: Request, props: { params: Promise<{ id: string
     const suggestedGroups = suggestion.Agrupamentos as { Tx_Titulo: string, Tx_Agrupados: string }[]
     const groups = suggestedGroups.map(g => ({ title: g.Tx_Titulo, codes: g.Tx_Agrupados.split(',').map(s => parseInt(s.trim())).filter(Boolean) }))
 
+    let message = ''
+
     // test if all codes were mapped
     const allCodes = current.map(c => c.id)
     const mappedCodes = groups.reduce((acc, g) => {
@@ -62,7 +64,7 @@ async function POST_HANDLER(_req: Request, props: { params: Promise<{ id: string
     }, [] as number[])
     const missingCodes = allCodes.filter(c => !mappedCodes.includes(c))
     if (missingCodes.length > 0) {
-      throw new Error(`Códigos não mapeados: ${missingCodes.join(', ')}`)
+      message = `Alguns códigos não foram mapeados: ${missingCodes.join(', ')}`
     }
 
     // Build mapping pairs from current title (descr_from) to suggested group.title (descr_to)
@@ -90,7 +92,7 @@ async function POST_HANDLER(_req: Request, props: { params: Promise<{ id: string
     // Persist: rewrite mappings for this batch id
     const saved = await Dao.rewriteBatchFixIndexMap(id, deduped)
 
-    return Response.json({ status: 'OK', saved, summary: { groups: groups.length, pairs: deduped.length } })
+    return Response.json({ status: 'OK', message, saved, summary: { groups: groups.length, pairs: deduped.length } })
 }
 
 export const POST = withErrorHandler(POST_HANDLER as any)
