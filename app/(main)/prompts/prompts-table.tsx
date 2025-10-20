@@ -26,9 +26,4 @@ export default function PromptsTable({ prompts, onClick, onProcessNumberChange, 
             </TableRecords >
         </>
     )
-    return <TableRecords records={prompts} spec="Prompts" pageSize={20} onClick={onClick}>
-        <div className="col col-auto">
-            <Button variant="primary" href="/prompts/prompt/new">Criar Novo Prompt</Button>
-        </div>
-    </TableRecords>
 }

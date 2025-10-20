@@ -34,7 +34,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 { header: 'Tipo', accessorKey: 'descr', enableSorting: true, style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '10em' }, cell: data => <span title={data.row.original.descr}>{data.row.original.descr.toLowerCase()}</span> },
                 { header: 'Sigilo', accessorKey: 'sigilo', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => <span>{data.row.original.sigilo}</span> },
             ],
-            tableClassName: 'table table-sm table-striped table-warning',
+            tableClassName: 'table table-sm table-striped table-warning mb-0',
             pageSizes: [10, 20, 50, 100, 200, 500],
         },
         CountersByPromptKinds: {
@@ -78,7 +78,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 { header: 'Compart.', accessorKey: 'share', enableSorting: true, cell: data => Share[data.row.original.share]?.descr || 'Não Encontrado', style: { textAlign: "center" } },
                 { header: 'Estrelas', accessorKey: 'favorite_count', enableSorting: true, style: { textAlign: "right" } },
             ],
-            tableClassName: 'table table-striped table-border-sides'
+            tableClassName: 'table table-striped table-border-sides mb-0'
         },
         PromptsByKind: {
             columns: [
@@ -154,7 +154,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 } },
                 { header: 'Contexto', accessorKey: 'context', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
             ],
-            tableClassName: 'table table-sm table-striped table-info',
+            tableClassName: 'table table-sm table-striped table-info mb-0',
             pageSizes: [10, 20, 50, 100],
         },
         Library: {
@@ -186,7 +186,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 } },
                 { header: 'Contexto', accessorKey: 'context', enableSorting: true, cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
             ],
-            tableClassName: 'table table-bordered table-hover',
+            tableClassName: 'table table-bordered table-hover mb-0',
             pageSizes: [10, 20, 50, 100],
         },
 
@@ -207,7 +207,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                     </>)
                 }
             ],
-            tableClassName: 'table table-sm table-striped table-border-sides',
+            tableClassName: 'table table-sm table-striped table-border-sides mb-0',
             pageSizes: [10, 20, 50, 100, 200, 500],
         },
     }

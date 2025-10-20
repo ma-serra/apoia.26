@@ -17,7 +17,7 @@ export default async function ServerContents() {
         spec="Library" 
         pageSize={10}
       >
-        <div className="col col-auto mb-0">
+        <div className="col col-auto mt-3 mb-0">
           <Link href="/library/new?kind=MARKDOWN" className="btn btn-primary">Criar Documento</Link>
         </div>
       </Table>

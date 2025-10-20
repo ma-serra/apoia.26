@@ -127,45 +127,49 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
             <div className="row">
                 {children}
                 {linkToBack &&
-                    <div className="col col-auto mb-0">
+                    <div className="col col-auto mt-3 mb-0">
                         <Link href={`${pathname}/${linkToBack}`} className="btn btn-light bt d-print-none">Voltar</Link>
                     </div>
                 }
                 {linkToAdd &&
-                    <div className="col col-auto ms-auto mb-0">
+                    <div className="col col-auto ms-auto mt-3 mb-0">
                         <Link href={`${pathname}/${linkToAdd}`} className="btn btn-light bt float-end d-print-none"><FontAwesomeIcon icon={faAdd} /></Link>
                     </div>
                 }
                 {options?.apenasSelecionadas &&
-                    <div className="col col-auto ms-auto mb-0">
-                        <div className="row g-0 pt-2">
-                        Listar:&nbsp;&nbsp;
-                            <div className="col pe-2">
-                                <Form.Check
+                    <div className="col col-auto ms-auto mt-3 mb-0">
+                        <div className="d-flex align-items-center gap-2 d-print-none">
+                            <div className="btn-group" role="group" aria-label="Filtro de seleção">
+                                <input
                                     type="radio"
-                                    id="radio-todas"
+                                    className="btn-check"
                                     name="filtro-selecao"
-                                    label="Todas"
+                                    id="radio-todas"
+                                    autoComplete="off"
                                     checked={!apenasSelecionadas}
                                     onChange={() => setApenasSelecionadas(false)}
-                                    className="d-print-none"
                                 />
-                            </div>
-                            <div className="col">
-                                <Form.Check
+                                <label className="btn btn-outline-secondary" htmlFor="radio-todas">
+                                    Listar Todas
+                                </label>
+
+                                <input
                                     type="radio"
-                                    id="radio-selecionadas"
+                                    className="btn-check"
                                     name="filtro-selecao"
-                                    label="Selecionadas"
+                                    id="radio-selecionadas"
+                                    autoComplete="off"
                                     checked={apenasSelecionadas}
                                     onChange={() => setApenasSelecionadas(true)}
-                                    className="d-print-none"
                                 />
+                                <label className="btn btn-outline-secondary" htmlFor="radio-selecionadas">
+                                    Selecionadas
+                                </label>
                             </div>
                         </div>
                     </div>
                 }
-                <div className="col col-auto ms-auto mb-0">
+                <div className={`col col-auto mt-3 mb-0 ${options?.apenasSelecionadas ? '' : 'ms-auto'}`}>
                     <input
                         list="filter-options"
                         value={filter}
@@ -177,8 +181,8 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                         <option value="selecionada" />
                     </datalist>
                 </div>
-                {pageSizes && Array.isArray(pageSizes) && pageSizes.length > 0 && (
-                    <div className="col col-auto mb-0">
+                {(pageSizes && Array.isArray(pageSizes) && pageSizes.length > 0 && table.getPageCount() > 1 || currentPageSize !== pageSizes?.[0]) && (
+                    <div className="col col-auto mt-3 mb-0">
                         <Form.Select
                             value={currentPageSize}
                             onChange={e => setCurrentPageSize(Number(e.target.value))}
@@ -190,7 +194,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                         </Form.Select>
                     </div>
                 )}
-                <div className="col col-auto mb-0">
+                {(table.getState().pagination.pageIndex > 0 || table.getPageCount() > 1) && <div className="col col-auto mt-3 mb-0">
                     <Pagination className='mb-0'>
                         <Pagination.First onClick={() => table.firstPage()}
                             disabled={!table.getCanPreviousPage()} />
@@ -203,7 +207,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                         <Pagination.Last onClick={() => table.lastPage()}
                             disabled={!table.getCanNextPage()} />
                     </Pagination>
-                </div>
+                </div>}
             </div>
         </div>
     )

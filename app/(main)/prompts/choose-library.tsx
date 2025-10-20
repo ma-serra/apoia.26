@@ -34,7 +34,7 @@ function ChooseLibraryForm({ allDocuments, selectedDocuments, onSave, onClose, r
             <div className="row">
                 <div className="col-12">
                     <TableRecords records={allDocuments} spec="ChooseLibrary" options={{}} pageSize={10} selectedIds={selectedIds} onSelectdIdsChanged={onSelectedIdsChanged}>
-                        <div className="col col-auto mb-0">
+                        <div className="col col-auto mt-3 mb-0">
                             {alteredDocuments
                                 ? <Button onClick={() => onSave(alteredDocuments ? selectedIds : [])} variant="primary">{readyToStartAI ? <><FontAwesomeIcon icon={faRotateRight} className="me-2" />Salvar Alterações e Refazer</> : <><FontAwesomeIcon icon={faCheck} className="me-1" />OK</>}</Button>
                                 : <Button onClick={() => onClose()} variant="secondary"><FontAwesomeIcon icon={faClose} className="me-1" />Fechar</Button>
