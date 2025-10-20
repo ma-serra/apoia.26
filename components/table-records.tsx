@@ -139,12 +139,13 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                 {options?.apenasSelecionadas &&
                     <div className="col col-auto ms-auto mb-0">
                         <div className="row g-0 pt-2">
+                        Listar:&nbsp;&nbsp;
                             <div className="col pe-2">
                                 <Form.Check
                                     type="radio"
                                     id="radio-todas"
                                     name="filtro-selecao"
-                                    label="Listar Todas"
+                                    label="Todas"
                                     checked={!apenasSelecionadas}
                                     onChange={() => setApenasSelecionadas(false)}
                                     className="d-print-none"
