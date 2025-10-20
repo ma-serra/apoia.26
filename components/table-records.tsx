@@ -181,7 +181,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                         <option value="selecionada" />
                     </datalist>
                 </div>
-                {(pageSizes && Array.isArray(pageSizes) && pageSizes.length > 0 && table.getPageCount() > 1 || currentPageSize !== pageSizes?.[0]) && (
+                {(pageSizes && Array.isArray(pageSizes) && pageSizes.length > 0 && (table.getPageCount() > 1 || currentPageSize !== pageSizes?.[0])) && (
                     <div className="col col-auto mt-3 mb-0">
                         <Form.Select
                             value={currentPageSize}
