@@ -52,13 +52,12 @@ export const ChoosePiecesLoading = () => {
 }
 
 
-export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStartEditing, onEndEditing, dossierNumber, readyToStartAI, baselineDefaultIds, startEditing = true }: {
-    allPieces: PecaType[], selectedPieces: PecaType[], onSave: (pieces: string[]) => void, onStartEditing: () => void, onEndEditing: () => void, dossierNumber: string, readyToStartAI: boolean, baselineDefaultIds: string[], startEditing?: boolean
+export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStartEditing, onEndEditing, editing, dossierNumber, readyToStartAI, baselineDefaultIds}: {
+    allPieces: PecaType[], selectedPieces: PecaType[], onSave: (pieces: string[]) => void, onStartEditing: () => void, onEndEditing: () => void, editing: boolean, dossierNumber: string, readyToStartAI: boolean, baselineDefaultIds: string[]
 }) {
     const pathname = usePathname(); // let's get the pathname to make the component reusable - could be used anywhere in the project
     const router = useRouter();
     const currentSearchParams = useSearchParams()
-    const [editing, setEditing] = useState(!!startEditing)
     // Removed unused reloading/ref/flags
 
     const PIECES_PARAM = 'pieces' // stores hyphen-separated 1-based indices (1..N) in original allPieces order
@@ -92,7 +91,6 @@ export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStar
     }
 
     const onSaveLocal = (pieces: string[]) => {
-        setEditing(false)
         // setReloading(true)
         onSave(pieces)
         // If pieces is empty, it signals "no change" (keep default selection)
@@ -111,7 +109,6 @@ export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStar
     useEffect(() => { baselineDefaultIdsRef.current = baselineDefaultIds || null }, [baselineDefaultIds, dossierNumber])
 
     const onClose = () => {
-        setEditing(false)
         // Clear param only if the current selection equals the automatic baseline; otherwise, preserve existing 'pecas'
         try {
             const baselineIds = baselineDefaultIdsRef.current || []
@@ -139,7 +136,7 @@ export default function ChoosePieces({ allPieces, selectedPieces, onSave, onStar
         } else {
             s += l[0] + ' + ' + (l.length - 1)
         }
-        return <p className="text-body-tertiary text-center h-print">{s} - <span onClick={() => { setEditing(true); onStartEditing() }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></p>
+        return <p className="text-body-tertiary text-center h-print">{s} - <span onClick={() => { onStartEditing() }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></p>
     }
     return <ChoosePiecesForm onSave={onSaveLocal} onClose={onClose} allPieces={allPieces} selectedPieces={selectedPieces} dossierNumber={dossierNumber} readyToStartAI={readyToStartAI} />
 }

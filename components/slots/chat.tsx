@@ -138,7 +138,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             // Reset padding when component unmounts
             document.body.style.paddingBottom = ''
         }
-    }, [params.sidekick, messages, input, files])
+    }, [params.sidekick])
 
     const handleEditMessage = (idx: number) => {
         const message = messages[idx]

@@ -462,3 +462,8 @@
         color: #0EA5E9 !important;
         /* Use !important if needed to override Bootstrap defaults */
     }
+    
+    div.text-white.toast-body a {
+        color: #71d2ff;
+        text-decoration: underline;
+    }

@@ -25,11 +25,11 @@ function ErrorMsg(msg: string) {
         return <span>A chave da API informada não é válida. Por favor, forneça uma chave de API válida.</span>
     }
 
-    if (msg.match(/Não foram encontrados registros/)) 
+    if (msg.match(/Não foram encontrados registros/) || msg.match(/ConsultaProcessoException - The specified key does not exist/)) 
         return <>
             <p>A Apoia utiliza o Datalake para obter informações sobre os processos e também o conteúdo das peças processuais.</p>
             <p>A Apoia solicitou os metadados de um processo e o Datalake respondeu com um erro indicando que o processo não foi encontrado.</p>
-            <p>Este erro pode ser causado por um problema na fila de processamento do Datalake ou na integração entre o tribunal em questão e o Datalake.</p>
+            <p>Este erro pode ser causado por um problema na fila de processamento do Datalake ou na integração entre o tribunal em questão e o Datalake. Também pode se tratar de um processo anterior a 2020 que não foi migrado para o Datalake.</p>
             <p>Sugimos entrar em contato com a equipe que cuida do datalake para resolver esse problema.</p>
             <p>Isso é um erro bem comum, mas não é um erro da Apoia.</p>
         </>

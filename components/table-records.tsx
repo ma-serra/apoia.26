@@ -95,7 +95,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                     {thead ? thead() : table.getHeaderGroups().map(headerGroup => (
                         <tr key={headerGroup.id}>
                             {headerGroup.headers.map(header => (
-                                <th key={header.id} style={(header.column.columnDef as any)?.style}>
+                                <th key={header.id} className={(header.column.columnDef as any)?.className} style={(header.column.columnDef as any)?.style}>
                                     {header.isPlaceholder
                                         ? null
                                         : flexRender(
@@ -116,7 +116,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                         : table.getRowModel().rows.map(row => (
                             <tr key={row.id}>
                                 {row.getVisibleCells().map(cell => (
-                                    <td key={cell.id} style={(cell.column.columnDef as any)?.style}>
+                                    <td key={cell.id} className={(cell.column.columnDef as any)?.className} style={(cell.column.columnDef as any)?.style}>
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>
                                 ))}
@@ -126,37 +126,45 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
             </table>
             <div className="row">
                 {children}
-                <div className="col col-auto mb-0">
-                    {linkToBack &&
-                        <Link href={`${pathname}/${linkToBack}`} className="btn btn-light bt d-print-none">Voltar</Link>
-                    }
-                </div>
-                <div className="col col-auto ms-auto mb-0">
-                    {linkToAdd &&
-                        <Link href={`${pathname}/${linkToAdd}`} className="btn btn-light bt float-end d-print-none"><FontAwesomeIcon icon={faAdd} /></Link>
-                    }
-                </div>
-                {options?.apenasSelecionadas &&
+                {linkToBack &&
                     <div className="col col-auto mb-0">
+                        <Link href={`${pathname}/${linkToBack}`} className="btn btn-light bt d-print-none">Voltar</Link>
+                    </div>
+                }
+                {linkToAdd &&
+                    <div className="col col-auto ms-auto mb-0">
+                        <Link href={`${pathname}/${linkToAdd}`} className="btn btn-light bt float-end d-print-none"><FontAwesomeIcon icon={faAdd} /></Link>
+                    </div>
+                }
+                {options?.apenasSelecionadas &&
+                    <div className="col col-auto ms-auto mb-0">
                         <div className="row g-0 pt-2">
                             <div className="col pe-2">
-                                <div className="form-check form-switch d-print-none">
-                                    <label title="" htmlFor="custom-switch" className="form-check-label">Todas</label>
-                                </div>
+                                <Form.Check
+                                    type="radio"
+                                    id="radio-todas"
+                                    name="filtro-selecao"
+                                    label="Listar Todas"
+                                    checked={!apenasSelecionadas}
+                                    onChange={() => setApenasSelecionadas(false)}
+                                    className="d-print-none"
+                                />
                             </div>
                             <div className="col">
                                 <Form.Check
-                                    type="switch"
-                                    id="custom-switch"
+                                    type="radio"
+                                    id="radio-selecionadas"
+                                    name="filtro-selecao"
                                     label="Selecionadas"
                                     checked={apenasSelecionadas}
-                                    onChange={e => { setApenasSelecionadas(e.target.checked) }}
+                                    onChange={() => setApenasSelecionadas(true)}
+                                    className="d-print-none"
                                 />
                             </div>
                         </div>
                     </div>
                 }
-                <div className="col col-auto mb-0">
+                <div className="col col-auto ms-auto mb-0">
                     <input
                         list="filter-options"
                         value={filter}

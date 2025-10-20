@@ -4,7 +4,7 @@ import { IAPromptList } from './db/mysql-types'
 import { TipoDeSinteseMap } from './proc/combinacoes'
 import { Instance, Matter, Scope, Share, StatusDeLancamento } from './proc/process-types'
 
-export async function fixPromptList(basePrompts: IAPromptList[]) {
+export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao = false): Promise<IAPromptList[]> {
 
     // Determine beta tester cookie
     const cookieStore = await cookies()
@@ -25,6 +25,7 @@ export async function fixPromptList(basePrompts: IAPromptList[]) {
     const seededOverlay: IAPromptList[] = []
     for (const key of Object.keys(TipoDeSinteseMap)) {
         const def = TipoDeSinteseMap[key]
+        if (!showChatPadrao && key === 'CHAT_STANDALONE') continue
         const base = baseByKind.get(`^${key}`)
             ? baseByKind.get(`^${key}`)
             : await Dao.addInternalPrompt(`^${key}`) as IAPromptList
@@ -40,7 +41,7 @@ export async function fixPromptList(basePrompts: IAPromptList[]) {
             content: {
                 ...base.content,
                 author: def.author || '-',
-                target: 'PROCESSO',
+                target: key === 'CHAT_STANDALONE' ? 'CHAT' : 'PROCESSO',
                 scope: def.scope?.length ? def.scope : Object.keys(Scope),
                 instance: def.instance?.length ? def.instance : Object.keys(Instance),
                 matter: def.matter?.length ? def.matter : Object.keys(Matter),

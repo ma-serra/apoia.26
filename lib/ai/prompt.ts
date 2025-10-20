@@ -36,6 +36,8 @@ export const applyTextsAndVariables = (text: string, data: PromptDataType, jsonS
 
     text = text.replace('{{biblioteca}}', libraryPrompt)
 
+    text = text.replace('{{salvaguardas}}', salvaguardas)
+
     text = text.replace('{{numeroDoProcesso}}', data.numeroDoProcesso || 'Número do processo não definido')
 
     text = text.replace('{{dataAtual}}', formatDateDDMMYYYY(new Date()))
@@ -192,6 +194,7 @@ export function getInternalPrompt(slug: string): PromptDefinitionType {
     return internalPrompts[getPromptIdentifier(slug)]
 }
 
+import salvaguardas from '@/prompts/salvaguardas.md'
 import sistema from '@/prompts/sistema.md'
 import ementa from '@/prompts/ementa.md'
 import int_testar from "@/prompts/int-testar.md"

@@ -15,11 +15,17 @@ import { slugify } from '@/lib/utils/utils'
 import { assertModel, getSelectedModelName } from '@/lib/ai/model-server'
 import ProcessContents from '@/app/(main)/prompts/process-contents'
 import ServerContents from '@/app/(main)/prompts/server-contents'
+import { redirect } from 'next/navigation'
 
 export default async function Home({ searchParams }) {
     noStore()
     const sp = await searchParams
     const numeroDoProcesso = typeof sp.process === 'string' ? sp.process.trim() : undefined
+
+    const prompt = typeof sp.prompt === 'string' ? sp.prompt.trim() : undefined
+    // if (!prompt && !numeroDoProcesso) {
+    //     redirect('?prompt=chat-standalone')
+    // }
 
     const user = await assertCurrentUser()
     if (!(await isUserCorporativo(user)))
@@ -33,12 +39,14 @@ export default async function Home({ searchParams }) {
         textos: []
     }
 
-    return numeroDoProcesso
-        ? <div className="mb-5">
-            <ServerContents sidekick />
-        </div>
-        : <Chat definition={definition} data={data} model={model} withTools={true} key={1}
-            footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
-            sidekick
-        />
+    return <div className="mb-5">
+        <ServerContents sidekick />
+    </div>
+
+    // prompt === 'chat-standalone'
+    //     ? <Chat definition={definition} data={data} model={model} withTools={true} key={1}
+    //         footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
+    //         sidekick
+    //     />
+    //     : 
 }

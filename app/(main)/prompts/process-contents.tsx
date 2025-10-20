@@ -19,6 +19,8 @@ import { nivelDeSigiloPermitido } from "@/lib/proc/sigilo";
 import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
 import { devLog } from "@/lib/utils/log";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons }: {
     prompt: IAPrompt,
@@ -39,7 +41,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     const [loadingPiecesProgress, setLoadingPiecesProgress] = useState(-1)
     const [requests, setRequests] = useState<GeneratedContent[]>([])
     const [readyToStartAI, setReadyToStartAI] = useState(false)
-    const [choosingPieces, setChoosingPieces] = useState(true)
+    const [choosingPieces, setChoosingPieces] = useState(!(sidekick && prompt?.kind === '^CHAT'))
     const [choosingLibrary, setChoosingLibrary] = useState(false)
     const searchParams = useSearchParams()
 
@@ -111,9 +113,16 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     }
 
     useEffect(() => {
+        if (prompt?.kind === '^CHAT') return
+        setReadyToStartAI(false)
+        setChoosingPieces(true)
+    }, [prompt])
+
+    useEffect(() => {
         if (!dadosDoProcesso?.pecas || dadosDoProcesso.pecas.length === 0) return
         // Compute automatic default selection for baseline
         const autoDefault = chooseSelectedPieces(dadosDoProcesso.pecas, prompt.content.piece_strategy, prompt.content.piece_descr)
+        console.log('autoDefault', autoDefault)
         setDefaultPieceIds(autoDefault.map(p => p.id))
         // If URL has explicit 'pieces' numbers (1-based), prefer them over automatic selection
         // Backward compatibility: fall back to 'pecas' and accept comma or hyphen separators
@@ -132,10 +141,11 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
                 setSelectedPieces(sel)
                 return
             }
-        }
-        // Fallback to automatic selection only if we don't have a selection yet
-        if (!selectedPieces || selectedPieces.length === 0) {
+        } else {
+            // Fallback to automatic selection only if we don't have a selection yet
+            // if (!selectedPieces || selectedPieces.length === 0) {
             setSelectedPieces(autoDefault)
+            // }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [prompt, dadosDoProcesso.pecas, searchParams])
@@ -179,8 +189,10 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
 
     console.log('vou iniciar', readyToStartAI, choosingPieces, choosingLibrary, requests?.length)
 
+    // const TramitacaoTitle = ({ classe }: { classe: string }) => <div className="text-body-tertiary text-center h-print">Tramitação: {classe} - <span onClick={() => { return }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></div>
+
     return <div>
-        {!sidekick && <Subtitulo dadosDoProcesso={dadosDoProcesso} />}
+        {sidekick ? null : <Subtitulo dadosDoProcesso={dadosDoProcesso} />}
         {children}
         {allLibraryDocuments && Array.isArray(allLibraryDocuments) && allLibraryDocuments.length > 0 && selectedLibraryDocuments !== null && <>
             <ChooseLibrary
@@ -194,7 +206,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             />
         </>}
         {selectedPieces && <>
-            <ChoosePieces allPieces={dadosDoProcesso.pecas} selectedPieces={selectedPieces} onSave={(pieces) => { setRequests([]); changeSelectedPieces(pieces) }} onStartEditing={() => { setChoosingPieces(true) }} onEndEditing={() => setChoosingPieces(false)} dossierNumber={dadosDoProcesso.numeroDoProcesso} readyToStartAI={readyToStartAI} baselineDefaultIds={defaultPieceIds || []} startEditing={!sidekick} />
+            <ChoosePieces allPieces={dadosDoProcesso.pecas} selectedPieces={selectedPieces} onSave={(pieces) => { setRequests([]); changeSelectedPieces(pieces) }} onStartEditing={() => { setChoosingPieces(true) }} onEndEditing={() => setChoosingPieces(false)} editing={choosingPieces} dossierNumber={dadosDoProcesso.numeroDoProcesso} readyToStartAI={readyToStartAI} baselineDefaultIds={defaultPieceIds || []} />
             <LoadingPieces />
             <ErrorMsg dadosDoProcesso={dadosDoProcesso} />
             {/* <div className="mb-4"></div> */}

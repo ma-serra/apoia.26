@@ -23,7 +23,7 @@ export default async function ServerContents( params: { sidekick?: boolean } ) {
     // Ensure internal synthesis prompts are available in the bank (one-time upsert)
     const basePrompts = await Dao.retrieveLatestPrompts(user_id, await isUserModerator(user))
 
-    const prompts = await fixPromptList(basePrompts)
+    const prompts = await fixPromptList(basePrompts, params.sidekick ?? false )
 
     return <Contents prompts={prompts} user={user} user_id={user_id} apiKeyProvided={!!apiKey} model={model} isModerator={isModerator} sidekick={params.sidekick} />
 }

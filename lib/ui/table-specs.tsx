@@ -29,10 +29,10 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                     ),
                 },
                 { header: 'Evento', accessorKey: 'numeroDoEvento', enableSorting: true },
-                { header: 'Descrição', accessorKey: 'descricaoDoEvento', enableSorting: true, style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '10em' }, cell: data => <span title={data.row.original.descricaoDoEvento}>{data.row.original.descricaoDoEvento.toLowerCase()}</span> },
+                { header: 'Descrição', accessorKey: 'descricaoDoEvento', enableSorting: true, className: 'd-none d-lg-table-cell', style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '10em' }, cell: data => <span title={data.row.original.descricaoDoEvento}>{data.row.original.descricaoDoEvento.toLowerCase()}</span> },
                 { header: 'Rótulo', accessorKey: 'rotulo', enableSorting: true, style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '10em' }, cell: data => <a href={`/api/v1/process/${data.row.original.numeroDoProcesso || options?.dossierNumber}/piece/${data.row.original.id}/binary`} target="_blank" title={data.row.original.rotulo}>{data.row.original.rotulo.toLowerCase()}</a> },
                 { header: 'Tipo', accessorKey: 'descr', enableSorting: true, style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '10em' }, cell: data => <span title={data.row.original.descr}>{data.row.original.descr.toLowerCase()}</span> },
-                { header: 'Sigilo', accessorKey: 'sigilo', enableSorting: true, cell: data => <span>{data.row.original.sigilo}</span> },
+                { header: 'Sigilo', accessorKey: 'sigilo', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => <span>{data.row.original.sigilo}</span> },
             ],
             tableClassName: 'table table-sm table-striped table-warning',
             pageSizes: [10, 20, 50, 100, 200, 500],
@@ -148,11 +148,11 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                     enableSorting: true,
                     cell: data => data.row.original.title
                 },
-                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, cell: data => {
+                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => {
                     const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
                     return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
                 } },
-                { header: 'Contexto', accessorKey: 'context', enableSorting: true, cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
+                { header: 'Contexto', accessorKey: 'context', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
             ],
             tableClassName: 'table table-sm table-striped table-info',
             pageSizes: [10, 20, 50, 100],

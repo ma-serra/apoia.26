@@ -22,6 +22,7 @@ import { VisualizationEnum } from "@/lib/ui/preprocess"
 import { array } from "zod"
 import { slugify } from '@/lib/utils/utils'
 import ErrorMessage from "@/components/error-message"
+import Chat from "@/components/slots/chat"
 
 export const copyPromptToClipboard = (prompt: IAPromptList) => {
     let s: string = prompt.content.system_prompt
@@ -288,25 +289,42 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     })
 
     const promptsSidekick = useMemo(() => {
+        if (!sidekick) return []
         const chatIsCurrentPrompt = prompt?.kind === '^CHAT'
         console.log('promptsSidekick', filteredPromptsBase.length, prompt, chatIsCurrentPrompt)
-        const list = filteredPromptsBase.filter((p) => p.content.target === 'PROCESSO' && p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt))
+        let list = filteredPromptsBase.filter((p) => p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt) || (p.kind === '^CHAT_STANDALONE' && !numeroDoProcesso))
+        if (list.length < 2)
+            list = filteredPromptsBase.filter((p) => p.share === 'PADRAO' || p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt))
+        const chat = list.find(p => p.kind === '^CHAT')
+        if (chat) chat.name = 'Chat com Peças Selecionadas'
+
+        list.sort((a, b) => {
+            if (a.kind === '^CHAT_STANDALONE' && b.kind !== '^CHAT_STANDALONE') return -1
+            if (a.kind !== '^CHAT_STANDALONE' && b.kind === '^CHAT_STANDALONE') return 1
+            if (a.kind === '^CHAT' && b.kind !== '^CHAT') return -1
+            if (a.kind !== '^CHAT' && b.kind === '^CHAT') return 1
+            if (a.is_favorite && !b.is_favorite) return -1
+            if (!a.is_favorite && b.is_favorite) return 1
+            if (a.name < b.name) return -1
+            if (a.name > b.name) return 1
+            return 0
+        })
         return list
     }, [filteredPromptsBase, prompt])
 
     const promptButtons = useMemo(() => (<>
-        <div className="text-center mt-5 mb-3">Prompts Favoritos e Sugeridos:</div>
         <div className="d-flex flex-wrap gap-2 justify-content-center">
             {promptsSidekick && promptsSidekick.length > 0 ? (
                 promptsSidekick.map((p, i) => (
                     <Button
                         key={p.base_id ?? `${p.kind}-${i}`}
                         onClick={() => setPrompt(p)}
+                        variant="light"
                         style={{
                             // HSL hue from 30° (orange) to 280° (purple), avoiding red (0°)
-                            backgroundColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
+                            // backgroundColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
                             borderColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
-                            color: '#fff',
+                            color: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 30%)`,
                         }}
                     >
                         {p.name}
@@ -318,140 +336,9 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         </div>
     </>), [promptsSidekick])
 
-    return (sidekick)
-        ? (prompt)
-            ? (numeroDoProcesso && dadosDoProcesso)
-                ? <Container className="mt-4" fluid={true}>
-                    {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}
-                    {prompt.content.target === 'PROCESSO'
-                        ? !numeroDoProcesso
-                            ? <ProcessNumberForm id={`${prompt.base_id}`} onChange={setNumber} />
-                            : <>
-                                <div id="printDiv">
-                                    {dadosDoProcesso
-                                        ? <><ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
-                                            <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent} apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments} sidekick={sidekick} promptButtons={promptButtons}>
-                                                <PromptTitle prompt={prompt} />
-                                            </ProcessContents>
-                                        </>
-                                        : <><ProcessTitle id={numeroDoProcesso} /><SubtituloLoading /><PromptTitle prompt={prompt} /></>}
-                                </div>
-                            </>
-                        :
-                        prompt.content.target === 'TEXTO'
-                            ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
-                            : prompt.content.target === 'REFINAMENTO'
-                                ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
-                                : null
-                    }
-                </Container>
-                : null
-            : promptButtons
-        : !prompt
-            ? <>
-                {/* <div className="" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}> */}
-                <div className="bg-primary text-white">
-                    <Container className="p-2 pb-3" fluid={false}>
-                        <FormGroup as={Row} className="">
-                            <div className="col col-auto">
-                                <FormLabel className="mb-0">Número do Processo</FormLabel>
-                                <Form.Control name="numeroDoProcesso" placeholder="(opcional)" autoFocus={true} className="form-control" onChange={(e) => setNumber(e.target.value.replace(/\D/g, ""))} value={number} />
-                            </div>
-                            {numeroDoProcesso && !dadosDoProcesso &&
-                                <div className="col col-auto">
-                                    <FormLabel className="mb-0">&nbsp;</FormLabel>
-                                    <span className="form-control text-white" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}><Spinner size="sm" animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner></span>
-                                </div>
-                            }
-                            {numeroDoProcesso && arrayDeDadosDoProcesso && arrayDeDadosDoProcesso.length > 1 &&
-                                <div className="col col-auto">
-                                    <FormLabel className="mb-0">Tramitação</FormLabel>
-                                    <FormSelect value={idxProcesso} onChange={(e) => { const idx = parseInt(e.target.value); setIdxProcesso(idx); setDadosDoProcesso(arrayDeDadosDoProcesso[idx]) }} className="form-select">
-                                        {arrayDeDadosDoProcesso.map((d, idx) => <option key={idx} value={idx}>{d.classe}</option>)}
-                                    </FormSelect>
-                                </div>
-                            }
-                            {dadosDoProcesso && arrayDeDadosDoProcesso && arrayDeDadosDoProcesso.length === 1 &&
-                                <div className="col col-auto">
-                                    <FormLabel className="mb-0">&nbsp;</FormLabel>
-                                    <span className="form-control text-white" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>{dadosDoProcesso.classe}</span>
-                                </div>
-                            }
-                            <div className="col col-auto ms-auto">
-                                <FormLabel className="mb-0">Segmento</FormLabel>
-                                <FormSelect value={scope} onChange={(e) => setScope(e.target.value)} className={`form-select w-auto${scope ? ' bg-warning' : ''}`}>
-                                    <option value="">Todos</option>
-                                    {enumSorted(Scope).map((s) => <option key={`key-scope-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
-                                </FormSelect>
-                            </div>
-                            <div className="col col-auto">
-                                <FormLabel className="mb-0">Instância</FormLabel>
-                                <FormSelect value={instance} onChange={(e) => setInstance(e.target.value)} className={`form-select w-auto${instance ? ' bg-warning' : ''}`}>
-                                    <option value="">Todas</option>
-                                    {enumSorted(Instance).map((s) => <option key={`key-instance-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
-                                </FormSelect>
-                            </div>
-                            <div className="col col-auto">
-                                <FormLabel className="mb-0">Natureza</FormLabel>
-                                <FormSelect value={matter} onChange={(e) => setMatter(e.target.value)} className={`form-select w-auto${matter ? ' bg-warning' : ''}`}>
-                                    <option value="">Todas</option>
-                                    {enumSorted(Matter).map((s) => <option key={`key-matter-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
-                                </FormSelect>
-                            </div>
-                        </FormGroup >
-                    </Container>
-                </div >
-                <Container className="mt-2 mb-3" fluid={false}>
-                    {!apiKeyProvided && <p className="text-center mt-3 mb-3">Execute os prompts diretamente na Apoia, cadastrando sua <Link href="/prefs">Chave de API</Link>.</p>}
-
-                    <Tabs
-                        activeKey={activeTab}
-                        onSelect={(k) => setActiveTab(k || 'principal')}
-                        className="mt-3"
-                    >
-                        <Tab eventKey="principal" title="Principais">
-                            <PromptsTable prompts={promptsPrincipais} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
-                                <div className="col col-auto">
-                                    <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
-                                        <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
-                                        <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
-                                    </DropdownButton>
-                                </div>
-                            </PromptsTable>
-                        </Tab>
-
-                        <Tab eventKey="comunidade" title="Prompts Não Avaliados">
-                            <PromptsTable prompts={promptsComunidade} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
-                                <div className="col col-auto">
-                                    <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
-                                        <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
-                                        <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
-                                    </DropdownButton>
-                                </div>
-                            </PromptsTable>
-
-                            <div className="alert alert-warning mt-3">
-                                <p className="mb-0">
-                                    <strong>Atenção:</strong> Os prompts da comunidade são compartilhados publicamente por outros usuários.
-                                    Esses prompts não passam por nenhum tipo de validação e podem gerar respostas imprecisas,
-                                    inconsistentes ou inadequadas para seu contexto.
-                                </p>
-                            </div>
-                        </Tab>
-                    </Tabs>
-
-                </Container>
-                <ToastContainer className="p-3" position="bottom-end" style={{ zIndex: 1 }}>
-                    <Toast onClose={() => setToast('')} show={!!toast} delay={10000} bg={toastVariant} autohide key={toast} >
-                        <Toast.Header>
-                            <strong className="me-auto">Atenção</strong>
-                        </Toast.Header>
-                        <Toast.Body><ErrorMessage message={toast} /></Toast.Body>
-                    </Toast>
-                </ToastContainer>
-
-            </>
-            : <Container className="mt-4" fluid={false}>
+    if (sidekick) {
+        return (prompt)
+            ? <Container className="mt-4" fluid={true}>
                 {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}
                 {prompt.content.target === 'PROCESSO'
                     ? !numeroDoProcesso
@@ -460,19 +347,169 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                             <div id="printDiv">
                                 {dadosDoProcesso
                                     ? <><ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
-                                        <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent} apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}>
+                                        <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent}
+                                            apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}
+                                            sidekick={sidekick} 
+                                            promptButtons={prompt?.kind === '^CHAT' ? <><p className="text-center mt-3 ms-3 me-3">Converse sobre o processo ou selecione um dos seus prompts favoritos para começar!</p>{promptButtons}</> : undefined}>
                                             <PromptTitle prompt={prompt} />
                                         </ProcessContents>
                                     </>
                                     : <><ProcessTitle id={numeroDoProcesso} /><SubtituloLoading /><PromptTitle prompt={prompt} /></>}
                             </div>
                         </>
-                    :
-                    prompt.content.target === 'TEXTO'
+                    : prompt.content.target === 'TEXTO'
                         ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
                         : prompt.content.target === 'REFINAMENTO'
                             ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
-                            : null
+                            : prompt.content.target === 'CHAT'
+                                ? <><Chat definition={prompt} data={{ textos: [] }} model={model} withTools={true} key={1}
+                                    footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
+                                    sidekick
+                                    promptButtons={<><p className="text-center mt-3 ms-3 me-3">Converse comigo ou selecione um dos seus prompts favoritos para começar!</p>{promptButtons}</>}
+                                /></>
+                                : <ErrorMessage message={`Tipo de alvo do prompt desconhecido: ${prompt.content.target}`} />
                 }
             </Container>
+            : (numeroDoProcesso)
+                ? <>
+                    <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} onRemove={() => { setNumeroDoProcesso(null); setDadosDoProcesso(null); setNumber(null) }} />
+                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos para começar!</p>
+                    {promptButtons}
+                </>
+                : <>
+                    <h1 className="text-center mt-5">Bem vindo à Apoia</h1>
+                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos para começar!</p>
+                    {promptButtons}
+                </>
+
+    }
+
+    return !prompt
+        ? <>
+            {/* <div className="" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}> */}
+            <div className="bg-primary text-white">
+                <Container className="p-2 pb-3" fluid={false}>
+                    <FormGroup as={Row} className="">
+                        <div className="col col-auto">
+                            <FormLabel className="mb-0">Número do Processo</FormLabel>
+                            <Form.Control name="numeroDoProcesso" placeholder="(opcional)" autoFocus={true} className="form-control" onChange={(e) => setNumber(e.target.value.replace(/\D/g, ""))} value={number} />
+                        </div>
+                        {numeroDoProcesso && !dadosDoProcesso &&
+                            <div className="col col-auto">
+                                <FormLabel className="mb-0">&nbsp;</FormLabel>
+                                <span className="form-control text-white" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}><Spinner size="sm" animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner></span>
+                            </div>
+                        }
+                        {numeroDoProcesso && arrayDeDadosDoProcesso && arrayDeDadosDoProcesso.length > 1 &&
+                            <div className="col col-auto">
+                                <FormLabel className="mb-0">Tramitação</FormLabel>
+                                <FormSelect value={idxProcesso} onChange={(e) => { const idx = parseInt(e.target.value); setIdxProcesso(idx); setDadosDoProcesso(arrayDeDadosDoProcesso[idx]) }} className="form-select">
+                                    {arrayDeDadosDoProcesso.map((d, idx) => <option key={idx} value={idx}>{d.classe}</option>)}
+                                </FormSelect>
+                            </div>
+                        }
+                        {dadosDoProcesso && arrayDeDadosDoProcesso && arrayDeDadosDoProcesso.length === 1 &&
+                            <div className="col col-auto">
+                                <FormLabel className="mb-0">&nbsp;</FormLabel>
+                                <span className="form-control text-white" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>{dadosDoProcesso.classe}</span>
+                            </div>
+                        }
+                        <div className="col col-auto ms-auto">
+                            <FormLabel className="mb-0">Segmento</FormLabel>
+                            <FormSelect value={scope} onChange={(e) => setScope(e.target.value)} className={`form-select w-auto${scope ? ' bg-warning' : ''}`}>
+                                <option value="">Todos</option>
+                                {enumSorted(Scope).map((s) => <option key={`key-scope-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
+                            </FormSelect>
+                        </div>
+                        <div className="col col-auto">
+                            <FormLabel className="mb-0">Instância</FormLabel>
+                            <FormSelect value={instance} onChange={(e) => setInstance(e.target.value)} className={`form-select w-auto${instance ? ' bg-warning' : ''}`}>
+                                <option value="">Todas</option>
+                                {enumSorted(Instance).map((s) => <option key={`key-instance-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
+                            </FormSelect>
+                        </div>
+                        <div className="col col-auto">
+                            <FormLabel className="mb-0">Natureza</FormLabel>
+                            <FormSelect value={matter} onChange={(e) => setMatter(e.target.value)} className={`form-select w-auto${matter ? ' bg-warning' : ''}`}>
+                                <option value="">Todas</option>
+                                {enumSorted(Matter).map((s) => <option key={`key-matter-${s.value.name}`} value={s.value.name}>{s.value.descr}</option>)}
+                            </FormSelect>
+                        </div>
+                    </FormGroup >
+                </Container>
+            </div >
+            <Container className="mt-2 mb-3" fluid={false}>
+                {!apiKeyProvided && <p className="text-center mt-3 mb-3">Execute os prompts diretamente na Apoia, cadastrando sua <Link href="/prefs">Chave de API</Link>.</p>}
+
+                <Tabs
+                    activeKey={activeTab}
+                    onSelect={(k) => setActiveTab(k || 'principal')}
+                    className="mt-3"
+                >
+                    <Tab eventKey="principal" title="Principais">
+                        <PromptsTable prompts={promptsPrincipais} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
+                            <div className="col col-auto">
+                                <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
+                                    <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
+                                    <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
+                                </DropdownButton>
+                            </div>
+                        </PromptsTable>
+                    </Tab>
+
+                    <Tab eventKey="comunidade" title="Prompts Não Avaliados">
+                        <PromptsTable prompts={promptsComunidade} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
+                            <div className="col col-auto">
+                                <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
+                                    <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
+                                    <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
+                                </DropdownButton>
+                            </div>
+                        </PromptsTable>
+
+                        <div className="alert alert-warning mt-3">
+                            <p className="mb-0">
+                                <strong>Atenção:</strong> Os prompts da comunidade são compartilhados publicamente por outros usuários.
+                                Esses prompts não passam por nenhum tipo de validação e podem gerar respostas imprecisas,
+                                inconsistentes ou inadequadas para seu contexto.
+                            </p>
+                        </div>
+                    </Tab>
+                </Tabs>
+
+            </Container>
+            <ToastContainer className="p-3" position="bottom-end" style={{ zIndex: 1 }}>
+                <Toast onClose={() => setToast('')} show={!!toast} delay={10000} bg={toastVariant} autohide key={toast} >
+                    <Toast.Header>
+                        <strong className="me-auto">Atenção</strong>
+                    </Toast.Header>
+                    <Toast.Body className={toastVariant !== 'Light' && 'text-white'}><ErrorMessage message={toast} /></Toast.Body>
+                </Toast>
+            </ToastContainer>
+
+        </>
+        : <Container className="mt-4" fluid={false}>
+            {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}
+            {prompt.content.target === 'PROCESSO'
+                ? !numeroDoProcesso
+                    ? <ProcessNumberForm id={`${prompt.base_id}`} onChange={setNumber} />
+                    : <>
+                        <div id="printDiv">
+                            {dadosDoProcesso
+                                ? <><ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
+                                    <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent} apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}>
+                                        <PromptTitle prompt={prompt} />
+                                    </ProcessContents>
+                                </>
+                                : <><ProcessTitle id={numeroDoProcesso} /><SubtituloLoading /><PromptTitle prompt={prompt} /></>}
+                        </div>
+                    </>
+                :
+                prompt.content.target === 'TEXTO'
+                    ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
+                    : prompt.content.target === 'REFINAMENTO'
+                        ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
+                        : null
+            }
+        </Container>
 }
