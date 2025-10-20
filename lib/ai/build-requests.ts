@@ -71,9 +71,11 @@ export const buildRequests = (prompt: IAPrompt, documentosDaBiblioteca: string[]
         requestArray.push(req)
 
         // Basic chat as last item
-        const definition2 = getInternalPrompt(`chat`)
-        const data: PromptDataType = { textos: pecasComConteudo, documentosDaBiblioteca }
-        requestArray.push({ documentCode: null, documentDescr: null, data, title: 'Chat', produto: P.CHAT, promptSlug: definition2.kind, internalPrompt: definition2 })
+        if (!prompt?.name?.toLowerCase().startsWith('chat ')) {
+            const definition2 = getInternalPrompt(`chat`)
+            const data: PromptDataType = { textos: pecasComConteudo, documentosDaBiblioteca }
+            requestArray.push({ documentCode: null, documentDescr: null, data, title: 'Chat', produto: P.CHAT, promptSlug: definition2.kind, internalPrompt: definition2 })
+        }
     }
 
     return requestArray

@@ -4,7 +4,7 @@ import { ReactNode, Suspense, useState } from 'react'
 import { maiusculasEMinusculas, slugify } from '@/lib/utils/utils'
 import { ResumoDePecaLoading } from '@/components/loading'
 import { calcMd5 } from '@/lib/utils/hash'
-import { ContentType, GeneratedContent } from '@/lib/ai/prompt-types'
+import { ContentType, GeneratedContent, PromptDataType, TextoType } from '@/lib/ai/prompt-types'
 import AiContent from '@/components/ai-content'
 import { EMPTY_FORM_STATE, FormHelper } from '@/lib/ui/form-support'
 import { P } from '@/lib/proc/combinacoes'
@@ -39,6 +39,27 @@ const onReady = (Frm: FormHelper, requests: GeneratedContent[], idx: number, con
     }
 }
 
+function textosAnteriores(Frm: FormHelper, requests: GeneratedContent[], idx: number): TextoType[] {
+    const textos: TextoType[] = []
+    let i = 0
+    for (const r of requests) {
+        if (r.produto === P.CHAT) break
+        const content = Frm.get(`generated[${i}]`)
+        if (!content) break
+        textos.push({ numeroDoProcesso: r?.data?.numeroDoProcesso || '', slug: slugify(r.title), descr: r.title, texto: content?.json ? content.formated : content.raw, sigilo: '0' })
+        i++
+    }
+    return textos
+}
+
+function dataComTextosAnteriores(Frm: FormHelper, requests: GeneratedContent[], idx: number): PromptDataType {
+    const textos = textosAnteriores(Frm, requests, idx)
+    const request = requests[idx]
+    const data = JSON.parse(JSON.stringify(request.data))
+    data.textos = [...(data.textos || []), ...textos]
+    return data
+}
+
 function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string, sidekick?: boolean, promptButtons?: ReactNode) {
     const request = requests[idx]
 
@@ -55,28 +76,17 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
     if (request.produto === P.PEDIDOS && pedidos) {
         return <Pedidos pedidos={pedidos} request={request} Frm={Frm} key={idx} />
     } else if (request.produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS && pedidos) {
-        return <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={request} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} />
+        if (Frm.get('pending') > 0) return null
+        const requestComTextosAnteriores = { ...request, data: dataComTextosAnteriores(Frm, requests, idx) }
+        return <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} />
     } else if (isInformationExtractionPrompt(request.internalPrompt?.prompt) && information_extraction) {
         return <div key={idx}>
             <AiTitle request={request} />
             <InformationExtractionForm promptMarkdown={request.internalPrompt.prompt} promptFormat={request.internalPrompt.format} Frm={Frm} variableName={informationExtractionVariableName} />
         </div>
-    } else if (request.produto === P.CHAT) {
+    } else if (request.produto === P.CHAT || request?.title.toLowerCase().startsWith('chat ')) {
         if (Frm.get('pending') > 0) return null
-
-        // Acrescenta os textos gerados anteriormente, se houver
-        const data = { ...request.data }
-        if (data.textos) data.textos = JSON.parse(JSON.stringify(data.textos))
-        let i = 0
-        for (const r of requests) {
-            if (r.produto === P.CHAT) break
-            const content = Frm.get(`generated[${i}]`)
-            if (!content) break
-            data.textos.push({ numeroDoProcesso: data?.numeroDoProcesso || '', slug: slugify(r.title), descr: r.title, texto: content?.json ? content.formated : content.raw, sigilo: '0' })
-            i++
-        }
-
-        return <Chat definition={request.internalPrompt} data={data} model={(request.internalPrompt as any)?.model || 'unknown'} key={dataHash} sidekick={sidekick} promptButtons={promptButtons} />
+        return <Chat definition={request.internalPrompt} data={dataComTextosAnteriores(Frm, requests, idx)} model={(request.internalPrompt as any)?.model || 'unknown'} key={dataHash} sidekick={sidekick} promptButtons={promptButtons} />
     }
 
     return <div key={idx}>

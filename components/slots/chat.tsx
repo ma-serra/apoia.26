@@ -19,6 +19,7 @@ import { getAllSuggestions, resolveSuggestion } from '@/components/suggestions/r
 import type { SuggestionContext } from '@/components/suggestions/context'
 import { Suggestion } from '../suggestions/base';
 import MessageStatus from '../message-status';
+import { send } from 'process';
 
 function preprocessar(mensagem: UIMessage, role: string) {
     const texto = mensagem.parts.reduce((acc, part) => {
@@ -75,7 +76,8 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const [activeModalInitial, setActiveModalInitial] = useState<any>(null)
     const [activeModalSubmitHandler, setActiveModalSubmitHandler] = useState<((values: any, ctx: SuggestionContext) => void) | null>(null)
     const [modalDrafts, setModalDrafts] = useState<Record<string, any>>({})
-    const [showReasoning, setShowReasoning] = useState(false)
+    const [initialMessages, setInitialMessages] = useState<UIMessage[]>([])
+    const hasRun = useRef(false)
 
 
     const handleProcessNumberChange = (number: string) => {
@@ -98,7 +100,11 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
         error,
     })
 
+    // Memoized dataKey to avoid deep comparison issues in useEffect
+    const dataKey = useMemo(() => JSON.stringify(params.data ?? {}), [params.data])
+
     useEffect(() => {
+        if (hasRun.current) return; hasRun.current = true;
         const load = async () => {
             const res = await fetch('/api/v1/ai?messagesOnly=true', {
                 method: 'POST',
@@ -110,11 +116,18 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             if (!res.ok)
                 throw new Error(`Failed to fetch chat messages: ${res.status} ${res.statusText}`)
             const modelMsgs = await res.json()
-            setMessages(convertToUIMessages(modelMsgs))
+            const uiMsgs = convertToUIMessages(modelMsgs)
+            setMessages(uiMsgs)
+            setInitialMessages(uiMsgs)
+
+            if (uiMsgs.length && uiMsgs[uiMsgs.length - 1].role === 'user') {
+                sendMessage()
+            }
+
         }
         // Only load when definition.kind or data changes; setMessages is stable from hook
         load()
-    }, [params.definition.kind, params.data, params?.data?.numeroDoProcesso, setMessages])
+    }, [params.definition.kind, dataKey])
 
     // Adjust body padding based on controls height in sidekick mode
     useEffect(() => {
@@ -257,7 +270,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const inputClass = params.sidekick ? 'btn-outline-secondary' : 'bg-secondary text-white'
 
     const messagesContent = useMemo(() => (
-        <>{messages.map((m, idx) => (
+        <>{messages.slice(initialMessages?.length || 0).map((m, idx) => (
             m.role === 'user' ?
                 <div className="row justify-content-end ms-5 g-2 chat-user-container" key={m.id}>
                     <div className={`col col-auto mb-0 icon-container`}>

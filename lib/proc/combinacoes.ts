@@ -534,7 +534,7 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         sort: 1000,
         nome: 'Relatório de Aposentadoria Especial - Segunda Instância',
         padroes: [...padroesBasicosSegundaInstancia, padraoApelacaoForcado],
-        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_SEGUNDA_INSTANCIA, P.CHAT]
+        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_SEGUNDA_INSTANCIA, P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT]
     },
 
     PREV_BI_ANALISE_DE_LAUDO: {
