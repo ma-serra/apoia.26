@@ -8,6 +8,7 @@ import { tua } from '../proc/tua'
 import { InteropProcessoType } from './interop-types'
 import { mapPdpjToSimplified, PdpjInput } from './pdpj-mapping'
 import { P, T } from '../proc/combinacoes'
+import { serviceMonitor } from './pdpjServiceMonitor'
 
 const mimeTypyFromTipo = (tipo: string): string => {
     switch (tipo) {
@@ -108,6 +109,7 @@ export class InteropPDPJ implements Interop {
         if (response.headers.get('Content-Type') === 'application/json')
             data = JSON.parse(texto)
         if (response.status !== 200) {
+            serviceMonitor.recordFailure(numeroDoProcesso)
             throw new Error(`Não foi possível acessar o processo ${numeroDoProcesso} no DataLake/Codex da PDPJ (${data ? data?.message || JSON.stringify(data) : response.statusText})`)
         }
         return data
@@ -253,6 +255,7 @@ export class InteropPDPJ implements Interop {
             const b = await response.arrayBuffer()
             if (response.status !== 200) {
                 try {
+                    serviceMonitor.recordFailure(numeroDoProcesso)
                     const decoder = new TextDecoder('utf-8')
                     const texto = decoder.decode(b)
                     if (response.headers.get('Content-Type') === 'application/json') {
@@ -263,6 +266,7 @@ export class InteropPDPJ implements Interop {
                     throw new Error(`Não foi possível obter o texto da peça no DataLake/Codex da PDPJ. (${e} - ${numeroDoProcesso}/${idDaPeca})`)
                 }
             }
+            serviceMonitor.recordSuccess()
             const contentType = response.headers.get('Content-Type')
             if (contentType === 'text/html') {
                 const decoder = new TextDecoder('utf-8')

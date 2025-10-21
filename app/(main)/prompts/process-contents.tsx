@@ -122,7 +122,6 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
         if (!dadosDoProcesso?.pecas || dadosDoProcesso.pecas.length === 0) return
         // Compute automatic default selection for baseline
         const autoDefault = chooseSelectedPieces(dadosDoProcesso.pecas, prompt.content.piece_strategy, prompt.content.piece_descr)
-        console.log('autoDefault', autoDefault)
         setDefaultPieceIds(autoDefault.map(p => p.id))
         // If URL has explicit 'pieces' numbers (1-based), prefer them over automatic selection
         // Backward compatibility: fall back to 'pecas' and accept comma or hyphen separators
@@ -186,8 +185,6 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             setReadyToStartAI(true)
         }
     }, [choosingPieces, choosingLibrary, requests])
-
-    console.log('vou iniciar', readyToStartAI, choosingPieces, choosingLibrary, requests?.length)
 
     // const TramitacaoTitle = ({ classe }: { classe: string }) => <div className="text-body-tertiary text-center h-print">Tramitação: {classe} - <span onClick={() => { return }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></div>
 

@@ -291,7 +291,6 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     const promptsSidekick = useMemo(() => {
         if (!sidekick) return []
         const chatIsCurrentPrompt = prompt?.kind === '^CHAT'
-        console.log('promptsSidekick', filteredPromptsBase.length, prompt, chatIsCurrentPrompt)
         let list = filteredPromptsBase.filter((p) => p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt) || (p.kind === '^CHAT_STANDALONE' && !numeroDoProcesso))
         if (list.length < 2)
             list = filteredPromptsBase.filter((p) => p.share === 'PADRAO' || p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt))

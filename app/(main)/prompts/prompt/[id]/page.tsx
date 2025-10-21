@@ -46,10 +46,6 @@ export default async function Home(props: { params: Promise<{ id: number }> }) {
         }
     }
 
-    console.log('Rendering Prompt Info for prompt ID:', prompt);
-
-
-
     return (
         <Container className="mt-5" fluid={false}>
             <h1 className="text-center">Informações de Prompt</h1>
