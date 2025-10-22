@@ -17,15 +17,16 @@ import { isInformationExtractionPrompt } from '@/lib/ai/auto-json'
 import { InformationExtractionForm } from '@/components/InformationExtractionForm'
 import { Pedidos } from './pedidos'
 import { PedidosFundamentacoesEDispositivos } from './pedidos-fundamentacoes-e-dispositivos'
+import { devLog } from '@/lib/utils/log'
 
 const Frm = new FormHelper(true)
 
 const onBusy = (Frm: FormHelper, requests: GeneratedContent[], idx: number) => {
     Frm.set('pending', Frm.get('pending') + 1)
+    Frm.set(`generated[${idx}]`, undefined)
 }
 
 const onReady = (Frm: FormHelper, requests: GeneratedContent[], idx: number, content: ContentType) => {
-    const request = requests[idx]
     Frm.set('pending', Frm.get('pending') - 1)
     Frm.set(`generated[${idx}]`, content)
 
@@ -43,6 +44,7 @@ function textosAnteriores(Frm: FormHelper, requests: GeneratedContent[], idx: nu
     const textos: TextoType[] = []
     let i = 0
     for (const r of requests) {
+        if (i >= idx) break
         if (r.produto === P.CHAT) break
         const content = Frm.get(`generated[${i}]`)
         if (!content) break
@@ -60,8 +62,21 @@ function dataComTextosAnteriores(Frm: FormHelper, requests: GeneratedContent[], 
     return data
 }
 
+function previousArePending(Frm: FormHelper, requests: GeneratedContent[], idx: number): boolean {
+    for (let i = 0; i < idx; i++) {
+        const content = Frm.get(`generated[${i}]`)
+        if (!content?.raw) {
+            // devLog('previousArePending', idx, requests[idx].title, i)
+            return true
+        }
+    }
+    // devLog('previousAreComplete', idx, requests[idx].title)
+    return false
+}
+
 function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string, sidekick?: boolean, promptButtons?: ReactNode) {
     const request = requests[idx]
+    let requestComTextosAnteriores = request
 
     const informationExtractionVariableName = `_information_extraction_${idx}`
     const dataHash = calcMd5(request.data)
@@ -75,24 +90,26 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
     const pedidos = Frm.get('pedidos')
     if (request.produto === P.PEDIDOS && pedidos) {
         return <Pedidos pedidos={pedidos} request={request} Frm={Frm} key={idx} />
-    } else if (request.produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS && pedidos) {
-        if (Frm.get('pending') > 0) return null
-        const requestComTextosAnteriores = { ...request, data: dataComTextosAnteriores(Frm, requests, idx) }
-        return <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} />
+    } else if (request.produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) {
+        if (previousArePending(Frm, requests, idx)) return null
+        requestComTextosAnteriores = { ...requestComTextosAnteriores, data: dataComTextosAnteriores(Frm, requests, idx) }
+        if (pedidos) {
+            return <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} onBusy={() => onBusy(Frm, requests, idx + 1)} onReady={(content) => onReady(Frm, requests, idx + 1, content)} />
+        }
     } else if (isInformationExtractionPrompt(request.internalPrompt?.prompt) && information_extraction) {
         return <div key={idx}>
             <AiTitle request={request} />
             <InformationExtractionForm promptMarkdown={request.internalPrompt.prompt} promptFormat={request.internalPrompt.format} Frm={Frm} variableName={informationExtractionVariableName} />
         </div>
     } else if (request.produto === P.CHAT || request?.title.toLowerCase().startsWith('chat ')) {
-        if (Frm.get('pending') > 0) return null
+        if (previousArePending(Frm, requests, idx)) return null
         return <Chat definition={request.internalPrompt} data={dataComTextosAnteriores(Frm, requests, idx)} model={(request.internalPrompt as any)?.model || 'unknown'} key={dataHash} sidekick={sidekick} promptButtons={promptButtons} />
     }
 
     return <div key={idx}>
         <AiTitle request={request} />
         <Suspense fallback={ResumoDePecaLoading()}>
-            <AiContent definition={request.internalPrompt} data={request.data} key={`prompt: ${request.promptSlug} data: ${dataHash}`} onBusy={() => onBusy(Frm, requests, idx)} onReady={(content) => onReady(Frm, requests, idx, content)}
+            <AiContent definition={request.internalPrompt} data={requestComTextosAnteriores.data} key={`prompt: ${request.promptSlug} data: ${dataHash}`} onBusy={() => onBusy(Frm, requests, idx)} onReady={(content) => onReady(Frm, requests, idx, content)}
                 visualization={request.internalPrompt.template ? VisualizationEnum.DIFF_HIGHLIGHT_INCLUSIONS : undefined} diffSource={request.internalPrompt.template ? preprocessTemplate(request.internalPrompt.template) : undefined} dossierCode={dossierCode} />
         </Suspense>
     </div>
@@ -109,13 +126,15 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, pr
 
     Frm.update(data, setData, EMPTY_FORM_STATE)
 
-    return <>{requests.map((request, idx) => {
-        if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) return null
-        return requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons)
-    })}
+    const ctrls = []
+    for (let idx = 0; idx < requests.length; idx++) {
+        if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) continue
+        const ctrl = requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons)
+        if (ctrl === null) break
+        ctrls.push(ctrl)
+    }
 
-        {/* <p>{JSON.stringify(data)}</p> */}
-    </>
+    return ctrls
 }
 
 

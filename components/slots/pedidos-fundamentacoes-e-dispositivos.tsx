@@ -2,14 +2,14 @@
 
 import AiContent from "@/components/ai-content"
 import { getInternalPrompt } from "@/lib/ai/prompt"
-import { GeneratedContent } from "@/lib/ai/prompt-types"
+import { ContentType, GeneratedContent } from "@/lib/ai/prompt-types"
 import { P } from "@/lib/proc/combinacoes"
 import { FormHelper } from "@/lib/ui/form-support"
 import { calcMd5 } from "@/lib/utils/hash"
 import { labelToName, maiusculasEMinusculas } from "@/lib/utils/utils"
 import { Button } from "react-bootstrap"
 
-export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextRequest, Frm, dossierCode }: { pedidos: { proximoPrompt: string, pedidos: any[] }, request: GeneratedContent, nextRequest: GeneratedContent, Frm: FormHelper, dossierCode: string }) => {
+export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextRequest, Frm, dossierCode, onBusy, onReady }: { pedidos: { proximoPrompt: string, pedidos: any[] }, request: GeneratedContent, nextRequest: GeneratedContent, Frm: FormHelper, dossierCode: string, onBusy?: () => void, onReady?: (content: ContentType) => void }) => {
     const tiposDeLiminar = [
         { id: 'NAO', name: 'Não' },
         { id: 'SIM', name: 'Sim' },
@@ -42,10 +42,13 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
         // const pedidos = [...Frm.get('pedidos')].filter(p => p.dispositivo).map(p => ({ ...p, fundamentacoes: [...p.fundamentacoes.filter(f => f.selecionada).map(f => f.texto)] }))
         // const proximoPrompt = Frm.get('pedidos').proximoPrompt || 'SENTENCA'
         const aPedidos = [...Frm.get('pedidos').pedidos].filter(p => p.dispositivo && p.dispositivo !== 'DESCONSIDERAR')
-    const data = { ...request.data }
-    data.textos = [...request.data.textos, { numeroDoProcesso: data?.numeroDoProcesso || '', slug: 'pedidos', descr: 'Pedidos', texto: JSON.stringify(aPedidos), sigilo: '0' }]
+        const data = { ...request.data }
+        data.textos = [...request.data.textos, { numeroDoProcesso: data?.numeroDoProcesso || '', slug: 'pedidos', descr: 'Pedidos', texto: JSON.stringify(aPedidos), sigilo: '0' }]
 
         const prompt = getInternalPrompt(nextRequest.produto === P.VOTO ? 'voto' : 'sentenca')
+
+        const aiContentKey = `prompt: 'sentenca', data: ${calcMd5(data)}}`
+        console.log('Rendering AiContent with key:', aiContentKey)
 
         return <>
             <h2>{maiusculasEMinusculas(request.title)}</h2>
@@ -76,7 +79,7 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
                 </div>
             </div>
             <h2>{nextRequest.produto === P.VOTO ? 'Voto' : 'Sentença'}</h2>
-            <AiContent definition={prompt} data={data} key={`prompt: 'sentenca', data: ${calcMd5(data)}`} dossierCode={dossierCode} />
+            <AiContent definition={prompt} data={data} key={aiContentKey} dossierCode={dossierCode} onBusy={onBusy} onReady={onReady} />
         </>
     }
 
@@ -110,7 +113,7 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
             )}
         </div>
         {Frm.get('pedidos')?.pedidos.length > 0 &&
-            <div className="row h-print">
+            <div className="row h-print mb-3">
                 <div className="col">
                     <Button className="float-end" variant="primary" onClick={() => Frm.set('pedidosAnalisados', true)} disabled={Frm.get('pedidos')?.pedidos?.some(p => !p.dispositivo)}>
                         Gerar {nextRequest.produto === P.VOTO ? 'Voto' : 'Sentença'}

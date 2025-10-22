@@ -24,14 +24,14 @@ export const buildRequests = (prompt: IAPrompt, documentosDaBiblioteca: string[]
                 for (const peca of pecasComConteudo) {
                     const definition = getInternalPrompt(`resumo-${peca.slug}`)
                     const data: PromptDataType = { textos: [peca], documentosDaBiblioteca }
-                    requestArray.push({ documentCode: peca.id || null, documentDescr: peca.descr, documentLocation: peca.event, documentLink: `/api/v1/process/${peca.numeroDoProcesso || numeroDoProcesso}/piece/${peca.id}/binary`, data, title: peca.descr, produto: ip.produto, promptSlug: definition.kind, internalPrompt: definition })
+                    requestArray.push({ documentCode: peca.id || null, documentDescr: peca.descr, documentLocation: peca.event, documentLink: `/api/v1/process/${peca.numeroDoProcesso || numeroDoProcesso}/piece/${peca.id}/binary`, data, title: peca.descr, produto: ip.produto, promptSlug: definition.kind, internalPrompt: definition, status: {pending: true, completed: false, error: false} })
                 }
                 continue
             }
             const def = getInternalPrompt(ip.prompt)
             if (!def) continue
             const data: PromptDataType = { numeroDoProcesso, textos: pecasComConteudo, documentosDaBiblioteca }
-            requestArray.push({ documentCode: null, documentDescr: null, data, title: ip.titulo, produto: ip.produto, promptSlug: def.kind, internalPrompt: def })
+            requestArray.push({ documentCode: null, documentDescr: null, data, title: ip.titulo, produto: ip.produto, promptSlug: def.kind, internalPrompt: def, status: {pending: true, completed: false, error: false} })
         }
     } else {
         if (prompt.content.summary === 'SIM') {
@@ -42,7 +42,7 @@ export const buildRequests = (prompt: IAPrompt, documentosDaBiblioteca: string[]
                     textos: [peca],
                     documentosDaBiblioteca
                 }
-                requestArray.push({ documentCode: peca.id || null, documentDescr: peca.descr, documentLocation: peca.event, documentLink: `/api/v1/process/${peca.numeroDoProcesso || numeroDoProcesso}/piece/${peca.id}/binary`, data, title: peca.descr, produto: P.RESUMO_PECA, promptSlug: definition.kind, internalPrompt: definition })
+                requestArray.push({ documentCode: peca.id || null, documentDescr: peca.descr, documentLocation: peca.event, documentLink: `/api/v1/process/${peca.numeroDoProcesso || numeroDoProcesso}/piece/${peca.id}/binary`, data, title: peca.descr, produto: P.RESUMO_PECA, promptSlug: definition.kind, internalPrompt: definition, status: {pending: true, completed: false, error: false} })
             }
         }
         const definition: PromptDefinitionType = {
@@ -74,7 +74,7 @@ export const buildRequests = (prompt: IAPrompt, documentosDaBiblioteca: string[]
         if (!prompt?.name?.toLowerCase().startsWith('chat ')) {
             const definition2 = getInternalPrompt(`chat`)
             const data: PromptDataType = { textos: pecasComConteudo, documentosDaBiblioteca }
-            requestArray.push({ documentCode: null, documentDescr: null, data, title: 'Chat', produto: P.CHAT, promptSlug: definition2.kind, internalPrompt: definition2 })
+            requestArray.push({ documentCode: null, documentDescr: null, data, title: 'Chat', produto: P.CHAT, promptSlug: definition2.kind, internalPrompt: definition2, status: {pending: true, completed: false, error: false} })
         }
     }
 
