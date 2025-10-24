@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next"
 import React from 'react'
 import { redirect } from 'next/navigation'
 import authOptions from '@/app/api/auth/[...nextauth]/options'
-import Wait from "@/components/auth/wait"
+import Wait from "./wait"
 
 const AuthKeycloakInAIFrame = async ({ searchParams }) => {
     const sp = await searchParams
