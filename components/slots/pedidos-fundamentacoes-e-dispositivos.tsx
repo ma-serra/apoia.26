@@ -48,7 +48,6 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
         const prompt = getInternalPrompt(nextRequest.produto === P.VOTO ? 'voto' : 'sentenca')
 
         const aiContentKey = `prompt: 'sentenca', data: ${calcMd5(data)}}`
-        console.log('Rendering AiContent with key:', aiContentKey)
 
         return <>
             <h2>{maiusculasEMinusculas(request.title)}</h2>
