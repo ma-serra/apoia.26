@@ -8,15 +8,23 @@ const AuthKeycloak = async ({ searchParams }) => {
     const sp = await searchParams
     const raw = sp?.redirect || sp?.callbackUrl
     const callbackUrl = (typeof raw === 'string' && /^(\/|http:\/\/|https:\/\/)\S+$/.test(raw)) ? raw : '/'
+    const isPopup = sp?.popup === 'true'
 
     const session = await getServerSession(authOptions)
-    if (session && session.user) redirect(callbackUrl)
+    if (session && session.user) {
+        // Se estiver autenticado e for popup, redireciona para página de callback
+        if (isPopup) {
+            redirect(`/auth/keycloak/popup-callback?redirect=${encodeURIComponent(callbackUrl)}`)
+        }
+        // Senão, redireciona normalmente
+        redirect(callbackUrl)
+    }
 
     if (!authOptions.providers.find(provider => provider.name === "Keycloak"))
         throw new Error("Keycloak provider not found")
 
     return (
-        <Redirecting callbackUrl={callbackUrl} />
+        <Redirecting callbackUrl={callbackUrl} isPopup={isPopup} />
     )
 }
 export default AuthKeycloak

@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { useEffect, useState } from 'react'
 
-const AutoLogin = (props: { callbackUrl: string, isPopup?: boolean }) => {
+const Wait = (props: { callbackUrl: string, isPopup?: boolean }) => {
     const [isInIframe, setIsInIframe] = useState(false)
     const [authCheckInterval, setAuthCheckInterval] = useState<NodeJS.Timeout | null>(null)
 
@@ -82,4 +82,4 @@ const AutoLogin = (props: { callbackUrl: string, isPopup?: boolean }) => {
     )
 }
 
-export default AutoLogin
+export default Wait
