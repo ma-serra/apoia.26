@@ -8,7 +8,6 @@ const Redirecting = (props: { callbackUrl: string }) => {
     const router = useRouter()
 
     useEffect(() => {
-        const inIframe = window.self !== window.top
         signIn('keycloak', { callbackUrl: props.callbackUrl })
     }, [props.callbackUrl, router])
 
