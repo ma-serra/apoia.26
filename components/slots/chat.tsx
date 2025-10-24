@@ -135,7 +135,6 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
         
         const updatePadding = () => {
             const controlsHeight = controlsRef.current?.offsetHeight || 0
-            console.log('Controls height:', controlsHeight)
             // Apply padding to body instead of chat-box
             document.body.style.paddingBottom = `${controlsHeight}px`
         }
