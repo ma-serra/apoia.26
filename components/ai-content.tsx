@@ -9,7 +9,7 @@ import { ResumoDePecaLoading } from '@/components/loading'
 import { ContentType, PromptConfigType, PromptDataType, PromptDefinitionType, PromptOptionsType } from '@/lib/ai/prompt-types'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faThumbsDown } from '@fortawesome/free-regular-svg-icons'
-import { faRefresh } from '@fortawesome/free-solid-svg-icons'
+import { faRefresh, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { Form } from 'react-bootstrap'
 import devLog from '@/lib/utils/log'
 import { readUIMessageStream, UIMessage } from 'ai'
@@ -47,6 +47,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const [visualizationId, setVisualizationId] = useState<number>(params.visualization)
     const [showTemplateTable, setShowTemplateTable] = useState(false)
     const [currentMessage, setCurrentMessage] = useState<UIMessage>({ id: null, role: 'assistant', parts: [] })
+    const [copySuccess, setCopySuccess] = useState(false)
     const initialized = useRef(false)
 
     const reportError = (err: any, payload: any) => {
@@ -94,7 +95,10 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     const handleCopy = () => {
         navigator.clipboard.writeText(preprocessed.text).then(() => {
-            // opcional: mostrar uma notificação de sucesso
+            setCopySuccess(true);
+            setTimeout(() => {
+                setCopySuccess(false);
+            }, 1000);
         }, (err) => {
             console.error('Erro ao copiar para a área de transferência: ', err);
         });
@@ -235,7 +239,12 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                     {color === 'warning' && <h1 className="mt-0">Rascunho</h1>}
                     {(complete || errormsg) && (
                         <>
-                            <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { handleCopy() }}><FontAwesomeIcon icon={faCopy} /></button>
+                            <button 
+                                className={`btn btn-sm btn-transparent float-end d-print-none }`} 
+                                onClick={() => { handleCopy() }}
+                            >
+                                <FontAwesomeIcon icon={copySuccess ? faCheck : faCopy} />
+                            </button>
                             {evaluated
                                 ? <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { setCurrent(''); run() }}><FontAwesomeIcon icon={faRefresh} /></button>
                                 : <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { handleShow() }}><FontAwesomeIcon icon={faThumbsDown} /></button>}
