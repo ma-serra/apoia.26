@@ -240,18 +240,78 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     }, [processNumber])
 
     const sendPrompt = useCallback((text: string) => {
-        const msg = createUserMessage(text, [], { suggestion: true })
-        sendMessage(msg)
+        // Build file parts if files are attached
+        const buildFileParts = async () => {
+            if (!files || files.length === 0) return [] as any[]
+            const MAX_FILES = 3
+            const MAX_SINGLE_BYTES = 10 * 1024 * 1024 // 10MB
+            const MAX_TOTAL_BYTES = 30 * 1024 * 1024 // 30MB
+            if (files.length > MAX_FILES) {
+                setClientError(`Máximo de ${MAX_FILES} PDFs por mensagem.`)
+                return []
+            }
+            let total = 0
+            for (const f of Array.from(files)) {
+                if (f.type !== 'application/pdf') {
+                    setClientError(`Arquivo não é PDF: ${f.name}`)
+                    return []
+                }
+                if (f.size > MAX_SINGLE_BYTES) {
+                    setClientError(`Arquivo ${f.name} excede 10MB.`)
+                    return []
+                }
+                total += f.size
+                if (total > MAX_TOTAL_BYTES) {
+                    setClientError('Tamanho total dos PDFs excede 30MB.')
+                    return []
+                }
+            }
+            // Convert to Data URLs
+            const convertFilesToDataURLs = async (filesLocal: FileList) => {
+                return Promise.all(Array.from(filesLocal).map(file => new Promise<any>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                        resolve({
+                            type: 'file',
+                            filename: file.name,
+                            mediaType: file.type,
+                            url: reader.result as string,
+                        })
+                    }
+                    reader.onerror = reject
+                    reader.readAsDataURL(file)
+                })))
+            }
+            return await convertFilesToDataURLs(files)
+        }
+        
+        buildFileParts().then(fileParts => {
+            if (clientError) return
+            const msg = createUserMessage(text, fileParts, { suggestion: true })
+            sendMessage(msg)
+            // Clear files after sending
+            setFiles(undefined)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        })
         setFocusToChatInput()
-    }, [createUserMessage, sendMessage, setFocusToChatInput])
+    }, [files, createUserMessage, sendMessage, setFocusToChatInput, clientError])
 
-    const suggestionCtx: SuggestionContext = useMemo(() => ({
-        processNumber,
-        setProcessNumber: (n?: string) => setProcessNumber(n || ''),
-        alreadyLoadedProcessMetadata,
-        messages,
-        sendPrompt,
-    }), [processNumber, alreadyLoadedProcessMetadata, messages, sendPrompt])
+    const suggestionCtx: SuggestionContext = useMemo(() => {
+        // Verifica se há arquivos atualmente anexados OU se alguma mensagem anterior contém arquivos
+        const hasCurrentFiles = files && files.length > 0
+        const hasPreviousFiles = messages.some(m => 
+            m.role === 'user' && m.parts?.some((p: any) => p.type === 'file' && p.mediaType === 'application/pdf')
+        )
+        
+        return {
+            processNumber,
+            setProcessNumber: (n?: string) => setProcessNumber(n || ''),
+            alreadyLoadedProcessMetadata,
+            messages,
+            sendPrompt,
+            hasAttachedFiles: hasCurrentFiles || hasPreviousFiles,
+        }
+    }, [processNumber, alreadyLoadedProcessMetadata, messages, sendPrompt, files])
     const runSuggestion = (id: string) => {
         setCurrentSuggestion(getAllSuggestions().find(s => s.id === id) || null)
         const result = resolveSuggestion(id, suggestionCtx)

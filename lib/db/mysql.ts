@@ -730,6 +730,8 @@ export class Dao {
             prompt,
             sha256,
         })
+        sql.whereNot('generation', '')
+        sql.whereNotNull('generation')
         if (attempt) {
             sql.where({ attempt })
         } else {
@@ -806,6 +808,7 @@ export class Dao {
 
     static async insertIAGeneration(data: mysqlTypes.IAGeneration): Promise<mysqlTypes.IAGenerated | undefined> {
         if (!knex) return
+        if (!data?.generation) throw new Error('Não é possível armazenar um resultado de IA vazio')
         const created_by = await getCurrentUserId()
         const prompt_payload = null
         const {

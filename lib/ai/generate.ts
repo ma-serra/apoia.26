@@ -24,7 +24,7 @@ import { getTools } from './tools'
 
 export async function retrieveFromCache(sha256: string, model: string, prompt: string, attempt: number | null): Promise<IAGenerated | undefined> {
     const cached = await Dao.retrieveIAGeneration({ sha256, model, prompt, attempt })
-    if (cached) return cached
+    if (cached?.generation) return cached
     return undefined
 }
 

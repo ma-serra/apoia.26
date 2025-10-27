@@ -33,7 +33,12 @@ export default function AskProcessNumberModal(props: ModalProps<{ processNumber?
   return (
     <Modal show={show} onHide={onClose} backdrop="static">
       <Modal.Header closeButton>
-        <Modal.Title>Informar número do processo</Modal.Title>
+        <Modal.Title>
+          {context.hasAttachedFiles 
+            ? 'Informar número do processo (opcional)'
+            : 'Informar número do processo'
+          }
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Form.Group>
@@ -50,7 +55,11 @@ export default function AskProcessNumberModal(props: ModalProps<{ processNumber?
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        <Button variant="primary" onClick={() => onSubmit({ processNumber })} disabled={!processNumber?.trim()}>
+        <Button 
+          variant="primary" 
+          onClick={() => onSubmit({ processNumber })} 
+          disabled={!context.hasAttachedFiles && !processNumber?.trim()}
+        >
           Confirmar
         </Button>
       </Modal.Footer>

@@ -6,6 +6,7 @@ export type SuggestionContext = {
   alreadyLoadedProcessMetadata: boolean
   messages: UIMessage[]
   sendPrompt: (text: string) => void
+  hasAttachedFiles?: boolean
 }
 
 export type ImmediateAction = { type: 'immediate', prompt: string }

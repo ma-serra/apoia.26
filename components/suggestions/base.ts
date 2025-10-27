@@ -16,9 +16,13 @@ export abstract class Suggestion {
       initial: {},
       onSubmit: (values, context) => {
         const numero = values?.processNumber?.trim()
-        if (!numero) return
-        context.setProcessNumber(numero)
-        context.sendPrompt(`Sobre o processo ${numero}, ${prompt.toLowerCase()}`)
+        if (numero) {
+          context.setProcessNumber(numero)
+          context.sendPrompt(`Sobre o processo ${numero}, ${prompt.toLowerCase()}`)
+        } else {
+          // Se não informou número mas tem arquivos anexados, envia sem o número
+          context.sendPrompt(prompt)
+        }
       }
     }
   }
