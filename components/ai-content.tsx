@@ -8,7 +8,7 @@ import { preprocess, Visualization, VisualizationEnum } from '@/lib/ui/preproces
 import { ResumoDePecaLoading } from '@/components/loading'
 import { ContentType, PromptConfigType, PromptDataType, PromptDefinitionType, PromptOptionsType } from '@/lib/ai/prompt-types'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faThumbsDown } from '@fortawesome/free-regular-svg-icons'
+import { faCopy, faThumbsDown } from '@fortawesome/free-regular-svg-icons'
 import { faRefresh } from '@fortawesome/free-solid-svg-icons'
 import { Form } from 'react-bootstrap'
 import devLog from '@/lib/utils/log'
@@ -91,6 +91,14 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         if (evaluation_id) setEvaluated(await evaluate(params.definition, params.data, evaluation_id, descr))
     }
     const handleShow = () => setShow(true)
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(preprocessed.text).then(() => {
+            // opcional: mostrar uma notificação de sucesso
+        }, (err) => {
+            console.error('Erro ao copiar para a área de transferência: ', err);
+        });
+    }
 
     const fetchStream = async () => {
         const textDecoder = new TextDecoder('utf-8')
@@ -225,11 +233,14 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
             ? <>
                 <div className={`alert alert-${color} ai-content`}>
                     {color === 'warning' && <h1 className="mt-0">Rascunho</h1>}
-                    {complete || errormsg
-                        ? evaluated
-                            ? <button className="btn btn-sm bt float-end d-print-none" onClick={() => { setCurrent(''); run() }}><FontAwesomeIcon icon={faRefresh} /></button>
-                            : <button className="btn btn-sm bt float-end d-print-none" onClick={() => { handleShow() }}><FontAwesomeIcon icon={faThumbsDown} /></button>
-                        : null}
+                    {(complete || errormsg) && (
+                        <>
+                            <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { handleCopy() }}><FontAwesomeIcon icon={faCopy} /></button>
+                            {evaluated
+                                ? <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { setCurrent(''); run() }}><FontAwesomeIcon icon={faRefresh} /></button>
+                                : <button className="btn btn-sm btn-transparent float-end d-print-none" onClick={() => { handleShow() }}><FontAwesomeIcon icon={faThumbsDown} /></button>}
+                        </>
+                    )}
                     {errormsg
                         ? <ErrorMessage message={errormsg} />
                         : <div dangerouslySetInnerHTML={{ __html: spinner(preprocessed.text, complete) }} />}
