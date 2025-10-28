@@ -22,6 +22,21 @@ import * as Sentry from '@sentry/nextjs'
 import { getLibraryDocumentsForPrompt } from './library'
 import { getTools } from './tools'
 
+export async function checkModelSupportsAudioVideo(modelName: string): Promise<boolean> {
+    const details = Object.values(Model).find(m => m.name === modelName)
+    const audioVideoTypes = [
+        FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, 
+        FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF, 
+        FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC
+    ]
+    return audioVideoTypes.some(type => details?.supportedFileTypes?.includes(type))
+}
+
+export async function checkModelSupportsPdf(modelName: string): Promise<boolean> {
+    const details = Object.values(Model).find(m => m.name === modelName)
+    return !!details?.supportedFileTypes?.includes(FileTypeEnum.PDF)
+}
+
 export async function retrieveFromCache(sha256: string, model: string, prompt: string, attempt: number | null): Promise<IAGenerated | undefined> {
     const cached = await Dao.retrieveIAGeneration({ sha256, model, prompt, attempt })
     if (cached?.generation) return cached
@@ -141,6 +156,18 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const exec = promptExecuteBuilder(definition, data, libraryPrompt)
     const messages = exec.message
     const structuredOutputs = exec.params?.structuredOutputs
+    
+    // Debug: verificar estrutura das mensagens
+    messages.forEach((msg, index) => {
+        devLog(`Message ${index}:`, {
+            role: msg.role,
+            contentType: typeof msg.content,
+            isArray: Array.isArray(msg.content),
+            content: Array.isArray(msg.content) ? '[array]' : msg.content?.toString().substring(0, 100)
+        })
+    })
+    
+    devLog('Messages built:', JSON.stringify(messages, null, 2))
     const { model, modelRef, apiKeyFromEnv } = await getModel({ structuredOutputs: !!structuredOutputs, overrideModel: definition.model })
 
     if (results) results.model = model
@@ -183,6 +210,16 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
         const details = Object.values(Model).find(m => m.name === model)
         return !!details?.supportedFileTypes?.includes(FileTypeEnum.PDF)
     }
+
+    const modelSupportsAudioVideo = () => {
+        const details = Object.values(Model).find(m => m.name === model)
+        const audioVideoTypes = [
+            FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, 
+            FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF, 
+            FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC
+        ]
+        return audioVideoTypes.some(type => details?.supportedFileTypes?.includes(type))
+    }
     const processedMessagesModel: ModelMessage[] = []
     const processedMessagesLog: ModelMessage[] = []
     for (const m of messages) {
@@ -220,6 +257,22 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                 newPartsModel.push(part)
                 if (part.url?.startsWith('data:')) {
                     newPartsLog.push({ ...part, url: `data:application/pdf;base64,[omitted:${part.filename}]` })
+                } else {
+                    newPartsLog.push(part)
+                }
+            } else if (part?.type === 'file' && (part.mediaType?.startsWith('audio/') || part.mediaType?.startsWith('video/'))) {
+                // Handle audio/video files
+                if (!modelSupportsAudioVideo()) {
+                    // Model doesn't support audio/video, show warning
+                    const unsupported = { type: 'text', text: `Arquivo ${part.mediaType} (${part.filename}) não é suportado pelo modelo selecionado. Use um modelo como Gemini que suporta áudio e vídeo.` }
+                    newPartsModel.push(unsupported)
+                    newPartsLog.push(unsupported)
+                    continue
+                }
+                // Model supports audio/video: keep original for model; sanitized for log
+                newPartsModel.push(part)
+                if (part.url?.startsWith('data:')) {
+                    newPartsLog.push({ ...part, url: `data:${part.mediaType};base64,[omitted:${part.filename}]` })
                 } else {
                     newPartsLog.push(part)
                 }
@@ -262,7 +315,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
             },
             onError: (error) => {
                 Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
-                console.error('Error during streaming:', error)
+                console.error('Error during streaming:', error, (error as any)?.cause)
             },
             onFinish: async ({ text, usage }) => {
                 if (apiKeyFromEnv)

@@ -6,10 +6,21 @@ import { DadosDoProcessoType } from "@/lib/proc/process-types"
 import { fixPromptForAutoJson, promptJsonSchemaFromPromptMarkdown } from "./auto-json"
 import { formatDateDDMMYYYY } from "../utils/date"
 import { LibraryDocumentsType } from "./library"
+import devLog from "@/lib/utils/log"
 
 export const formatText = (txt: TextoType, limit?: number) => {
     let s: string = txt.descr
-    s += `:\n<${txt.slug}${txt.event ? ` event="${txt.event}"` : ''}${txt.idOrigem ? ` id="${txt.idOrigem}"` : ''}${txt.label ? ` label="${txt.label}"` : ''}>\n${limit ? txt.texto?.substring(0, limit) : txt.texto}\n</${txt.slug}>\n\n`
+    
+    // Verificar se o texto é uma Data URL (data:tipo/subtipo;base64,dados)
+    if (txt.texto?.startsWith('data:')) {
+        // Para Data URLs, não incluir o conteúdo base64 no texto do prompt
+        // O arquivo será anexado separadamente no processamento das mensagens
+        s += `:\n<${txt.slug}${txt.event ? ` event="${txt.event}"` : ''}${txt.idOrigem ? ` id="${txt.idOrigem}"` : ''}${txt.label ? ` label="${txt.label}"` : ''}>\n[ARQUIVO_ANEXADO]\n</${txt.slug}>\n\n`
+    } else {
+        // Processamento normal para texto
+        s += `:\n<${txt.slug}${txt.event ? ` event="${txt.event}"` : ''}${txt.idOrigem ? ` id="${txt.idOrigem}"` : ''}${txt.label ? ` label="${txt.label}"` : ''}>\n${limit ? txt.texto?.substring(0, limit) : txt.texto}\n</${txt.slug}>\n\n`
+    }
+    
     return s
 }
 
@@ -88,13 +99,17 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
     const message: ModelMessage[] = []
     if (definition?.kind !== 'chat' && definition?.kind !== 'chat_standalone') {
         sistema.split('\n---\n').forEach(part => {
-            message.push({ role: 'system', content: applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt) })
+            const content = applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt)
+            devLog('System message content type:', typeof content, 'isArray:', Array.isArray(content))
+            message.push({ role: 'system', content } as ModelMessage)
         })
     }
 
     if (definition.systemPrompt) {
         definition.systemPrompt.split('\n---\n').forEach(part => {
-            message.push({ role: 'system', content: applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt) })
+            const content = applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt)
+            devLog('SystemPrompt content type:', typeof content, 'isArray:', Array.isArray(content))
+            message.push({ role: 'system', content } as ModelMessage)
         })
     }
 
@@ -112,7 +127,36 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
 
     const promptContent: string = applyTextsAndVariables(prompt, data, definition.jsonSchema, definition.template)
     if (prompt) {
-        message.push({ role: 'user', content: promptContent })
+        // Verificar se há arquivos (Data URLs) nos textos
+        const filesInTexts = data.textos.filter(txt => txt.texto?.startsWith('data:'))
+        
+        if (filesInTexts.length > 0) {
+            // Para mensagens com arquivos, usar content array
+            const contentParts: any[] = [
+                { type: 'text', text: promptContent }
+            ]
+            
+            // Adicionar cada arquivo como parte da mensagem
+            for (const txt of filesInTexts) {
+                if (txt.texto?.startsWith('data:')) {
+                    // Extrair tipo MIME da Data URL
+                    const mimeMatch = txt.texto.match(/^data:([^;]+);base64,(.+)$/)
+                    if (mimeMatch) {
+                        contentParts.push({
+                            type: 'file',
+                            filename: txt.descr || 'arquivo',
+                            mediaType: mimeMatch[1],
+                            data: mimeMatch[2] // Dados base64 do arquivo
+                        })
+                    }
+                }
+            }
+            
+            message.push({ role: 'user', content: contentParts } as ModelMessage)
+        } else {
+            // Mensagem normal (sem arquivos) - content como string
+            message.push({ role: 'user', content: promptContent } as ModelMessage)
+        }
     }
 
     const params: PromptExecuteParamsType = {}
@@ -234,6 +278,7 @@ import prev_bi_sentenca_laudo_favoravel from '@/prompts/prev-bi-sentenca-laudo-f
 import prev_bi_sentenca_laudo_desfavoravel from '@/prompts/prev-bi-sentenca-laudo-desfavoravel.md'
 import linguagem_simples from '@/prompts/linguagem-simples.md'
 import relatorio_de_apelacao_e_triagem from '@/prompts/relatorio-de-apelacao-e-triagem.md'
+import degravacao from '@/prompts/degravacao.md'
 
 // Enum for the different types of prompts
 export const internalPrompts = {
@@ -275,4 +320,5 @@ export const internalPrompts = {
     prev_bi_sentenca_laudo_desfavoravel: promptDefinitionFromMarkdown('prev_bi_sentenca_laudo_desfavoravel', prev_bi_sentenca_laudo_desfavoravel),
     linguagem_simples: promptDefinitionFromMarkdown('linguagem_simples', linguagem_simples),
     relatorio_de_apelacao_e_triagem: promptDefinitionFromMarkdown('relatorio_de_apelacao_e_triagem', relatorio_de_apelacao_e_triagem),
+    degravacao: promptDefinitionFromMarkdown('degravacao', degravacao),
 }

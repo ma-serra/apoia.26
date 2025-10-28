@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, CardBody, CardTitle, CardText } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faList, faFileText, faDatabase, faAlignJustify, faComments, faDollar, faGavel, faUserSecret, faBoxArchive, faBook, faBookAtlas, faBookJournalWhills, faBookOpen } from '@fortawesome/free-solid-svg-icons'
+import { faList, faFileText, faDatabase, faAlignJustify, faComments, faDollar, faGavel, faUserSecret, faBoxArchive, faBookOpen, faPen, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { faFileLines } from '@fortawesome/free-regular-svg-icons'
 import Link from 'next/link'
 import ApiKeyMissing from '@/components/api-key-missing'
@@ -66,6 +66,13 @@ export default async function HomePage() {
             href: "/headnote",
             color: "text-secondary"
         },
+        // {
+        //     icon: faPencil,
+        //     title: "Degravação",
+        //     description: "Transcreva áudios de audiências e sessões com IA",
+        //     href: "/transcription",
+        //     color: "text-info"
+        // },
         {
             icon: faUserSecret,
             title: "Anonimização",

@@ -174,8 +174,8 @@ export const obterConteudoDaPeca = async (dossier_id: number, numeroDoProcesso: 
                 return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.IMAGE, TEXTO_PECA_IMAGEM_JPEG) }
             case 'image/png':
                 return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.IMAGE, TEXTO_PECA_IMAGEM_PNG) }
-            // case 'audio/x-ms-wma':
-            //     return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.AUDIO, TEXTO_PECA_AUDIO_XMS_WMA) }
+            case 'audio/x-ms-wma':
+                return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.AUDIO, TEXTO_PECA_AUDIO_XMS_WMA) }
             case 'video/x-ms-wmv':
                 return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.VIDEO, TEXTO_PECA_VIDEO_XMS_WMV) }
             case 'video/mp4':
