@@ -23,6 +23,8 @@ import { array } from "zod"
 import { slugify } from '@/lib/utils/utils'
 import ErrorMessage from "@/components/error-message"
 import Chat from "@/components/slots/chat"
+import { addGenericCookie } from "./add-cookie"
+import TermosDeUso from "./termos-de-uso"
 
 export const copyPromptToClipboard = (prompt: IAPromptList) => {
     let s: string = prompt.content.system_prompt
@@ -53,6 +55,19 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     const [toast, setToast] = useState<string>()
     const [toastVariant, setToastVariant] = useState<string>()
     const [activeTab, setActiveTab] = useState<string>('principal')
+
+    const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
+
+    useEffect(() => {
+        const getCookie = (name: string): string | null => {
+            if (typeof document === 'undefined') return null
+            const cookies = document.cookie ? document.cookie.split('; ') : []
+            const found = cookies.find((c) => c.startsWith(`${name}=`))
+            return found ? decodeURIComponent(found.split('=').slice(1).join('=')) : null
+        }
+        const raw = getCookie('termos-de-uso')
+        setTermosAceitos(raw === '1')
+    }, [])
 
     const toastMessage = (message: string, variant: string) => {
         setToast(message)
@@ -336,6 +351,12 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     </>), [promptsSidekick])
 
     if (sidekick) {
+        if (termosAceitos === false) {
+            return <TermosDeUso onAccept={() => { setTermosAceitos(true); addGenericCookie('termos-de-uso', '1') }} />
+        }
+        const urlNovaAba = numeroDoProcesso
+            ? `${window.location.origin}/prompts?process=${numeroDoProcesso}`
+            : `${window.location.origin}/`
         return (prompt)
             ? <Container className="mt-4" fluid={true}>
                 {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}
@@ -348,8 +369,8 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                                     ? <><ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
                                         <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent}
                                             apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}
-                                            sidekick={sidekick} 
-                                            promptButtons={prompt?.kind === '^CHAT' ? <><p className="text-center mt-3 ms-3 me-3">Converse sobre o processo ou selecione um dos seus prompts favoritos para começar!</p>{promptButtons}</> : undefined}>
+                                            sidekick={sidekick}
+                                            promptButtons={prompt?.kind === '^CHAT' ? <><p className="text-center mt-1x ms-3 me-3">Converse sobre o processo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</> : undefined}>
                                             <PromptTitle prompt={prompt} />
                                         </ProcessContents>
                                     </>
@@ -364,7 +385,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                                 ? <><Chat definition={prompt} data={{ textos: [] }} model={model} withTools={true} key={1}
                                     footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
                                     sidekick
-                                    promptButtons={<><p className="text-center mt-3 ms-3 me-3">Converse comigo ou selecione um dos seus prompts favoritos para começar!</p>{promptButtons}</>}
+                                    promptButtons={<><p className="text-center mt-3 ms-3 me-3">Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</>}
                                 /></>
                                 : <ErrorMessage message={`Tipo de alvo do prompt desconhecido: ${prompt.content.target}`} />
                 }
@@ -372,13 +393,13 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
             : (numeroDoProcesso)
                 ? <>
                     <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} onRemove={() => { setNumeroDoProcesso(null); setDadosDoProcesso(null); setNumber(null) }} />
-                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos para começar!</p>
-                    {promptButtons}
+                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
+                    <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
                 </>
                 : <>
                     <h1 className="text-center mt-5">Bem vindo à Apoia</h1>
-                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos para começar!</p>
-                    {promptButtons}
+                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
+                    <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
                 </>
 
     }
