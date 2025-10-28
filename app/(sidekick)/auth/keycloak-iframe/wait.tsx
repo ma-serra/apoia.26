@@ -1,5 +1,6 @@
 'use client'
 
+import { envString } from '@/lib/utils/env'
 import { useEffect, useRef, useState } from 'react'
 
 const Wait = () => {
@@ -10,12 +11,14 @@ const Wait = () => {
         // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
         if (hasRun.current) return
         hasRun.current = true
-
-        const popup = window.open('/auth/keycloak?popup=true&redirect=/auth/ready', '_blank')
-
-        if (!popup) {
-            alert('Por favor, habilite popups para este site para realizar a autenticação.')
-            return
+        if (true) {
+            parent.postMessage(`auth-popup:${process.env.NEXT_PUBLIC_BASE_URL}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
+        } else {
+            const popup = window.open('/auth/keycloak?popup=true&redirect=/auth/ready', '_blank')
+            if (!popup) {
+                alert('Por favor, habilite popups para este site para realizar a autenticação.')
+                return
+            }
         }
 
         // Listener para mensagem do popup
