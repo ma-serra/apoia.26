@@ -124,7 +124,7 @@ Exemplo: A questão em discussão consiste em saber se há obscuridade, contradi
 
 ## Decisões
 
-Conteúdo: uma lista de alegações com fundamentos, decisão e citações de normas e jurisprudência. As informações serão dispostas nos campos abaixo
+Conteúdo: uma lista de alegações com fundamentos, decisão e citações de normas e jurisprudência. As informações serão dispostas nos campos abaixo. As razões de decidir devem ser bem detalhadas.
 
 ### Campo alegacao
 - Vá lendo o voto e, crie um item na lista para cada alegação. Quando uma alegação for dividida em vários subtópicos, inclua um item para cada um dos subtópicos.
@@ -143,7 +143,7 @@ Conteúdo: uma lista de alegações com fundamentos, decisão e citações de no
 
 ## Dispositivo
 
-Conteúdo: Conclusão da decisão/julgamento (provimento do recurso, desprovimento do recurso).
+Conteúdo: Conclusão da decisão/julgamento (provimento do recurso, desprovimento do recurso). O dispositivo deve ser objetivo.
 
 Exemplo: Embargos de declaração rejeitados.
 
@@ -210,6 +210,7 @@ A resposta deve ser formatada em JSON, conforme o modelo abaixo, demarcado por <
 # Tarefa principal
 
 Leia cuidadosamente os textos abaixo e produza a ementa conforme o modelo acima.
+
 Não prefixe a resposta com crases triplas.
 Sua resposta deve ser um JSON válido.
 O primeiro caracter da resposta deve ser '{'. 
