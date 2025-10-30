@@ -8,6 +8,7 @@ const AuthKeycloakInAIFrame = async ({ searchParams }) => {
     const sp = await searchParams
     const raw = sp?.redirect || sp?.callbackUrl
     const callbackUrl = (typeof raw === 'string' && /^(\/|http:\/\/|https:\/\/)\S+$/.test(raw)) ? raw : '/'
+    const url = process.env.NEXT_PUBLIC_URL
 
     const session = await getServerSession(authOptions)
     if (session && session.user) redirect(callbackUrl)
@@ -16,7 +17,7 @@ const AuthKeycloakInAIFrame = async ({ searchParams }) => {
         throw new Error("Keycloak provider not found")
 
     return (
-        <Wait callbackUrl={callbackUrl} />
+        <Wait callbackUrl={callbackUrl} baseUrl={url} />
     )
 }
 export default AuthKeycloakInAIFrame

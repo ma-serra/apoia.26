@@ -3,7 +3,7 @@
 import { envString } from '@/lib/utils/env'
 import { useEffect, useRef, useState } from 'react'
 
-const Wait = () => {
+const Wait = (props: { baseUrl: string }) => {
     const [authCheckInterval, setAuthCheckInterval] = useState<NodeJS.Timeout | null>(null)
     const hasRun = useRef(false)
 
@@ -12,7 +12,7 @@ const Wait = () => {
         if (hasRun.current) return
         hasRun.current = true
         if (true) {
-            parent.postMessage(`auth-popup:${process.env.NEXT_PUBLIC_URL}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
+            parent.postMessage(`auth-popup:${props.baseUrl}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
         } else {
             const popup = window.open('/auth/keycloak?popup=true&redirect=/auth/ready', '_blank')
             if (!popup) {
