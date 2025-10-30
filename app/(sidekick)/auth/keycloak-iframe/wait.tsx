@@ -12,7 +12,7 @@ const Wait = () => {
         if (hasRun.current) return
         hasRun.current = true
         if (true) {
-            parent.postMessage(`auth-popup:${process.env.NEXT_PUBLIC_BASE_URL}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
+            parent.postMessage(`auth-popup:${process.env.NEXT_PUBLIC_URL}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
         } else {
             const popup = window.open('/auth/keycloak?popup=true&redirect=/auth/ready', '_blank')
             if (!popup) {

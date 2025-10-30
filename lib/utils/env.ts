@@ -2,6 +2,7 @@ import Cryptr from "cryptr";
 
 enum EnvPublicEnum {
     NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_URL,
     NEXTAUTH_URL_INTERNAL,
     NEXTAUTH_URL,
 

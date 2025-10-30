@@ -2,7 +2,8 @@ import React from 'react'
 import { ClientIFrameTest } from './client'
 
 const KeycloakIFrameTest = async ({ searchParams }) => {
-    console.log('Base URL:', process.env.NEXT_PUBLIC_BASE_URL)
-    return <ClientIFrameTest baseUrl={process.env.NEXT_PUBLIC_BASE_URL} />
+    const url = process.env.NEXT_PUBLIC_URL
+    console.log('Base URL:', url)
+    return <ClientIFrameTest baseUrl={url} />
 }
 export default KeycloakIFrameTest
