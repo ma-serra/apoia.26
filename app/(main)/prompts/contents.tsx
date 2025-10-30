@@ -468,23 +468,13 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                 >
                     <Tab eventKey="principal" title="Principais">
                         <PromptsTable prompts={promptsPrincipais} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
-                            <div className="col col-auto mt-3">
-                                <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
-                                    <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
-                                    <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
-                                </DropdownButton>
-                            </div>
+                            {CriarNovo()}
                         </PromptsTable>
                     </Tab>
 
                     <Tab eventKey="comunidade" title="Prompts Não Avaliados">
                         <PromptsTable prompts={promptsComunidade} onClick={promptOnClick} onProcessNumberChange={setNumeroDoProcesso} isModerator={isModerator}>
-                            <div className="col col-auto mt-3">
-                                <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
-                                    <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
-                                    <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo</Dropdown.Item>
-                                </DropdownButton>
-                            </div>
+                            {CriarNovo()}
                         </PromptsTable>
 
                         <div className="alert alert-warning mt-3">
@@ -532,4 +522,14 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                         : null
             }
         </Container>
+
+    function CriarNovo() {
+        return <div className="col col-auto mt-3">
+            <DropdownButton id="criar-novo-dropdown" title="Criar Novo" variant="primary">
+                <Dropdown.Item href="/prompts/prompt/new">Prompt</Dropdown.Item>
+                <Dropdown.Item href="/prompts/prompt/new?template=true&import=true">Prompt a partir de um modelo pré-existente</Dropdown.Item>
+                <Dropdown.Item href="/prompts/prompt/new?template=true">Prompt a partir de um modelo no padrão da Apoia</Dropdown.Item>
+            </DropdownButton>
+        </div>
+    }
 }

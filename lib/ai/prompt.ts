@@ -279,6 +279,7 @@ import prev_bi_sentenca_laudo_desfavoravel from '@/prompts/prev-bi-sentenca-laud
 import linguagem_simples from '@/prompts/linguagem-simples.md'
 import relatorio_de_apelacao_e_triagem from '@/prompts/relatorio-de-apelacao-e-triagem.md'
 import degravacao from '@/prompts/degravacao.md'
+import template_a_partir_de_modelo from '@/prompts/template-a-partir-de-modelo.md'
 
 // Enum for the different types of prompts
 export const internalPrompts = {
@@ -321,4 +322,5 @@ export const internalPrompts = {
     linguagem_simples: promptDefinitionFromMarkdown('linguagem_simples', linguagem_simples),
     relatorio_de_apelacao_e_triagem: promptDefinitionFromMarkdown('relatorio_de_apelacao_e_triagem', relatorio_de_apelacao_e_triagem),
     degravacao: promptDefinitionFromMarkdown('degravacao', degravacao),
+    template_a_partir_de_modelo: promptDefinitionFromMarkdown('template_a_partir_de_modelo', template_a_partir_de_modelo),
 }

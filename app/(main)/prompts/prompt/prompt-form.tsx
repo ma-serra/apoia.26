@@ -1,6 +1,6 @@
 'use client'
 
-import { Form, Button, Accordion, Nav, Col } from 'react-bootstrap'
+import { Form, Button, Accordion, Nav, Col, Modal } from 'react-bootstrap'
 import { useRouter } from 'next/navigation'
 // import { DeleteForm } from "./record-delete-form"
 import TextareaAutosize from 'react-textarea-autosize'
@@ -16,8 +16,13 @@ import { enumSorted } from '@/lib/ai/model-types'
 import { Instance, Matter, Scope, Target } from '@/lib/proc/process-types'
 import { PieceDescr, PieceStrategy } from '@/lib/proc/combinacoes'
 import { findUnclosedMarking } from '@/lib/ai/template'
+import dynamic from 'next/dynamic'
+import AiContent from '@/components/ai-content'
+import { getInternalPrompt } from '@/lib/ai/prompt'
+import { PromptConfigType } from '@/lib/ai/prompt-types'
+import { VisualizationEnum } from '@/lib/ui/preprocess'
 
-// const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
+const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
 
 const Frm = new FormHelper()
 
@@ -33,6 +38,9 @@ export default function PromptForm(props) {
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(initialState?.content?.system_prompt || initialState?.content?.json_schema || initialState?.content?.format ? true : false)
     const [isTemplate, setIsTemplate] = useState(initialState?.content?.template || props.template ? true : false)
     const [pending, setPending] = useState(false)
+    const [showImportModal, setShowImportModal] = useState(props.importMode || false)
+    const [importText, setImportText] = useState('')
+    const [showAiContent, setShowAiContent] = useState(false)
 
 
     try {
@@ -58,6 +66,21 @@ export default function PromptForm(props) {
                 router.push(`/prompts`)
             else
                 router.push(`/prompts`)
+        }
+
+        const handleImportResult = (content) => {
+            console.log('handleImportResult', content)
+            if (isTemplate && content.raw) {
+                Frm.set('content.template', content.raw)
+                // setData({ ...data, content: { ...data.content, template: content.raw } })
+                setShowImportModal(false)
+                setShowAiContent(false)
+                setImportText('')
+            }
+        }
+
+        const handleExecuteImport = () => {
+            setShowAiContent(true)
         }
 
         async function handleSave() {
@@ -97,97 +120,128 @@ export default function PromptForm(props) {
         const unclosedMarking = isTemplate ? findUnclosedMarking(data.content.template || '') : null
 
         return (
-            <div className="row mb-5">
-                <Frm.Input label="Nome" name="name" width={3} explanation="Use maiúsculas e minúsculas." />
-                <Frm.Input label="Autor" name="content.author" width={3} explanation="Use maiúsculas e minúsculas." />
-                <Frm.MultiSelect label="Segmento" name="content.scope" options={scopeOptions} width={2} />
-                <Frm.MultiSelect label="Instância" name="content.instance" options={instanceOptions} width={2} />
-                <Frm.MultiSelect label="Natureza" name="content.matter" options={matterOptions} width={2} />
-                {/* <Frm.Input label="Descrição" name="content.descr" width={12} /> */}
-                <Frm.Select label="Fonte dos Dados" name="content.target" options={targetOptions} width={3} />
-                <Frm.Input label="Nome do Campo" name="content.editor_label" width={3} visible={[Target.TEXTO.name, Target.REFINAMENTO.name].includes(data.content.target)} />
-                <Frm.Select label="Seleção de Peças" name="content.piece_strategy" options={pieceStrategyOptions} width={3} visible={Target.PROCESSO.name === data.content.target} />
-                <Frm.MultiSelect label="Tipos de Peças" name="content.piece_descr" options={pieceDescrOptions} width={2} visible={Target.PROCESSO.name === data.content.target && PieceStrategy.TIPOS_ESPECIFICOS.name === data.content.piece_strategy} />
-                <Frm.Select label="Resumir Selecionadas" name="content.summary" options={summaryOptions} width={2} visible={Target.PROCESSO.name === data.content.target} />
-                <Frm.Select label="Compartilhamento" name="share" options={shareOptions} width={2} />
+            <>
+                <Modal show={showImportModal} onHide={() => setShowImportModal(false)} size="xl">
+                    <Modal.Header closeButton>
+                        <Modal.Title>Importar Modelo</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {!showAiContent && (<>
+                            <label>Modelo</label>
+                            <div className="alert alert-secondary mb-1 p-0">
+                                <EditorComp markdown={importText} onChange={setImportText} />
+                            </div>
+                            <p className="text-body-secondary">Cole o texto do modelo no campo acima e clique em &quot;Executar&quot; para utilizar a IA para converter o modelo para o formato aceito pela Apoia.</p>
+                            <Button disabled={!importText} className="mt-3" onClick={handleExecuteImport}>
+                                Executar
+                            </Button>
+                        </>)}
+                        {showAiContent && importText && (<>
+                            <label>Convertendo modelo para o padrão da Apoia</label>
+                            <AiContent
+                                definition={getInternalPrompt('template-a-partir-de-modelo')}
+                                data={{ textos: [{ numeroDoProcesso: '', descr: 'Modelo', slug: 'modelo', texto: importText, sigilo: '0' }] }}
+                                config={{} as PromptConfigType}
+                                visualization={VisualizationEnum.TEXT_EDITED}
+                                dossierCode={undefined}
+                                onReady={handleImportResult}
+                            />
+                            <p className="text-body-secondary mt-0">Aguarde enquanto o modelo é processado. Quando o processamento estiver concluído, ele será automaticamente transferido para a página de criação de prompt baseado em modelo.</p>
+                        </>)}
+                    </Modal.Body>
+                </Modal>
+                <div className="row mb-5">
+                    <Frm.Input label="Nome" name="name" width={3} explanation="Use maiúsculas e minúsculas." />
+                    <Frm.Input label="Autor" name="content.author" width={3} explanation="Use maiúsculas e minúsculas." />
+                    <Frm.MultiSelect label="Segmento" name="content.scope" options={scopeOptions} width={2} />
+                    <Frm.MultiSelect label="Instância" name="content.instance" options={instanceOptions} width={2} />
+                    <Frm.MultiSelect label="Natureza" name="content.matter" options={matterOptions} width={2} />
+                    {/* <Frm.Input label="Descrição" name="content.descr" width={12} /> */}
+                    <Frm.Select label="Fonte dos Dados" name="content.target" options={targetOptions} width={3} />
+                    <Frm.Input label="Nome do Campo" name="content.editor_label" width={3} visible={[Target.TEXTO.name, Target.REFINAMENTO.name].includes(data.content.target)} />
+                    <Frm.Select label="Seleção de Peças" name="content.piece_strategy" options={pieceStrategyOptions} width={3} visible={Target.PROCESSO.name === data.content.target} />
+                    <Frm.MultiSelect label="Tipos de Peças" name="content.piece_descr" options={pieceDescrOptions} width={2} visible={Target.PROCESSO.name === data.content.target && PieceStrategy.TIPOS_ESPECIFICOS.name === data.content.piece_strategy} />
+                    <Frm.Select label="Resumir Selecionadas" name="content.summary" options={summaryOptions} width={2} visible={Target.PROCESSO.name === data.content.target} />
+                    <Frm.Select label="Compartilhamento" name="share" options={shareOptions} width={2} />
 
-                <div className='col col-12'>
-                    {showAdvancedOptions &&
-                        <Nav variant="underline" defaultActiveKey="fields" onSelect={(eventKey) => { setTab(eventKey || 'fields') }} className="mb-2">
-                            <Nav.Item>
-                                <Nav.Link eventKey="fields">Campos</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="yaml">YAML</Nav.Link>
-                            </Nav.Item>
-                        </Nav>
-                    }
-                    {tab === 'fields'
-                        ? (<>
-                            {isTemplate
-                                ? (<>
-                                    {showAdvancedOptions && <>
-                                        <div className="row">
-                                            {data.content.system_prompt !== undefined && <Frm.TextArea label="Prompt de Sistema (opcional)" name="content.system_prompt" maxRows={5} width={""} />}
-                                            {data.content.system_prompt !== undefined && <Frm.Button variant="light" onClick={() => { data.content.system_prompt = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Prompt de Sistema</Frm.Button>}
-                                        </div>
-                                        <div className="row">
-                                            <Frm.TextArea label="Prompt (opcional)" name="content.prompt" maxRows={5} width={""} />
-                                            {data.content.system_prompt === undefined && <Frm.Button variant="light" onClick={() => { data.content.system_prompt = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Prompt de Sistema</Frm.Button>}
-                                        </div>
-                                    </>}
-                                    <Frm.Markdown label="Modelo" name="content.template" maxRows={5} width={""} />
-                                    {unclosedMarking
-                                        ? <div className="alert alert-danger mt-3">
-                                            Marcação não fechada: <strong>{unclosedMarking.kind}</strong> na linha <strong>{unclosedMarking.lineNumber}</strong> - <span className="template-error" dangerouslySetInnerHTML={{ __html: unclosedMarking.lineContent }} />
-                                        </div>
+                    <div className='col col-12'>
+                        {showAdvancedOptions &&
+                            <Nav variant="underline" defaultActiveKey="fields" onSelect={(eventKey) => { setTab(eventKey || 'fields') }} className="mb-2">
+                                <Nav.Item>
+                                    <Nav.Link eventKey="fields">Campos</Nav.Link>
+                                </Nav.Item>
+                                <Nav.Item>
+                                    <Nav.Link eventKey="yaml">YAML</Nav.Link>
+                                </Nav.Item>
+                            </Nav>
+                        }
+                        {tab === 'fields'
+                            ? (<>
+                                {isTemplate
+                                    ? (<>
+                                        {showAdvancedOptions && <>
+                                            <div className="row">
+                                                {data.content.system_prompt !== undefined && <Frm.TextArea label="Prompt de Sistema (opcional)" name="content.system_prompt" maxRows={5} width={""} />}
+                                                {data.content.system_prompt !== undefined && <Frm.Button variant="light" onClick={() => { data.content.system_prompt = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Prompt de Sistema</Frm.Button>}
+                                            </div>
+                                            <div className="row">
+                                                <Frm.TextArea label="Prompt (opcional)" name="content.prompt" maxRows={5} width={""} />
+                                                {data.content.system_prompt === undefined && <Frm.Button variant="light" onClick={() => { data.content.system_prompt = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Prompt de Sistema</Frm.Button>}
+                                            </div>
+                                        </>}
+                                        <Frm.Markdown key={showImportModal} label="Modelo" name="content.template" maxRows={5} width={""} />
+                                        {unclosedMarking
+                                            ? <div className="alert alert-danger mt-3">
+                                                Marcação não fechada: <strong>{unclosedMarking.kind}</strong> na linha <strong>{unclosedMarking.lineNumber}</strong> - <span className="template-error" dangerouslySetInnerHTML={{ __html: unclosedMarking.lineContent }} />
+                                            </div>
 
-                                        : <div className="text-body-tertiary">Utilize &#39;&#123;&#39; para inclusões e &#39;&#123;&#123;&#39; para condicionais. Mais detalhes no <a href="https://trf2.gitbook.io/apoia/criar-prompt-a-partir-de-um-modelo" target="_blank">manual</a>.</div>
-                                    }
-                                </>)
-                                : (<>
-                                    {showAdvancedOptions && <>
-                                        <div className="row">
-                                            {data.content.json_schema !== undefined && <Frm.TextArea label="JSON Schema (opcional)" name="content.json_schema" maxRows={5} width={""} />}
-                                            {data.content.json_schema !== undefined && <Frm.Button variant="light" onClick={() => { data.content.json_schema = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Schema</Frm.Button>}
-                                        </div>
-                                        <div className="row">
-                                            {data.content.format !== undefined && <Frm.TextArea label="Format (opcional)" name="content.format" maxRows={5} width={""} />}
-                                            {data.content.format !== undefined && <Frm.Button variant="light" onClick={() => { data.content.format = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Format</Frm.Button>}
-                                        </div>
-                                        <div className="row">
-                                            <Frm.TextArea label="Prompt de Sistema (opcional)" name="content.system_prompt" maxRows={5} width={""} />
-                                            {data.content.json_schema === undefined && <Frm.Button variant="light" onClick={() => { data.content.json_schema = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Schema</Frm.Button>}
-                                            {data.content.format === undefined && <Frm.Button variant="light" onClick={() => { data.content.format = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Format</Frm.Button>}
-                                        </div>
-                                    </>}
-                                    <Frm.TextArea label="Prompt" name="content.prompt" maxRows={20} explanation={`Utilize {{textos}} onde devem ser incluídos os textos capturados ${Target.PROCESSO.name === data.content.target ? 'das peças do processo' : 'do editor de textos'}, ou serão automaticamente incluídos no final.`} />
-                                </>)}
-                        </>)
-                        : (<TextareaAutosize className="form-control" value={yaml} onChange={(e) => handleYamlChanged(e.target.value)} />)}
-                </div>
-                {data?.share === 'PUBLICO' &&
-                    <div className="col col-12"><div className="alert alert-danger mb-0 mt-3"><p><strong>Atenção:</strong> Um prompt público fica visível para todos os usuários.</p>
-                        <p>Para que seu prompt permaneça público, certifique-se de:</p>
-                        <ol className="mb-0">
-                            <li><strong>Descrever a função do seu prompt ao nomeá-lo</strong>, para facilitar a utilização pelos demais.</li>
-                            <li>Escrever o nome do prompt e o nome do autor com letras minúsculas e maiúsculas, <strong>não usar apenas maiúsculas</strong>;</li>
-                            <li><strong>Testar</strong> exaustivamente o prompt antes de disponibilizá-lo, a fim de verificar que apresenta os resultados esperados.</li>
-                        </ol>
+                                            : <div className="text-body-tertiary">Utilize &#39;&#123;&#39; para inclusões e &#39;&#123;&#123;&#39; para condicionais. Mais detalhes no <a href="https://trf2.gitbook.io/apoia/criar-prompt-a-partir-de-um-modelo" target="_blank">manual</a>.</div>
+                                        }
+                                    </>)
+                                    : (<>
+                                        {showAdvancedOptions && <>
+                                            <div className="row">
+                                                {data.content.json_schema !== undefined && <Frm.TextArea label="JSON Schema (opcional)" name="content.json_schema" maxRows={5} width={""} />}
+                                                {data.content.json_schema !== undefined && <Frm.Button variant="light" onClick={() => { data.content.json_schema = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Schema</Frm.Button>}
+                                            </div>
+                                            <div className="row">
+                                                {data.content.format !== undefined && <Frm.TextArea label="Format (opcional)" name="content.format" maxRows={5} width={""} />}
+                                                {data.content.format !== undefined && <Frm.Button variant="light" onClick={() => { data.content.format = undefined; setData({ ...data }) }}><FontAwesomeIcon icon={faRemove} /> Format</Frm.Button>}
+                                            </div>
+                                            <div className="row">
+                                                <Frm.TextArea label="Prompt de Sistema (opcional)" name="content.system_prompt" maxRows={5} width={""} />
+                                                {data.content.json_schema === undefined && <Frm.Button variant="light" onClick={() => { data.content.json_schema = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Schema</Frm.Button>}
+                                                {data.content.format === undefined && <Frm.Button variant="light" onClick={() => { data.content.format = ''; setData({ ...data }) }}><FontAwesomeIcon icon={faAdd} /> Format</Frm.Button>}
+                                            </div>
+                                        </>}
+                                        <Frm.TextArea label="Prompt" name="content.prompt" maxRows={20} explanation={`Utilize {{textos}} onde devem ser incluídos os textos capturados ${Target.PROCESSO.name === data.content.target ? 'das peças do processo' : 'do editor de textos'}, ou serão automaticamente incluídos no final.`} />
+                                    </>)}
+                            </>)
+                            : (<TextareaAutosize className="form-control" value={yaml} onChange={(e) => handleYamlChanged(e.target.value)} />)}
                     </div>
-                    </div>}
-                <div className="col col-auto mt-3 mb-3">
-                    <Button variant="light" className="" onClick={handleBack}>Voltar</Button>
-                </div>
+                    {data?.share === 'PUBLICO' &&
+                        <div className="col col-12"><div className="alert alert-danger mb-0 mt-3"><p><strong>Atenção:</strong> Um prompt público fica visível para todos os usuários.</p>
+                            <p>Para que seu prompt permaneça público, certifique-se de:</p>
+                            <ol className="mb-0">
+                                <li><strong>Descrever a função do seu prompt ao nomeá-lo</strong>, para facilitar a utilização pelos demais.</li>
+                                <li>Escrever o nome do prompt e o nome do autor com letras minúsculas e maiúsculas, <strong>não usar apenas maiúsculas</strong>;</li>
+                                <li><strong>Testar</strong> exaustivamente o prompt antes de disponibilizá-lo, a fim de verificar que apresenta os resultados esperados.</li>
+                            </ol>
+                        </div>
+                        </div>}
+                    <div className="col col-auto mt-3 mb-3">
+                        <Button variant="light" className="" onClick={handleBack}>Voltar</Button>
+                    </div>
 
-                <div className="col col-auto mt-3 mb-3 ms-auto">
-                    {showAdvancedOptions
-                        ? <Button variant="light" className="me-3" disabled={data.content.system_prompt || data.content.json_schema || data.content.format} onClick={() => { setShowAdvancedOptions(false) }}>Ocultar Opções Avançadas</Button>
-                        : <Button variant="light" className="me-3" onClick={() => { setShowAdvancedOptions(true) }}>Exibir Opções Avançadas</Button>}
-                    <Button variant="primary" disabled={pending || pristine} className="" onClick={handleSave}>Salvar</Button>
-                    <FormError formState={formState} />
-                </div>
-            </div >
+                    <div className="col col-auto mt-3 mb-3 ms-auto">
+                        {showAdvancedOptions
+                            ? <Button variant="light" className="me-3" disabled={data.content.system_prompt || data.content.json_schema || data.content.format} onClick={() => { setShowAdvancedOptions(false) }}>Ocultar Opções Avançadas</Button>
+                            : <Button variant="light" className="me-3" onClick={() => { setShowAdvancedOptions(true) }}>Exibir Opções Avançadas</Button>}
+                        <Button variant="primary" disabled={!data?.name || !data?.content?.author || pending || pristine} className="" onClick={handleSave}>Salvar</Button>
+                        <FormError formState={formState} />
+                    </div>
+                </div >
+            </>
         )
     } catch (e: any) {
         return (<div className="alert alert-danger">Erro no PromptForm: {e?.message || String(e)}</div>)

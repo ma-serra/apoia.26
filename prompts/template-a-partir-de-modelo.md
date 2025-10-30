@@ -16,13 +16,15 @@ O usuário fornecerá instruções desenvolvidas por um magistrado. Sua tarefa s
 ## Sintaxe do Modelo
 - O modelo deve ser formatado em Markdown e existem 3 tipos de marcadores especiais que podem ser utilizados.
 - Remova qualquer tipo de numeração de parágrafos ou itens, pois o modelo não deve conter numeração.
-- Remova o cabeçalho até a identificação do polo ativo e do polo passivo, pois o modelo não deve conter essas informações.
 - Remova o rodapé, com informações de assinatura e etc, pois o modelo não deve conter essas informações.
+- Citações longas devem ser formatadas como blocos de citação em Markdown, utilizando o símbolo de maior (>).
 
 ### Substituição de Trechos
 - Quando houver um trecho do modelo que deve ser substituído por um conteúdo específico de cada caso, utilize a seguinte sintaxe: {expr}.
 - O atributo "expr" deve ser uma expressão que indique qual informação deve ser inserida no local.
 - A expressão deve ser escrita em português, sem o uso de comando de linguagem de programação.
+- Não adianta que a expressão contenha algo do tipo ", se houver" pois, quando é necessário incluir ou não em função de uma condição, devem ser usados os marcadores abaixo de inclusão e exclusão de trechos ou partes.
+
 
 ### Inclusão e Exclusão de Trechos
 - Quando houver um trecho do modelo que deve ser incluído ou excluído dependendo de uma condição, utilize a seguinte sintaxe: {{expr}}...{{}}.
@@ -42,5 +44,5 @@ O usuário fornecerá instruções desenvolvidas por um magistrado. Sua tarefa s
 
 
 ## Instruções do Juiz:
-<instrucoes-do-juiz>
-</instrucoes-do-juiz>
+
+{{textos}}
