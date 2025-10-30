@@ -1,13 +1,10 @@
-import { assertCurrentUser, getCurrentUser, isUserModerator } from "../user"
+import { assertCurrentUser, isUserModerator } from "../user"
 import { slugify } from "../utils/utils"
 import * as mysqlTypes from "./mysql-types"
 import knex from './knex'
-import { PromptDataType } from "../ai/prompt-types"
 import { Instance, Matter, Scope } from "../proc/process-types"
-import { envNumber, envString } from "../utils/env"
+import { envString } from "../utils/env"
 import { dailyLimits } from "../utils/limits"
-import { IS_APPLE } from "@mdxeditor/editor"
-import type { IABatch, IABatchJob, IABatchSummary } from './mysql-types'
 import { PublicError } from "../utils/public-error"
 
 function getId(returning: number | { id: number }): number {
