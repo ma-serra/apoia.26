@@ -16,6 +16,6 @@ export async function removeListPublicPromptsCookie() {
 
 export async function addGenericCookie(nome: string, valor: string) {
     const cookieStore = await cookies()
-    cookieStore.set(nome, valor, { maxAge: 60 * 60 * 24 * 90 }) // 3 months in seconds
+    cookieStore.set(nome, valor, { maxAge: 60 * 60 * 24 * 90, sameSite: 'none', secure: true }) // 3 months in seconds
     return null
 }
