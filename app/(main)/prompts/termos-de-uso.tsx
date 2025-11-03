@@ -4,8 +4,7 @@ export default function TermosDeUso(props: { onAccept: () => void }) {
     return (
         <div className="container mt-4">
             <div className="text-center">
-                <img src="/apoia-logo-square-transp.png" alt="Apoia Logo" height={50} className="mx-auto mb-4" />
-                <img src="/apoia-logo-texto-transp.png" alt="Apoia Logo" height={50} className="mx-auto ms-2 mb-4" />
+                <img src="/apoia-logo-horiz-cor-fundo-claro.png" alt="Apoia Logo" height={50} className="mx-auto mb-4" />
             </div>
             <h2>Termos de Uso</h2>
             <p>Por favor, leia e aceite os termos de uso para continuar utilizando a aplicação.</p>
