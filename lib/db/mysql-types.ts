@@ -208,6 +208,28 @@ export type IAPromptList = {
     is_internal?: boolean
 }
 
+export type IAPromptRating = {
+    id: number
+    prompt_base_id: number
+    user_id: number
+    stars: number
+    created_at: Date
+    updated_at: Date
+}
+
+export type IAPromptRatingToInsert = {
+    prompt_base_id: number
+    user_id: number
+    stars: number
+}
+
+export type IAPromptRatingStats = {
+    prompt_base_id: number
+    voter_count: number
+    avg_laplace: number
+    wilson_score: number
+}
+
 
 
 export type IATestset = {
