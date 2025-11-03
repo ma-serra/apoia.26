@@ -1,6 +1,6 @@
 import { formatBrazilianDateTime, formatDate } from "@/lib/utils/utils"
-import { faPenToSquare, faStar, faUser } from "@fortawesome/free-regular-svg-icons"
-import { faCheck, faPlay, faRotateRight, faStar as faStarSolid, faStop, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
+import { faPenToSquare, faHeart, faUser } from "@fortawesome/free-regular-svg-icons"
+import { faCheck, faPlay, faRotateRight, faHeart as faHeartSolid, faStop, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import Link from 'next/link'
 import { Button, ButtonGroup, Dropdown, DropdownButton, Form } from "react-bootstrap"
@@ -48,8 +48,8 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
             columns: [
                 {
                     header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => data.row.original.is_favorite
-                        ? <a href={`/prompts/prompt/${data.row.original.base_id}/reset-favorite`} className="text-primary"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faStarSolid} /></a>
-                        : <a href={`/prompts/prompt/${data.row.original.base_id}/set-favorite`} className="text-secondary opacity-50"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faStar} /></a>
+                        ? <a href={`/prompts/prompt/${data.row.original.base_id}/reset-favorite`} className="text-primary"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faHeartSolid} /></a>
+                        : <a href={`/prompts/prompt/${data.row.original.base_id}/set-favorite`} className="text-secondary opacity-50"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faHeart} /></a>
                 },
                 {
                     header: 'Prompt', accessorKey: 'name', enableSorting: true, cell: data => <>
@@ -71,12 +71,13 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                     </>
                 },
 
+                { header: 'Avaliação', accessorKey: 'rating', enableSorting: true, style: { textAlign: "right" } },
                 { header: 'Autor', accessorKey: 'content.author', enableSorting: true },
                 { header: 'Segmento', accessorKey: 'content.scope', enableSorting: true, cell: data => data.row.original.content.scope?.length === Object.keys(Scope).length ? 'Todos' : data.row.original.content.scope?.map(i => Scope[i]?.acronym || 'Não Encontrado').join(', '), style: { textAlign: "center" } },
                 { header: 'Instância', accessorKey: 'content.instance', enableSorting: true, cell: data => data.row.original.content.instance?.length === Object.keys(Instance).length ? 'Todas' : data.row.original.content.instance?.map(i => Instance[i]?.acronym || 'Não Encontrado').join(', '), style: { textAlign: "center" } },
                 { header: 'Natureza', accessorKey: 'content.matter', enableSorting: true, cell: data => data.row.original.content.matter?.length === Object.keys(Matter).length ? 'Todas' : data.row.original.content.matter?.map(i => Matter[i]?.acronym || 'Não Encontrado').join(', '), style: { textAlign: "center" } },
                 { header: 'Compart.', accessorKey: 'share', enableSorting: true, cell: data => Share[data.row.original.share]?.descr || 'Não Encontrado', style: { textAlign: "center" } },
-                { header: 'Estrelas', accessorKey: 'favorite_count', enableSorting: true, style: { textAlign: "right" } },
+                { header: 'Favoritos', accessorKey: 'favorite_count', enableSorting: true, style: { textAlign: "right" } },
             ],
             tableClassName: 'table table-striped table-border-sides mb-0'
         },
