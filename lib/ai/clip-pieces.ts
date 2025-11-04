@@ -131,9 +131,12 @@ function clipNumericAndSymbolicPieces(textos: TextoType[]): TextoType[] {
         const text = piece.texto;
 
         // Ignora peças sem texto ou com texto vazio.
-        if (!text || text.length === 0) {
-            return piece;
-        }
+        if (!text || text.length === 0)
+            return piece
+
+        // Ignora peças que são data URLs (imagens codificadas).
+        if (text?.startsWith('data:'))
+            return piece
 
         // Conta caracteres que não são letras (ou seja, números, símbolos, espaços).
         const nonAlphabeticMatches = text.match(/[^a-zA-Z]/g);
