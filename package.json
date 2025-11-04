@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "cross-env DOTENV_CONFIG_QUIET=true next dev --turbopack -p 8081",
-        "build": "cross-env DOTENV_CONFIG_QUIET=true npx next-swagger-doc-cli next-swagger-doc.json && cross-env DOTENV_CONFIG_QUIET=true next build",
+        "build": "npm run copy-lamejs && cross-env DOTENV_CONFIG_QUIET=true npx next-swagger-doc-cli next-swagger-doc.json && cross-env DOTENV_CONFIG_QUIET=true next build",
         "start": "cross-env DOTENV_CONFIG_QUIET=true next start -p 8088",
         "lint": "next lint",
         "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -12,7 +12,8 @@
         "knex": "ts-node -P tsconfig.knex.json node_modules/knex/bin/cli.js",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:coverage": "jest --coverage"
+        "test:coverage": "jest --coverage",
+        "copy-lamejs": "node -e \"require('fs').copyFileSync('node_modules/lamejs/lame.min.js', 'public/lame.min.js')\""
     },
     "dependencies": {
         "@ai-sdk/amazon-bedrock": "^3.0.7",
@@ -58,6 +59,7 @@
         "jsdom": "^26.1.0",
         "json-canonicalize": "^2.0.0",
         "knex": "^3.1.0",
+        "lamejs": "^1.2.1",
         "lodash": "^4.17.21",
         "ms": "^2.1.3",
         "mysql2": "^3.14.3",

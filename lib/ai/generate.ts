@@ -158,16 +158,16 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const structuredOutputs = exec.params?.structuredOutputs
     
     // Debug: verificar estrutura das mensagens
-    messages.forEach((msg, index) => {
-        devLog(`Message ${index}:`, {
-            role: msg.role,
-            contentType: typeof msg.content,
-            isArray: Array.isArray(msg.content),
-            content: Array.isArray(msg.content) ? '[array]' : msg.content?.toString().substring(0, 100)
-        })
-    })
+    // messages.forEach((msg, index) => {
+    //     devLog(`Message ${index}:`, {
+    //         role: msg.role,
+    //         contentType: typeof msg.content,
+    //         isArray: Array.isArray(msg.content),
+    //         content: Array.isArray(msg.content) ? '[array]' : msg.content?.toString().substring(0, 100)
+    //     })
+    // })    
+    // devLog('Messages built:', JSON.stringify(messages, null, 2))
     
-    devLog('Messages built:', JSON.stringify(messages, null, 2))
     const { model, modelRef, apiKeyFromEnv } = await getModel({ structuredOutputs: !!structuredOutputs, overrideModel: definition.model })
 
     if (results) results.model = model

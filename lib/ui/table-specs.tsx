@@ -7,6 +7,7 @@ import { Button, ButtonGroup, Dropdown, DropdownButton, Form } from "react-boots
 import { Instance, Matter, Scope, Share } from "../proc/process-types"
 import { formatDateTime, formatDuration } from "../utils/date"
 import { RatingCell } from "@/components/RatingCell"
+import devLog from "../utils/log"
 
 const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void, options?: any) => {
     return {
@@ -89,7 +90,7 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                             promptBaseId={data.row.original.base_id}
                             rating={data.row.original.rating}
                             onRatingUpdate={(stats) => {
-                                console.log('Rating atualizado:', stats)
+                                devLog('Rating atualizado:', stats)
                             }}
                         />
                     )

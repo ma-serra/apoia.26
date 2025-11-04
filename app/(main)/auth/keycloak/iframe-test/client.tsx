@@ -11,12 +11,10 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
         const handleMessage = (event: MessageEvent) => {
             if (event.data.startsWith('auth-popup:')) {
                 const url = event.data.substring('auth-popup:'.length)
-                console.log('Opening auth popup with URL:', url)
                 window.open(url, '_blank')
                 // window.removeEventListener('message', handleMessage)
             } else if (event.data === 'auth-completed') {
                 // Recarrega a página principal para verificar autenticação
-                console.log('Authentication completed, forwarding to sidekick')
                 const iframe = document.getElementById('authFrame') as HTMLIFrameElement | null
                 if (iframe?.contentWindow) {
                     try {

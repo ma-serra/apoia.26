@@ -59,8 +59,22 @@ const nextConfig = {
             {
                 module: /swagger-jsdoc[\\/]src[\\/]utils\.js/,
                 message: /Critical dependency: the request of a dependency is an expression/
+            },
+            {
+                module: /lamejs[\\/]/,
+                message: /Critical dependency: the request of a dependency is an expression/
             }
         ]
+
+        // Garantir que lamejs seja tratado corretamente no client-side
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs: false,
+                path: false,
+            }
+        }
+
         return config
     },
     // experimental: {

@@ -170,7 +170,7 @@ export function clipPieces(model: string, textos: TextoType[]): TextoType[] {
         return initialClipedTextos;
     }
 
-    const currentTotalSize = initialClipedTextos.reduce((sum, p) => sum + (p.texto?.length || 0), 0);
+    const currentTotalSize = initialClipedTextos.reduce((sum, p) => sum + (p.texto?.startsWith('data:') ? 0 : p.texto?.length || 0), 0);
 
     // Se o tamanho total já está dentro do limite, não há mais nada a fazer.
     if (currentTotalSize <= maxTotalSize) {

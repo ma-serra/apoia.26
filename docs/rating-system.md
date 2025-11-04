@@ -19,7 +19,7 @@ import { StarsWidget } from '@/components/StarsWidget'
 <StarsWidget 
   promptBaseId={123}
   initialRating={4}
-  onRatingChange={(stats) => console.log('Novo rating:', stats)}
+  onRatingChange={(stats) => devLog('Novo rating:', stats)}
 />
 ```
 
@@ -238,7 +238,7 @@ const promptsWithRatings = prompts.map(prompt => ({
         <StarsWidget 
           promptBaseId={data.row.original.base_id}
           onRatingChange={(stats) => {
-            console.log('Rating atualizado:', stats)
+            devLog('Rating atualizado:', stats)
           }}
         />
       </div>

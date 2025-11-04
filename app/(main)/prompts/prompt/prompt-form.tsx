@@ -69,7 +69,6 @@ export default function PromptForm(props) {
         }
 
         const handleImportResult = (content) => {
-            console.log('handleImportResult', content)
             if (isTemplate && content.raw) {
                 Frm.set('content.template', content.raw)
                 // setData({ ...data, content: { ...data.content, template: content.raw } })
