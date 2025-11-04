@@ -350,13 +350,18 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         </div>
     </>), [promptsSidekick])
 
+    const [urlNovaAba, setUrlNovaAba] = useState('')
+    useEffect(() => {
+        const url = numeroDoProcesso
+            ? `${window.location.origin}/prompts?process=${numeroDoProcesso}`
+            : `${window.location.origin}/`
+        setUrlNovaAba(url)
+    }, [numeroDoProcesso])
+
     if (sidekick) {
         if (termosAceitos === false) {
             return <TermosDeUso onAccept={() => { setTermosAceitos(true); addGenericCookie('termos-de-uso', '1') }} />
         }
-        const urlNovaAba = numeroDoProcesso
-            ? `${window.location.origin}/prompts?process=${numeroDoProcesso}`
-            : `${window.location.origin}/`
         return (prompt)
             ? <Container className="mt-4" fluid={true}>
                 {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}

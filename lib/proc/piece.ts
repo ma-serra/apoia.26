@@ -161,7 +161,7 @@ export const obterConteudoDaPeca = async (dossier_id: number, numeroDoProcesso: 
 
         const { buffer, contentType } = await interop.obterPeca(numeroDoProcesso, idDaPeca)
 
-        switch (contentType.replace(/;.*$/, '')) {
+        switch (contentType?.replace(/;.*$/, '')) {
             case 'text/plain':
                 return { conteudo: await obterTextoSimples(buffer, document_id) }
             case 'text/html':
