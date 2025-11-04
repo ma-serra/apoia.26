@@ -7,10 +7,11 @@ import { NextRequest, NextResponse } from "next/server"
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { base_id: string } }
+    { params }: { params: Promise<{ base_id: string }> }
 ) {
     try {
-        const promptBaseId = parseInt(params.base_id)
+        const { base_id } = await params
+        const promptBaseId = parseInt(base_id)
         
         if (isNaN(promptBaseId)) {
             return NextResponse.json(
