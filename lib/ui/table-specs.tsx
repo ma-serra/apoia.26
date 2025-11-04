@@ -1,11 +1,12 @@
 import { formatBrazilianDateTime, formatDate } from "@/lib/utils/utils"
-import { faPenToSquare, faStar, faUser } from "@fortawesome/free-regular-svg-icons"
-import { faCheck, faPlay, faRotateRight, faStar as faStarSolid, faStop, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
+import { faPenToSquare, faHeart, faUser, faStar } from "@fortawesome/free-regular-svg-icons"
+import { faCheck, faPlay, faRotateRight, faHeart as faHeartSolid, faStop, faUser as faUserSolid } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import Link from 'next/link'
 import { Button, ButtonGroup, Dropdown, DropdownButton, Form } from "react-bootstrap"
 import { Instance, Matter, Scope, Share } from "../proc/process-types"
 import { formatDateTime, formatDuration } from "../utils/date"
+import { RatingCell } from "@/components/RatingCell"
 
 const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void, options?: any) => {
     return {
@@ -48,8 +49,8 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
             columns: [
                 {
                     header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => data.row.original.is_favorite
-                        ? <a href={`/prompts/prompt/${data.row.original.base_id}/reset-favorite`} className="text-primary"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faStarSolid} /></a>
-                        : <a href={`/prompts/prompt/${data.row.original.base_id}/set-favorite`} className="text-secondary opacity-50"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faStar} /></a>
+                        ? <a href={`/prompts/prompt/${data.row.original.base_id}/reset-favorite`} className="text-primary"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faHeartSolid} /></a>
+                        : <a href={`/prompts/prompt/${data.row.original.base_id}/set-favorite`} className="text-secondary opacity-50"><FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faHeart} /></a>
                 },
                 {
                     header: 'Prompt', accessorKey: 'name', enableSorting: true, cell: data => <>
@@ -76,7 +77,25 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                 { header: 'Instância', accessorKey: 'content.instance', enableSorting: true, cell: data => data.row.original.content.instance?.length === Object.keys(Instance).length ? 'Todas' : data.row.original.content.instance?.map(i => Instance[i]?.acronym || 'Não Encontrado').join(', '), style: { textAlign: "center" } },
                 { header: 'Natureza', accessorKey: 'content.matter', enableSorting: true, cell: data => data.row.original.content.matter?.length === Object.keys(Matter).length ? 'Todas' : data.row.original.content.matter?.map(i => Matter[i]?.acronym || 'Não Encontrado').join(', '), style: { textAlign: "center" } },
                 { header: 'Compart.', accessorKey: 'share', enableSorting: true, cell: data => Share[data.row.original.share]?.descr || 'Não Encontrado', style: { textAlign: "center" } },
-                { header: 'Estrelas', accessorKey: 'favorite_count', enableSorting: true, style: { textAlign: "right" } },
+
+                // Interactive rating: mostra número ou estrela, clique abre widget de avaliação
+                {
+                    header: <span title="Avaliação"><FontAwesomeIcon icon={faStar} /></span>,
+                    accessorKey: 'rating.avg_laplace',
+                    enableSorting: true,
+                    style: { textAlign: "center" },
+                    cell: data => (
+                        <RatingCell
+                            promptBaseId={data.row.original.base_id}
+                            rating={data.row.original.rating}
+                            onRatingUpdate={(stats) => {
+                                console.log('Rating atualizado:', stats)
+                            }}
+                        />
+                    )
+                },
+
+                { header: <span title="Favoritos"><FontAwesomeIcon icon={faHeart} /></span>, accessorKey: 'favorite_count', enableSorting: true, style: { textAlign: "center" } },
             ],
             tableClassName: 'table table-striped table-border-sides mb-0'
         },
@@ -142,16 +161,18 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                         />
                     ),
                 },
-                { 
-                    header: 'Título', 
-                    accessorKey: 'title', 
+                {
+                    header: 'Título',
+                    accessorKey: 'title',
                     enableSorting: true,
                     cell: data => data.row.original.title
                 },
-                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => {
-                    const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
-                    return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
-                } },
+                {
+                    header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => {
+                        const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
+                        return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
+                    }
+                },
                 { header: 'Contexto', accessorKey: 'context', enableSorting: true, className: 'd-none d-lg-table-cell', cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
             ],
             tableClassName: 'table table-sm table-striped table-info mb-0',
@@ -159,9 +180,9 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
         },
         Library: {
             columns: [
-                { 
-                    header: 'Título', 
-                    accessorKey: 'title', 
+                {
+                    header: 'Título',
+                    accessorKey: 'title',
                     enableSorting: true,
                     cell: data => {
                         const title = data.row.original.title;
@@ -180,10 +201,13 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
                     const { IALibraryKindLabels } = require('@/lib/db/mysql-types');
                     return IALibraryKindLabels[data.row.original.kind];
                 } },*/
-                { header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, cell: data => {
-                    const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
-                    return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
-                } },
+                {
+                    header: 'Inclusão', accessorKey: 'inclusion', enableSorting: true, cell: data => {
+                        const { IALibraryInclusionLabels } = require('@/lib/db/mysql-types');
+                        const React = require('react');
+                        return data.row.original.inclusion ? IALibraryInclusionLabels[data.row.original.inclusion] : IALibraryInclusionLabels.NAO;
+                    }
+                },
                 { header: 'Contexto', accessorKey: 'context', enableSorting: true, cell: data => data.row.original.context ? (data.row.original.context.length > 50 ? data.row.original.context.substring(0, 50) + '...' : data.row.original.context) : '-' },
             ],
             tableClassName: 'table table-bordered table-hover mb-0',
