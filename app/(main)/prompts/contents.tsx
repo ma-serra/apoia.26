@@ -387,7 +387,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                         : prompt.content.target === 'REFINAMENTO'
                             ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
                             : prompt.content.target === 'CHAT'
-                                ? <><Chat definition={prompt} data={{ textos: [] }} model={model} withTools={true} key={1}
+                                ? <><Chat definition={{...prompt, kind: slugify(prompt.kind)}} data={{ textos: [] }} model={model} withTools={true} key={1}
                                     footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
                                     sidekick
                                     promptButtons={<><p className="text-center mt-3 ms-3 me-3">Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</>}
