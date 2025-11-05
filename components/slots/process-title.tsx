@@ -12,7 +12,7 @@ export default function ProcessTitle(params: { id: string | number, onRemove?: (
             <span className="h1">
                 Processo {envString('NAVIGATE_TO_PROCESS_URL') ? (<a href={envString('NAVIGATE_TO_PROCESS_URL').replace('{numero}', id)} style={{ color: 'rgb(33, 37, 41)', textDecoration: 'none' }}>{id}</a>) : id}
             </span>
-            {onRemove && (<>&nbsp;- <span onClick={() => { onRemove() }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faRemove} /> Remover</span></>)}
+            {/* {onRemove && (<>&nbsp;- <span onClick={() => { onRemove() }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faRemove} /> Remover</span></>)} */}
         </div>
     )
     // return (

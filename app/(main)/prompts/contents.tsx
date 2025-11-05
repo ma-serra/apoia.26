@@ -1,6 +1,6 @@
 'use client'
 
-import { IALibrary, IAPromptList } from "@/lib/db/mysql-types"
+import { IALibrary, IAPrompt, IAPromptList } from "@/lib/db/mysql-types"
 import { UserType } from "@/lib/user"
 import PromptsTable from "./prompts-table"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
@@ -13,7 +13,7 @@ import ProcessTitle from "@/components/slots/process-title"
 import { SubtituloLoading } from "@/components/slots/subtitulo"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEdit } from "@fortawesome/free-solid-svg-icons"
-import { Button, Dropdown, DropdownButton, Form, FormGroup, FormLabel, FormSelect, Row, Toast, ToastContainer, Tab, Tabs } from "react-bootstrap"
+import { Button, Dropdown, DropdownButton, Form, FormGroup, FormLabel, FormSelect, Row, Toast, ToastContainer, Tab, Tabs, Breadcrumb } from "react-bootstrap"
 import { enumSorted } from "@/lib/ai/model-types"
 import { Container, Spinner } from 'react-bootstrap'
 import { tua } from "@/lib/proc/tua"
@@ -25,6 +25,7 @@ import ErrorMessage from "@/components/error-message"
 import Chat from "@/components/slots/chat"
 import { addGenericCookie } from "./add-cookie"
 import TermosDeUso from "./termos-de-uso"
+import BreadCrumbs from "./breadcrumbs"
 
 export const copyPromptToClipboard = (prompt: IAPromptList) => {
     let s: string = prompt.content.system_prompt
@@ -55,7 +56,6 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     const [toast, setToast] = useState<string>()
     const [toastVariant, setToastVariant] = useState<string>()
     const [activeTab, setActiveTab] = useState<string>('principal')
-
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
 
     useEffect(() => {
@@ -277,6 +277,10 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         if (activeTab === 'comunidade') params.set('tab', 'comunidade')
         else params.delete('tab')
 
+        if (!prompt || !numeroDoProcesso) {
+            params.delete('pieces')
+        }
+
         const qs = params.toString()
         if (qs === lastQueryRef.current) return
         lastQueryRef.current = qs
@@ -287,6 +291,18 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
 
     const PromptTitle = ({ prompt }: { prompt: IAPromptList }) => <div className="text-body-tertiary text-center h-print">Prompt: {prompt.name} - <span onClick={() => { setPrompt(null) /* Mantém processo carregado */ }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></div>
     const PromptTitleHeader = ({ prompt }: { prompt: IAPromptList }) => <div className="text-center"><span className="h3">{prompt.name}</span> - <span onClick={() => { setPrompt(null) /* Mantém processo carregado */ }} className="text-primary" style={{ cursor: 'pointer' }}><FontAwesomeIcon icon={faEdit} /> Alterar</span></div>
+    const resetProcess = () => {
+        setNumeroDoProcesso(null)
+        setNumber('')
+    }
+    const resetPrompt = () => {
+        setPrompt(null)
+    }
+    const resetToHome = () => {
+        setNumeroDoProcesso(null)
+        setNumber('')
+        setPrompt(prompts.find(p => p.kind === '^CHAT_STANDALONE') || null)
+    }
 
     const filteredPromptsBase = prompts.filter((p) => {
         if (scope && !p.content.scope?.includes(scope)) return false
@@ -304,10 +320,10 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     })
 
     const promptsSidekick = useMemo(() => {
-        if (!sidekick) return []
         const chatIsCurrentPrompt = prompt?.kind === '^CHAT'
+        if (!sidekick) return []
         let list = filteredPromptsBase.filter((p) => p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt) || (p.kind === '^CHAT_STANDALONE' && !numeroDoProcesso))
-        if (list.length < 2)
+        if (!filteredPromptsBase.find((p) => p.is_favorite))
             list = filteredPromptsBase.filter((p) => p.share === 'PADRAO' || p.is_favorite || (p.kind === '^CHAT' && !chatIsCurrentPrompt))
         const chat = list.find(p => p.kind === '^CHAT')
         if (chat) chat.name = 'Chat com Peças Selecionadas'
@@ -326,29 +342,32 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         return list
     }, [filteredPromptsBase, prompt])
 
-    const promptButtons = useMemo(() => (<>
-        <div className="d-flex flex-wrap gap-2 justify-content-center">
-            {promptsSidekick && promptsSidekick.length > 0 ? (
-                promptsSidekick.map((p, i) => (
-                    <Button
-                        key={p.base_id ?? `${p.kind}-${i}`}
-                        onClick={() => setPrompt(p)}
-                        variant="light"
-                        style={{
-                            // HSL hue from 30° (orange) to 280° (purple), avoiding red (0°)
-                            // backgroundColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
-                            borderColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
-                            color: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 30%)`,
-                        }}
-                    >
-                        {p.name}
-                    </Button>
-                ))
-            ) : (
-                <div className="text-muted">Nenhum prompt favorito disponível.</div>
-            )}
-        </div>
-    </>), [promptsSidekick])
+    const promptButtons = useMemo(() => {
+
+        return <>
+            <div className="d-flex flex-wrap gap-2 justify-content-center">
+                {promptsSidekick && promptsSidekick.length > 0 ? (
+                    promptsSidekick.filter(p => p?.kind !== prompt?.kind).map((p, i) => (
+                        <Button
+                            key={p.base_id ?? `${p.kind}-${i}`}
+                            onClick={() => setPrompt(p)}
+                            variant="light"
+                            style={{
+                                // HSL hue from 30° (orange) to 280° (purple), avoiding red (0°)
+                                // backgroundColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
+                                borderColor: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 40%)`,
+                                color: `hsl(${30 + ((i % 14) / 13) * (330 - 30)}, 85%, 30%)`,
+                            }}
+                        >
+                            {p.name}
+                        </Button>
+                    ))
+                ) : (
+                    <div className="text-muted">Nenhum prompt favorito disponível.</div>
+                )}
+            </div>
+        </>
+    }, [promptsSidekick])
 
     const [urlNovaAba, setUrlNovaAba] = useState('')
     useEffect(() => {
@@ -362,51 +381,57 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         if (termosAceitos === false) {
             return <TermosDeUso onAccept={() => { setTermosAceitos(true); addGenericCookie('termos-de-uso', '1') }} />
         }
-        return (prompt)
-            ? <Container className="mt-4" fluid={true}>
-                {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />}
-                {prompt.content.target === 'PROCESSO'
-                    ? !numeroDoProcesso
-                        ? <ProcessNumberForm id={`${prompt.base_id}`} onChange={setNumber} />
-                        : <>
-                            <div id="printDiv">
-                                {dadosDoProcesso
-                                    ? <><ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
-                                        <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent}
-                                            apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}
-                                            sidekick={sidekick}
-                                            promptButtons={prompt?.kind === '^CHAT' ? <><p className="text-center mt-1x ms-3 me-3">Converse sobre o processo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</> : undefined}>
-                                            <PromptTitle prompt={prompt} />
-                                        </ProcessContents>
-                                    </>
-                                    : <><ProcessTitle id={numeroDoProcesso} /><SubtituloLoading /><PromptTitle prompt={prompt} /></>}
-                            </div>
-                        </>
-                    : prompt.content.target === 'TEXTO'
-                        ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
-                        : prompt.content.target === 'REFINAMENTO'
-                            ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
-                            : prompt.content.target === 'CHAT'
-                                ? <><Chat definition={{...prompt, kind: slugify(prompt.kind)}} data={{ textos: [] }} model={model} withTools={true} key={1}
-                                    footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
-                                    sidekick
-                                    promptButtons={<><p className="text-center mt-3 ms-3 me-3">Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</>}
-                                /></>
-                                : <ErrorMessage message={`Tipo de alvo do prompt desconhecido: ${prompt.content.target}`} />
-                }
-            </Container>
-            : (numeroDoProcesso)
+        return <Container className="mt-0 mb-4" fluid={true}>
+            <BreadCrumbs numeroDoProcesso={numeroDoProcesso} prompt={prompt} resetToHome={resetToHome} resetProcess={resetProcess} resetPrompt={resetPrompt} />
+            {(prompt)
                 ? <>
-                    <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} onRemove={() => { setNumeroDoProcesso(null); setDadosDoProcesso(null); setNumber(null) }} />
-                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
-                    <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
+                    {/* {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && <PromptTitleHeader prompt={prompt} />} */}
+                    {prompt.content.target === 'PROCESSO'
+                        ? !numeroDoProcesso
+                            ? <ProcessNumberForm id={`${prompt.base_id}`} onChange={setNumber} />
+                            : <>
+                                <div id="printDiv">
+                                    {dadosDoProcesso
+                                        ? <>
+                                            <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
+                                            <ProcessContents prompt={prompt} dadosDoProcesso={dadosDoProcesso} pieceContent={pieceContent} setPieceContent={setPieceContent}
+                                                apiKeyProvided={apiKeyProvided} model={model} allLibraryDocuments={allLibraryDocuments}
+                                                sidekick={sidekick}
+                                                promptButtons={prompt?.kind === '^CHAT' ? <><p className="text-center mt-1x ms-3 me-3">Converse sobre o processo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</> : undefined}>
+                                                {/* <PromptTitle prompt={prompt} /> */}
+                                            </ProcessContents>
+                                        </>
+                                        : <>
+                                            <ProcessTitle id={numeroDoProcesso} /><SubtituloLoading />
+                                            {/* <PromptTitle prompt={prompt} /> */}
+                                        </>}
+                                </div>
+                            </>
+                        : prompt.content.target === 'TEXTO'
+                            ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
+                            : prompt.content.target === 'REFINAMENTO'
+                                ? <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
+                                : prompt.content.target === 'CHAT'
+                                    ? <><Chat definition={{ ...prompt, kind: slugify(prompt.kind) }} data={{ textos: [] }} model={model} withTools={true} key={1}
+                                        footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
+                                        sidekick
+                                        promptButtons={<><p className="text-center mt-3 ms-3 me-3"><img src="/apoia-logo-horiz-cor-fundo-claro.png" className="mb-3" style={{ height: "3em" }} /><br/>Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>{promptButtons}</>}
+                                    /></>
+                                    : <ErrorMessage message={`Tipo de alvo do prompt desconhecido: ${prompt.content.target}`} />
+                    }
                 </>
-                : <>
-                    <h1 className="text-center mt-5">Bem vindo à Apoia</h1>
-                    <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
-                    <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
-                </>
-
+                : (numeroDoProcesso)
+                    ? <>
+                        <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} onRemove={() => { setNumeroDoProcesso(null); setDadosDoProcesso(null); setNumber(null) }} />
+                        <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
+                        <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
+                    </>
+                    : <>
+                        <h1 className="text-center mt-5">Bem vindo à Apoia</h1>
+                        <p className="text-center mt-3 ms-3 me-3">Selecione um dos seus prompts favoritos ou lance a Apoia em uma <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.</p>
+                        <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
+                    </>
+            }</Container>
     }
 
     return !prompt
