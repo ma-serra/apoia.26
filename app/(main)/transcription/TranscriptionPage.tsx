@@ -13,6 +13,10 @@ import {
     AudioExtractionProgress as AudioExtractionProgressType,
     AudioExtractionResult
 } from '@/lib/audio/audio-extractor'
+import { slugify } from '@/lib/utils/utils'
+import Print from '@/components/slots/print'
+import { formatBytes, formatDuration } from '@/lib/audio/audio-utils'
+import Chat from '@/components/slots/chat'
 
 // Formatos de áudio e vídeo suportados
 const SUPPORTED_AUDIO_VIDEO_TYPES = [
@@ -37,12 +41,14 @@ export default function TranscriptionPage({ model }: { model: string }) {
     const [fileDataUrl, setFileDataUrl] = useState<string | null>(null)
     const [fileError, setFileError] = useState<string | null>(null)
     const [hidden, setHidden] = useState(true)
-    const [modelSupportsFiles, setModelSupportsFiles] = useState<boolean>(false)
+    const [modelSupportsFiles, setModelSupportsFiles] = useState<boolean>(true)
 
     // Estados para conversão de áudio
     const [isConverting, setIsConverting] = useState(false)
     const [conversionProgress, setConversionProgress] = useState<AudioExtractionProgressType | null>(null)
     const [conversionResult, setConversionResult] = useState<AudioExtractionResult | null>(null)
+    const [contentRaw, setContentRaw] = useState<string>('')
+
     const abortControllerRef = useRef<AbortController | null>(null)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -229,7 +235,7 @@ export default function TranscriptionPage({ model }: { model: string }) {
     }
 
     return (
-        <>
+        <div id="printDiv">
             <h2 className="mt-3">Degravação de Áudio/Vídeo</h2>
 
             {/* Verificação de suporte do modelo */}
@@ -250,7 +256,7 @@ export default function TranscriptionPage({ model }: { model: string }) {
 
             {/* Área de upload */}
             <div
-                className="alert alert-secondary mt-3 mb-1 p-4 text-center"
+                className="alert alert-secondary mt-3 mb-1 p-4 text-center h-print"
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 style={{
@@ -316,67 +322,111 @@ export default function TranscriptionPage({ model }: { model: string }) {
                     onCancel={handleCancelConversion}
                 />
             )}
+            {selectedFile && conversionResult && (
+                <div className="d-none d-print-block">
+                    <table className="table table-sm mb-0">
+                        <tbody>
+                            <tr>
+                                <th scope="row" style={{ width: '1%', textAlign: 'center' }}>Arquivo</th>
+                                <th style={{ width: '1%', textAlign: 'center' }}>Duração</th>
+                                <th style={{ width: '1%', textAlign: 'center' }}>Tamanho Original</th>
+                                <th style={{ width: '1%', textAlign: 'center' }}>Tamanho Otimizado</th>
+                            </tr>
+                            <tr>
+                                <td style={{ textAlign: 'center' }}>{selectedFile.name}</td>
+                                <td style={{ textAlign: 'center' }}>{formatDuration(conversionResult.durationSeconds)}</td>
+                                <td style={{ textAlign: 'center' }}>{formatBytes(selectedFile.size)}</td>
+                                <td style={{ textAlign: 'center' }}>{formatBytes(conversionResult.sizeBytes)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div >
+            )}
 
             {/* Botão de transcrever */}
-            {hidden && (
-                <>
-                    <div className="text-body-tertiary mb-3">
-                        Selecione um arquivo de áudio ou vídeo acima e clique em &quot;Transcrever&quot; para gerar a transcrição com timestamps e sumário.
-                    </div>
+            {
+                hidden && (
+                    <>
+                        <div className="text-body-tertiary mb-3">
+                            Selecione um arquivo de áudio ou vídeo acima e clique em &quot;Transcrever&quot; para gerar a transcrição com timestamps e sumário.
+                        </div>
 
-                    {selectedFile && fileError && (
-                        <Alert variant="danger" className="mb-3">
-                            <strong>Erro no arquivo</strong><br />
-                            {fileError}
-                        </Alert>
-                    )}
+                        {selectedFile && fileError && (
+                            <Alert variant="danger" className="mb-3">
+                                <strong>Erro no arquivo</strong><br />
+                                {fileError}
+                            </Alert>
+                        )}
 
-                    {selectedFile && !fileError && !model && (
-                        <Alert variant="warning" className="mb-3">
-                            <strong>Modelo necessário</strong><br />
-                            Por favor, configure uma chave de API válida para um modelo de IA.
-                        </Alert>
-                    )}
+                        {selectedFile && !fileError && !model && (
+                            <Alert variant="warning" className="mb-3">
+                                <strong>Modelo necessário</strong><br />
+                                Por favor, configure uma chave de API válida para um modelo de IA.
+                            </Alert>
+                        )}
 
-                    {selectedFile && !fileError && model && !modelSupportsFiles && (
-                        <Alert variant="warning" className="mb-3">
-                            <strong>Modelo incompatível</strong><br />
-                            O modelo selecionado ({model}) não suporta transcrição de áudio/vídeo.<br />
-                            Por favor, configure uma chave de API para um modelo Gemini (2.5 Flash, 2.5 Pro, etc.).
-                        </Alert>
-                    )}
+                        {selectedFile && !fileError && model && !modelSupportsFiles && (
+                            <Alert variant="warning" className="mb-3">
+                                <strong>Modelo incompatível</strong><br />
+                                O modelo selecionado ({model}) não suporta transcrição de áudio/vídeo.<br />
+                                Por favor, configure uma chave de API para um modelo Gemini (2.5 Flash, 2.5 Pro, etc.).
+                            </Alert>
+                        )}
 
-                    <Button
-                        disabled={!selectedFile || !!fileError || !modelSupportsFiles || isConverting || !fileDataUrl}
-                        className="mt-2"
-                        onClick={() => setHidden(false)}
-                    >
-                        Transcrever
-                    </Button>
-                </>
-            )}
+                        <Button
+                            disabled={!selectedFile || !!fileError || !modelSupportsFiles || isConverting || !fileDataUrl}
+                            className="mt-2"
+                            onClick={() => setHidden(false)}
+                        >
+                            Transcrever
+                        </Button>
+                    </>
+                )
+            }
 
             {/* Resultado da transcrição */}
-            {!hidden && selectedFile && fileDataUrl && !fileError && modelSupportsFiles && (
-                <>
-                    <h2 className="mt-3">Transcrição</h2>
-                    <AiContent
-                        definition={getInternalPrompt('degravacao')}
-                        data={{
-                            textos: [{
-                                numeroDoProcesso: '',
-                                descr: conversionResult
-                                    ? `Áudio extraído de: ${selectedFile.name} (convertido para MP3 16kHz mono)`
-                                    : `Arquivo de áudio: ${selectedFile.name}`,
-                                slug: 'arquivo',
-                                texto: fileDataUrl, // Data URL do arquivo (MP3 se foi vídeo)
-                                sigilo: '0'
-                            }]
-                        }}
-                        dossierCode={undefined}
-                    />
-                </>
-            )}
-        </>
+            {
+                !hidden && selectedFile && fileDataUrl && !fileError && modelSupportsFiles && (
+                    <>
+                        <h2 className="mt-3">Transcrição</h2>
+                        <AiContent
+                            definition={getInternalPrompt('degravacao')}
+                            data={{
+                                textos: [{
+                                    numeroDoProcesso: '',
+                                    descr: conversionResult
+                                        ? `Áudio extraído de: ${selectedFile.name} (convertido para MP3 16kHz mono)`
+                                        : `Arquivo de áudio: ${selectedFile.name}`,
+                                    slug: 'arquivo',
+                                    texto: fileDataUrl, // Data URL do arquivo (MP3 se foi vídeo)
+                                    sigilo: '0'
+                                }]
+                            }}
+                            dossierCode={undefined}
+                            onReady={(content) => setContentRaw(content.raw)}
+                        />
+                    </>
+                )
+            }
+
+            {contentRaw && (<>
+                <Chat
+                    definition={getInternalPrompt('chat')}
+                    model={model}
+                    data={{
+                        textos: [{
+                            numeroDoProcesso: '',
+                            descr: conversionResult
+                                ? `Áudio extraído de: ${selectedFile.name} (convertido para MP3 16kHz mono)`
+                                : `Arquivo de áudio: ${selectedFile.name}`,
+                            slug: 'arquivo',
+                            texto: contentRaw, // Data URL do arquivo (MP3 se foi vídeo)
+                            sigilo: '0'
+                        }]
+                    }}
+                />
+                <Print numeroDoProcesso={slugify(prompt.name)} />
+            </>)}
+        </div >
     )
 }

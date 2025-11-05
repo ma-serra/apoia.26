@@ -63,7 +63,7 @@ export default function AudioConversionProgress({
     }
 
     return (
-        <Alert variant="dark" className="mt-3 mb-1">
+        <Alert variant="dark" className="mt-3 mb-1 h-print">
 
             <div style={{
                 animation: progress.progress >= 99 ? 'fadeOutCollapse 0.5s ease-out forwards' : 'fadeIn 0.5s ease-in',
