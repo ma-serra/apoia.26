@@ -78,8 +78,3 @@
 ## CASO O USUÁRIO PEÇA PARA GERAR UM VOTO
 
 {{prompt:voto}}
-
----
-
-## INFORMAÇÕES ADICIONAIS
-- Data atual (está atualizada, pode utilizar): {{dataAtual}}

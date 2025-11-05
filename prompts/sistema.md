@@ -45,6 +45,3 @@
 ## Biblioteca de Documentos do Usuário
 
 {{biblioteca}}
-
-## INFORMAÇÕES ADICIONAIS
-- Data atual (está atualizada, pode utilizar): {{dataAtual}}

@@ -68,8 +68,6 @@
 ---
 
 ## INFORMAÇÕES ADICIONAIS
-- Data atual (está atualizada, pode utilizar): {{dataAtual}}
-
 
 PRINCIPAIS PEÇAS DO PROCESSO {{numeroDoProcesso}}:
 
