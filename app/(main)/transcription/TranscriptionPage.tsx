@@ -280,8 +280,8 @@ export default function TranscriptionPage({ model }: { model: string }) {
                         <div className="text-muted">
                             {formatFileSize(selectedFile.size)} • {selectedFile.type}
                         </div>
-                        <Button variant="outline-secondary" size="sm" className="mt-2">
-                            Trocar arquivo
+                        <Button variant="outline-secondary" size="sm" className="mt-2 h-print">
+                            Trocar Arquivo
                         </Button>
                     </div>
                 ) : (

@@ -63,7 +63,7 @@ export default function AudioConversionProgress({
     }
 
     return (
-        <Alert variant="info" className="mt-3 mb-1">
+        <Alert variant="dark" className="mt-3 mb-1">
 
             <div style={{
                 animation: progress.progress >= 99 ? 'fadeOutCollapse 0.5s ease-out forwards' : 'fadeIn 0.5s ease-in',
@@ -98,23 +98,21 @@ export default function AudioConversionProgress({
             )}
 
             {result && progress.stage === 'complete' && (
-                <Row style={{
-                    animation: 'fadeIn 0.5s ease-in',
-                }}>
+                <Row style={{ animation: 'fadeIn 0.5s ease-in' }}>
                     <Col xs="auto">
                         <div>
                             <div className="">
-                                Duracao: {formatDuration(result.durationSeconds)} |
+                                Duração: {formatDuration(result.durationSeconds)} |
                                 Tamanho: {formatBytes(result.sizeBytes)}
                             </div>
                             {result.sizeBytes > 20 * 1024 * 1024 && (
                                 <div className="small text-warning mt-1">
-                                    Arquivo maior que 20MB - pode haver limitacoes no envio
+                                    Arquivo maior que 20MB - pode haver limitações no envio
                                 </div>
                             )}
                         </div>
                     </Col>
-                    <Col xs="auto" className="ms-auto">
+                    <Col xs="auto" className="ms-auto h-print">
                         <span className="link-primary" onClick={handleDownload} style={{ cursor: 'pointer' }}>
                             <FontAwesomeIcon icon={faDownload} />
                         </span>
