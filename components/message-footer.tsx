@@ -1,14 +1,8 @@
+import devLog from "@/lib/utils/log"
 import { UIMessage } from "ai"
 import React, { useEffect, useState } from "react"
 
 export default function MessageFooter({ message }: { message: UIMessage }) {
-    const finish = message?.metadata as any
-    console.log('MessageFooter finish metadata:', finish)
-    if (!finish) return undefined
-
-    const usage = finish?.usage
-    const dollarValue = finish?.usage?.dollarValue
-
     const [dollarRate, setDollarRate] = useState<number | null>(null)
 
     useEffect(() => {
@@ -50,7 +44,7 @@ export default function MessageFooter({ message }: { message: UIMessage }) {
                     }
                 }
             } catch (err) {
-                console.log('Dollar rate fetch error:', err)
+                devLog('Dollar rate fetch error:', err)
             }
         })()
 
@@ -58,6 +52,11 @@ export default function MessageFooter({ message }: { message: UIMessage }) {
             mounted = false
         }
     }, [])
+
+    const finish = message?.metadata as any
+    if (!finish) return undefined
+    const usage = finish?.usage
+    const dollarValue = finish?.usage?.dollarValue
 
     // Provide a single-line footer string early return to populate the existing p
     const parts: string[] = []
