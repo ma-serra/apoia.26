@@ -6,7 +6,7 @@ import EvaluationModal from './ai-evaluation'
 import { evaluate } from '../lib/ai/generate'
 import { preprocess, Visualization, VisualizationEnum } from '@/lib/ui/preprocess'
 import { ResumoDePecaLoading } from '@/components/loading'
-import { ContentType, PromptConfigType, PromptDataType, PromptDefinitionType, PromptOptionsType } from '@/lib/ai/prompt-types'
+import { ContentType, PromptConfigType, PromptDataType, PromptDefinitionType, PromptOptionsType, UsageType } from '@/lib/ai/prompt-types'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faThumbsDown } from '@fortawesome/free-regular-svg-icons'
 import { faRefresh, faCheck } from '@fortawesome/free-solid-svg-icons'
@@ -16,6 +16,7 @@ import { readUIMessageStream, UIMessage } from 'ai'
 import { parseSSEToUIMessageChunkStream } from '@/lib/ai/message-stream'
 import ErrorMessage from './error-message'
 import MessageStatus from './message-status'
+import MessageFooter from './message-footer'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -234,13 +235,13 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     return <>
         <MessageStatus message={currentMessage} />
         {current || errormsg
-            ? <>
-                <div className={`alert alert-${color} ai-content`}>
+            ? <div className="mb-3" >
+                <div className={`alert alert-${color} ai-content mb-0`}>
                     {color === 'warning' && <h1 className="mt-0">Rascunho</h1>}
                     {(complete || errormsg) && (
                         <>
-                            <button 
-                                className={`btn btn-sm btn-transparent float-end d-print-none }`} 
+                            <button
+                                className={`btn btn-sm btn-transparent float-end d-print-none }`}
                                 onClick={() => { handleCopy() }}
                             >
                                 <FontAwesomeIcon icon={copySuccess ? faCheck : faCopy} />
@@ -255,13 +256,14 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                         : <div dangerouslySetInnerHTML={{ __html: spinner(preprocessed.text, complete) }} />}
                     <EvaluationModal show={show} onClose={handleClose} />
                 </div>
+                {complete && <MessageFooter message={currentMessage} />}
                 {preprocessed.templateTable && showTemplateTable &&
                     <div className="h-print">
                         <h2 className="">Tabela de Expressões</h2>
                         <div className="ai-content mb-3" dangerouslySetInnerHTML={{ __html: preprocessed.templateTable }} />
                     </div>
                 }
-            </>
+            </div>
             : <ResumoDePecaLoading />
         }
 

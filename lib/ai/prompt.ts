@@ -1,16 +1,17 @@
 import { ModelMessage, jsonSchema } from "ai"
 import { slugify } from "@/lib/utils/utils"
-import { PromptDataType, PromptExecuteType, PromptExecuteParamsType, PromptDefinitionType, PromptOptionsType, TextoType } from "@/lib/ai/prompt-types"
+import { PromptDataType, PromptExecuteType, PromptExecuteParamsType, PromptDefinitionType, PromptOptionsType, TextoType, PromptDefinitionMetadataType } from "@/lib/ai/prompt-types"
 import { buildFormatter } from "@/lib/ai/format"
 import { DadosDoProcessoType } from "@/lib/proc/process-types"
 import { fixPromptForAutoJson, promptJsonSchemaFromPromptMarkdown } from "./auto-json"
 import { formatDateDDMMYYYY } from "../utils/date"
 import { LibraryDocumentsType } from "./library"
 import devLog from "@/lib/utils/log"
+import yamlps from 'js-yaml'
 
 export const formatText = (txt: TextoType, limit?: number) => {
     let s: string = txt.descr
-    
+
     // Verificar se o texto é uma Data URL (data:tipo/subtipo;base64,dados)
     if (txt.texto?.startsWith('data:')) {
         // Para Data URLs, não incluir o conteúdo base64 no texto do prompt
@@ -20,7 +21,7 @@ export const formatText = (txt: TextoType, limit?: number) => {
         // Processamento normal para texto
         s += `:\n<${txt.slug}${txt.event ? ` event="${txt.event}"` : ''}${txt.idOrigem ? ` id="${txt.idOrigem}"` : ''}${txt.label ? ` label="${txt.label}"` : ''}>\n${limit ? txt.texto?.substring(0, limit) : txt.texto}\n</${txt.slug}>\n\n`
     }
-    
+
     return s
 }
 
@@ -129,13 +130,13 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
     if (prompt) {
         // Verificar se há arquivos (Data URLs) nos textos
         const filesInTexts = data.textos.filter(txt => txt.texto?.startsWith('data:'))
-        
+
         if (filesInTexts.length > 0) {
             // Para mensagens com arquivos, usar content array
             const contentParts: any[] = [
                 { type: 'text', text: promptContent }
             ]
-            
+
             // Adicionar cada arquivo como parte da mensagem
             for (const txt of filesInTexts) {
                 if (txt.texto?.startsWith('data:')) {
@@ -151,7 +152,7 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
                     }
                 }
             }
-            
+
             message.push({ role: 'user', content: contentParts } as ModelMessage)
         } else {
             // Mensagem normal (sem arquivos) - content como string
@@ -207,7 +208,7 @@ function mapToOrderedJson<T>(map: Map<string, T>, pretty: boolean = false): stri
 }
 
 export const promptDefinitionFromMarkdown = (slug, md: string): PromptDefinitionType => {
-    const regex = /(?:^# (?<tag>SYSTEM PROMPT|PROMPT|JSON SCHEMA|FORMAT)\s*)$/gms;
+    const regex = /(?:^# (?<tag>METADATA|SYSTEM PROMPT|PROMPT|JSON SCHEMA|FORMAT)\s*)$/gms;
 
     // Create an object with the different parts of the markdown
     const parts = md.split(regex).reduce((acc, part, index, array) => {
@@ -218,11 +219,15 @@ export const promptDefinitionFromMarkdown = (slug, md: string): PromptDefinition
             }
         }
         return acc;
-    }, {} as { prompt: string, system_prompt?: string, json_schema?: string, format?: string, template?: string })
+    }, {} as { prompt: string, system_prompt?: string, json_schema?: string, format?: string, template?: string, metadata?: string })
 
-    const { prompt, system_prompt, json_schema, format, template } = parts
+    const { prompt, system_prompt, json_schema, format, template, metadata } = parts
 
-    return { kind: slug, prompt, systemPrompt: system_prompt, jsonSchema: json_schema, format, template, cacheControl: true }
+    return {
+        kind: slug, prompt, systemPrompt: system_prompt, jsonSchema: json_schema, format, template,
+        metadata: metadata ? yamlps.load(metadata) as PromptDefinitionMetadataType : undefined,
+        cacheControl: true
+    }
 }
 
 export function getPromptIdentifier(prompt: string) {
@@ -272,7 +277,6 @@ import template from '@/prompts/template.md'
 import prev_ppp from '@/prompts/prev-ppp.md'
 import prev_apesp_pontos_controvertidos_primeira_instancia from '@/prompts/prev-apesp-pontos-controvertidos-primeira-instancia.md'
 import prev_apesp_pontos_controvertidos_segunda_instancia from '@/prompts/prev-apesp-pontos-controvertidos-segunda-instancia.md'
-import prev_apesp_pontos_controvertidos_segunda_instancia_com_ppp from '@/prompts/prev-apesp-pontos-controvertidos-segunda-instancia-com-ppp.md'
 import prev_bi_analise_de_laudo from '@/prompts/prev-bi-analise-de-laudo.md'
 import prev_bi_sentenca_laudo_favoravel from '@/prompts/prev-bi-sentenca-laudo-favoravel.md'
 import prev_bi_sentenca_laudo_desfavoravel from '@/prompts/prev-bi-sentenca-laudo-desfavoravel.md'
@@ -315,7 +319,6 @@ export const internalPrompts = {
     prev_ppp: promptDefinitionFromMarkdown('prev_ppp', prev_ppp),
     prev_apesp_pontos_controvertidos_primeira_instancia: promptDefinitionFromMarkdown('prev_apesp_pontos_controvertidos_primeira_instancia', prev_apesp_pontos_controvertidos_primeira_instancia),
     prev_apesp_pontos_controvertidos_segunda_instancia: promptDefinitionFromMarkdown('prev_apesp_pontos_controvertidos_segunda_instancia', prev_apesp_pontos_controvertidos_segunda_instancia),
-    prev_apesp_pontos_controvertidos_segunda_instancia_com_ppp: promptDefinitionFromMarkdown('prev_apesp_pontos_controvertidos_segunda_instancia_com_ppp', prev_apesp_pontos_controvertidos_segunda_instancia_com_ppp),
     prev_bi_analise_de_laudo: promptDefinitionFromMarkdown('prev_bi_analise_de_laudo', prev_bi_analise_de_laudo),
     prev_bi_sentenca_laudo_favoravel: promptDefinitionFromMarkdown('prev_bi_sentenca_laudo_favoravel', prev_bi_sentenca_laudo_favoravel),
     prev_bi_sentenca_laudo_desfavoravel: promptDefinitionFromMarkdown('prev_bi_sentenca_laudo_desfavoravel', prev_bi_sentenca_laudo_desfavoravel),

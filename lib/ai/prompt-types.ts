@@ -27,6 +27,12 @@ export type PromptDefinitionType = {
     template?: string
     model?: string
     cacheControl?: boolean | number
+    metadata?: PromptDefinitionMetadataType
+}
+
+export type PromptDefinitionMetadataType = {
+    author?: string
+    description?: string
 }
 
 // Tipo que define os textos que serão passados para um prompt
@@ -43,7 +49,7 @@ export type TextoType = {
     texto?: string
     sigilo: string
 }
-export type PromptDataType = { 
+export type PromptDataType = {
     numeroDoProcesso?: string,
     textos: TextoType[],
     documentosDaBiblioteca?: string[]
@@ -57,7 +63,7 @@ export type PromptExecuteParamsType = {
     cacheControl?: boolean | number
 }
 export type PromptExecuteType = {
-    message: ModelMessage[], 
+    message: ModelMessage[],
     params?: PromptExecuteParamsType,
     fixedPrompt: string
 }
@@ -101,7 +107,7 @@ export type GeneratedContent = {
     documentDescr: string | null, // descrição da peça no Eproc
     documentLocation?: string, // local onde a peça está armazenada
     documentLink?: string, // tipo da peça no Eproc
-    
+
     // infoDeProduto: InfoDeProduto
     title: string,
     produto: P,
@@ -118,5 +124,14 @@ export type GeneratedContent = {
 export type PromptAdditionalInformationType = {
     dossierCode?: string,
     documentId?: string
+}
+
+export type UsageType = {
+    inputTokens: number | undefined;
+    outputTokens: number | undefined;
+    totalTokens: number | undefined;
+    reasoningTokens?: number | undefined;
+    cachedInputTokens?: number | undefined;
+    dollarValue?: number | undefined;
 }
 

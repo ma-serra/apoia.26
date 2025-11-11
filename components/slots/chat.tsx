@@ -13,13 +13,13 @@ import TextareaAutosize from 'react-textarea-autosize'
 import { Modal, Button, Form } from 'react-bootstrap';
 import ErrorMessage from '../error-message';
 
-const converter = new showdown.Converter({ tables: true })
-
 import { getAllSuggestions, resolveSuggestion } from '@/components/suggestions/registry'
 import type { SuggestionContext } from '@/components/suggestions/context'
 import { Suggestion } from '../suggestions/base';
 import MessageStatus from '../message-status';
-import { send } from 'process';
+import MessageFooter from '../message-footer';
+
+const converter = new showdown.Converter({ tables: true })
 
 function preprocessar(mensagem: UIMessage, role: string) {
     const texto = mensagem.parts.reduce((acc, part) => {
@@ -132,19 +132,19 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     // Adjust body padding based on controls height in sidekick mode
     useEffect(() => {
         if (!params.sidekick || !controlsRef.current) return
-        
+
         const updatePadding = () => {
             const controlsHeight = controlsRef.current?.offsetHeight || 0
             // Apply padding to body instead of chat-box
             document.body.style.paddingBottom = `${controlsHeight}px`
         }
-        
+
         updatePadding()
-        
+
         // Update on resize
         const resizeObserver = new ResizeObserver(updatePadding)
         resizeObserver.observe(controlsRef.current)
-        
+
         return () => {
             resizeObserver.disconnect()
             // Reset padding when component unmounts
@@ -284,7 +284,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             }
             return await convertFilesToDataURLs(files)
         }
-        
+
         buildFileParts().then(fileParts => {
             if (clientError) return
             const msg = createUserMessage(text, fileParts, { suggestion: true })
@@ -299,10 +299,10 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const suggestionCtx: SuggestionContext = useMemo(() => {
         // Verifica se há arquivos atualmente anexados OU se alguma mensagem anterior contém arquivos
         const hasCurrentFiles = files && files.length > 0
-        const hasPreviousFiles = messages.some(m => 
+        const hasPreviousFiles = messages.some(m =>
             m.role === 'user' && m.parts?.some((p: any) => p.type === 'file' && p.mediaType === 'application/pdf')
         )
-        
+
         return {
             processNumber,
             setProcessNumber: (n?: string) => setProcessNumber(n || ''),
@@ -355,8 +355,9 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                     <MessageStatus message={m} />
                     {
                         hasText(m) &&
-                        <div className={`col col-auto mb-0`}>
-                            <div className={`text-wrap mb-2 rounded chat-content chat-ai${params.sidekick ? '-sidekick' : ''}`} dangerouslySetInnerHTML={{ __html: preprocessar(m, m.role) }} />
+                        <div className={`col col-auto mb-2`}>
+                            <div className={`text-wrap mb-0 rounded chat-content chat-ai${params.sidekick ? '-sidekick' : ''}`} dangerouslySetInnerHTML={{ __html: preprocessar(m, m.role) }} />
+                            <MessageFooter message={m} />
                         </div>
                     }
                 </div>

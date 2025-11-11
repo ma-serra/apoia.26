@@ -4,7 +4,7 @@ import { streamText, StreamTextResult, LanguageModel, streamObject, StreamObject
 import { IAGenerated, IAGeneration } from '../db/mysql-types'
 import { Dao } from '../db/mysql'
 import { assertCourtId, assertCurrentUser, assertSystemCode, UserType } from '../user'
-import { PromptAdditionalInformationType, PromptDataType, PromptDefinitionType, PromptExecutionResultsType, PromptOptionsType, TextoType } from '@/lib/ai/prompt-types'
+import { PromptAdditionalInformationType, PromptDataType, PromptDefinitionType, PromptExecutionResultsType, PromptOptionsType, TextoType, UsageType } from '@/lib/ai/prompt-types'
 import { promptExecuteBuilder, waitForTexts } from './prompt'
 import { calcSha256 } from '../utils/hash'
 import { envString } from '../utils/env'
@@ -20,13 +20,12 @@ import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai'
 import devLog, { isDev } from '../utils/log'
 import * as Sentry from '@sentry/nextjs'
 import { getLibraryDocumentsForPrompt } from './library'
-import { getTools } from './tools'
 
 export async function checkModelSupportsAudioVideo(modelName: string): Promise<boolean> {
     const details = Object.values(Model).find(m => m.name === modelName)
     const audioVideoTypes = [
-        FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, 
-        FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF, 
+        FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV,
+        FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF,
         FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC
     ]
     return audioVideoTypes.some(type => details?.supportedFileTypes?.includes(type))
@@ -52,11 +51,7 @@ async function saveToCache(data: IAGeneration): Promise<number | undefined> {
 async function saveLog(user: UserType, additionalInformation: PromptAdditionalInformationType, model: string, usage, sha256: string, kind: string, text: string, attempt: number, messages: ModelMessage[]) {
     const system_id = await Dao.assertSystemId(await assertSystemCode(user))
     const dossier_id = additionalInformation?.dossierCode ? (await Dao.assertIADossierId(additionalInformation.dossierCode, system_id, undefined, undefined)) : null
-    const calculedUsage = modelCalcUsage(
-        model,
-        (usage.inputTokens || 0) + (usage.cachedInputTokens || 0),
-        (usage.reasoningTokens || 0) + (usage.outputTokens || 0)
-    )
+    const calculedUsage = modelCalcUsage(model, usage)
     const generationId = await saveToCache({
         sha256, model, prompt: kind, generation: text, attempt: attempt || null,
         prompt_payload: JSON.stringify(messages), dossier_id, document_id: null,
@@ -73,8 +68,8 @@ function writeResponseToFile(kind: string, messages: ModelMessage[], text: strin
         const fs = require('fs')
         const currentDate = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').split('.')[0]
         let s = ''
-        for (const m of messages) s += `${m.role === 'system' ? '# SYSTEM PROMPT' : m.role === 'user' ? '# PROMPT' : `# ROLE: ${m.role}`}\n\n${m.content}\n\n`
-        s += `\n\n---\n\n${text}`
+        for (const m of messages) s += `${m.role === 'system' ? '---\\# SYSTEM PROMPT' : m.role === 'user' ? '---\\# PROMPT' : `---\\# ROLE: ${m.role}`}\n\n${typeof m.content === 'string' ? m.content : m.content && typeof m.content === 'object' ? JSON.stringify(m.content, null, 2) : String(m.content)}\n\n`
+        s += `\n\n---\n# RESPONSE\n\n${text}`
         fs.writeFileSync(`${path}/${currentDate}-${kind}.txt`, s)
     }
 }
@@ -112,21 +107,18 @@ export async function generateContent(definition: PromptDefinitionType, data: Pr
 }
 
 export async function writeUsage(usage, model: string, user_id: number | undefined, court_id: number | undefined) {
-    const { cachedInputTokens, inputTokens, outputTokens, reasoningTokens } = usage
-    const calculedUsage = modelCalcUsage(
-        model,
-        (inputTokens || 0) + (cachedInputTokens || 0),
-        (reasoningTokens || 0) + (outputTokens || 0)
-    )
+    const calculedUsage = modelCalcUsage(model, usage)
     if (user_id && court_id)
         await Dao.addToIAUserDailyUsage(user_id, court_id, calculedUsage.input_tokens, calculedUsage.output_tokens, calculedUsage.approximate_cost)
 }
 
 export type PromptReturnType = {
+    model: string
     messages?: string
     cached?: string
     textStream?: Promise<StreamTextResult<ToolSet, any>>
     objectStream?: Promise<StreamObjectResult<DeepPartial<any>, any, never>>
+    usage?: UsageType
 }
 
 export async function streamContent(definition: PromptDefinitionType, data: PromptDataType, results?: PromptExecutionResultsType, additionalInformation?: PromptAdditionalInformationType, tools?: Record<string, any>):
@@ -156,18 +148,7 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const exec = promptExecuteBuilder(definition, data, libraryPrompt)
     const messages = exec.message
     const structuredOutputs = exec.params?.structuredOutputs
-    
-    // Debug: verificar estrutura das mensagens
-    // messages.forEach((msg, index) => {
-    //     devLog(`Message ${index}:`, {
-    //         role: msg.role,
-    //         contentType: typeof msg.content,
-    //         isArray: Array.isArray(msg.content),
-    //         content: Array.isArray(msg.content) ? '[array]' : msg.content?.toString().substring(0, 100)
-    //     })
-    // })    
-    // devLog('Messages built:', JSON.stringify(messages, null, 2))
-    
+
     const { model, modelRef, apiKeyFromEnv } = await getModel({ structuredOutputs: !!structuredOutputs, overrideModel: definition.model })
 
     if (results) results.model = model
@@ -176,7 +157,7 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
     const attempt = definition?.cacheControl !== true && definition?.cacheControl || null
 
     if (results?.messagesOnly) {
-        return { messages: JSON.stringify(messages) }
+        return { model, messages: JSON.stringify(messages) }
     }
 
     // try to retrieve cached generations
@@ -188,7 +169,7 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
                 results.generationId = cached.id
                 results.model = cached.model || model
             }
-            return { cached: cached.generation }
+            return { model, cached: cached.generation }
         }
     }
 
@@ -204,6 +185,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     const user = await pUser
     const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
     const court_id = await assertCourtId(user)
+    const returnData: PromptReturnType = { model }
 
     // --- PDF processing & logging sanitization ---
     const modelSupportsPdf = () => {
@@ -214,8 +196,8 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     const modelSupportsAudioVideo = () => {
         const details = Object.values(Model).find(m => m.name === model)
         const audioVideoTypes = [
-            FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, 
-            FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF, 
+            FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV,
+            FileTypeEnum.WMA, FileTypeEnum.WMV, FileTypeEnum.AIFF,
             FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC
         ]
         return audioVideoTypes.some(type => details?.supportedFileTypes?.includes(type))
@@ -317,7 +299,8 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                 Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
                 console.error('Error during streaming:', error, (error as any)?.cause)
             },
-            onFinish: async ({ text, usage }) => {
+            onFinish: async ({ text, usage, providerMetadata }) => {
+                returnData.usage = { ...usage, dollarValue: modelCalcUsage(model, usage).approximate_cost }
                 if (apiKeyFromEnv)
                     writeUsage(usage, model, user_id, court_id)
                 if (cacheControl !== false) {
@@ -325,6 +308,9 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                     if (results) results.generationId = generationId
                 }
                 writeResponseToFile(kind, processedMessagesLog, text)
+                if (providerMetadata) {
+                    devLog('Provider metadata:', providerMetadata)
+                }
             },
             tools,
             stopWhen: stepCountIs(10),
@@ -340,7 +326,8 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                 } satisfies OpenAIResponsesProviderOptions,
             },
         })
-        return { textStream: pResult as any }
+        returnData.textStream = pResult as any
+        return returnData
         // }
     } else {
         devLog('streaming object', kind) //, messages, modelRef, structuredOutputs.schema)
@@ -356,6 +343,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
                 console.error('Error during streaming:', error)
             },
             onFinish: async ({ object, usage }) => {
+                returnData.usage = { ...usage, dollarValue: modelCalcUsage(model, usage).approximate_cost }
                 if (apiKeyFromEnv)
                     writeUsage(usage, model, user_id, court_id)
                 if (cacheControl !== false) {
@@ -369,7 +357,8 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
             schema: structuredOutputs.schema,
         })
         // @ts-ignore-next-line
-        return { objectStream: pResult }
+        returnData.objectStream = pResult
+        return returnData
     }
 }
 

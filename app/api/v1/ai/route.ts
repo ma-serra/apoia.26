@@ -5,7 +5,7 @@ import { Dao } from '@/lib/db/mysql'
 import { IAPrompt } from '@/lib/db/mysql-types'
 import { assertApiUser } from '@/lib/user'
 import { preprocessTemplate } from '@/lib/ai/template'
-import { StreamTextResult, ToolSet } from 'ai'
+import { createUIMessageStream, createUIMessageStreamResponse, StreamTextResult, ToolSet, UIMessage } from 'ai'
 import { ApiError, UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
 import { getTools } from '@/lib/ai/tools'
 
@@ -196,7 +196,19 @@ async function POST_HANDLER(request: Request) {
     }
 
     if (ret.textStream && searchParams.get('uiMessageStream') === 'true') {
-        return ((await ret.textStream) as StreamTextResult<ToolSet, any>).toUIMessageStreamResponse();
+        const uiMessageStream = ((await ret.textStream) as StreamTextResult<ToolSet, any>).toUIMessageStream({ sendFinish: false })
+        const stream = createUIMessageStream<UIMessage>({
+            execute: async ({ writer }) => {
+                for await (const part of uiMessageStream) {
+                    writer.write(part)
+                }
+                writer.write({
+                    type: 'finish',
+                    messageMetadata: { model: ret.model, usage: ret.usage },
+                });
+            }
+        })
+        return createUIMessageStreamResponse({ stream });
     }
 
     if (ret.textStream || ret.objectStream) {

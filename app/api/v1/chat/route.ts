@@ -2,11 +2,9 @@ import { generateAndStreamContent } from '@/lib/ai/generate'
 import { getModel } from '@/lib/ai/model-server'
 import { getTools } from '@/lib/ai/tools'
 import { Dao } from '@/lib/db/mysql'
-import { getCurrentUser, assertApiUser } from '@/lib/user'
-import { convertToModelMessages, StreamTextResult, ToolSet } from 'ai'
-import * as Sentry from '@sentry/nextjs'
-import devLog from '@/lib/utils/log'
-import { UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
+import { assertApiUser } from '@/lib/user'
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, StreamTextResult, ToolSet, UIMessage } from 'ai'
+import { withErrorHandler } from '@/lib/utils/api-error'
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 60
@@ -49,7 +47,7 @@ async function POST_HANDLER(req: Request) {
     const { searchParams } = new URL(req.url)
     const withTools = searchParams.get('withTools') === 'true'
 
-    const result = await generateAndStreamContent(
+    const ret = await generateAndStreamContent(
         model,
         undefined, // structuredOutputs
         false, // cacheControl
@@ -64,11 +62,23 @@ async function POST_HANDLER(req: Request) {
         withTools ? await getTools(pUser) : undefined
     )
 
-    if (typeof result === 'string') {
-        return new Response(result, { status: 200 })
+    if (typeof ret === 'string') {
+        return new Response(ret, { status: 200 })
     }
 
-    return ((await result.textStream) as StreamTextResult<ToolSet, any>).toUIMessageStreamResponse();
+    const uiMessageStream = ((await ret.textStream) as StreamTextResult<ToolSet, any>).toUIMessageStream({ sendFinish: false })
+    const stream = createUIMessageStream<UIMessage>({
+        execute: async ({ writer }) => {
+            for await (const part of uiMessageStream) {
+                writer.write(part)
+            }
+            writer.write({
+                type: 'finish',
+                messageMetadata: { model: ret.model, usage: ret.usage },
+            });
+        }
+    })
+    return createUIMessageStreamResponse({ stream });
 }
 
 export const POST = withErrorHandler(POST_HANDLER as any)

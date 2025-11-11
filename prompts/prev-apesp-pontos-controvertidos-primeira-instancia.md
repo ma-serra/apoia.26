@@ -1,3 +1,7 @@
+# METADATA
+
+- author: Caroline Tauk/JFRJ
+
 # PROMPT
 
 Você é um assistente de IA especializado em extrair informações de documentos e estruturá-las em formato JSON. Sua tarefa é analisar o conteúdo de múltiplos documentos e produzir um JSON longo e complexo com informações extraídas desses documentos. Siga as instruções abaixo cuidadosamente para completar esta tarefa.
@@ -141,25 +145,23 @@ Ajuste singular ou plural, se for o caso.
 
 | Início      | Fim         | Vínculo              | Atividade Especial | Profissão      | Código         | Agentes Nocivos      | Resumo   |
 |-------------|-------------|----------------------|--------------------|----------------|----------------|----------------------|----------|
-{% for periodo in Periodos %}| {{ periodo.Dt_Inicio_Periodo }} | {{ periodo.Dt_Fim_Periodo }} | {{ periodo.Tx_Vinculo }} | {{ "Sim" if periodo.Lo_Atividade_Especial else "Não" }} | {{ periodo.Tx_Profissao or "" }} | {{ periodo.Tx_Codigo or "" }} | {{ periodo.Tx_Agentes_Nocivos or "" }} | {{ periodo.Tg_Resumo }} |
+{% for periodo in Periodos %}| {= periodo.Dt_Inicio_Periodo =} | {= periodo.Dt_Fim_Periodo =} | {= periodo.Tx_Vinculo =} | {= "Sim" if periodo.Lo_Atividade_Especial else "Não" =} | {= periodo.Tx_Profissao or "" =} | {= periodo.Tx_Codigo or "" =} | {= periodo.Tx_Agentes_Nocivos or "" =} | {= periodo.Tg_Resumo =} |
 {% endfor %}
 
 ## Outros Argumentos da Contestação
 
 | Tipo                      | Alegação                | Resumo   |
 |---------------------------|-------------------------|----------|
-{% for argumento in Outros_Argumentos %}| {{ argumento.Tx_Tipo }} | {{ argumento.Tx_Alegacao }} | {{ argumento.Tg_Resumo }} |
+{% for argumento in Outros_Argumentos %}| {= argumento.Tx_Tipo =} | {= argumento.Tx_Alegacao =} | {= argumento.Tg_Resumo =} |
 {% endfor %}
 
 ## Extração Residual
 
 | Alegação                  | Resumo   |
 |---------------------------|----------|
-{% for residual in Residual %}| {{ residual.Tx_Alegacao }} | {{ residual.Tg_Resumo }} |
+{% for residual in Residual %}| {= residual.Tx_Alegacao =} | {= residual.Tg_Resumo =} |
 {% endfor %}
 
 ## Relatório
 
-<!-- add: <ins class="diffins-highlight"> -->
 {=Tg_Relatorio=}
-<!-- add: </ins> -->
