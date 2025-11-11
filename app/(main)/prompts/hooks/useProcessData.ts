@@ -1,0 +1,95 @@
+import { useState, useEffect } from "react"
+import { DadosDoProcessoType } from "@/lib/proc/process-types"
+
+export interface UseProcessDataResult {
+    numeroDoProcesso: string | null
+    setNumeroDoProcesso: (numero: string | null) => void
+    arrayDeDadosDoProcesso: DadosDoProcessoType[] | null
+    dadosDoProcesso: DadosDoProcessoType | null
+    idxProcesso: number
+    setIdxProcesso: (idx: number) => void
+    setDadosDoProcesso: (dados: DadosDoProcessoType | null) => void
+    number: string
+    setNumber: (number: string) => void
+    tramFromUrl: number | null
+    setTramFromUrl: (tram: number | null) => void
+    toastMessage: (message: string, variant: string) => void
+}
+
+export function useProcessData(
+    toastMessage: (message: string, variant: string) => void
+): UseProcessDataResult {
+    const [numeroDoProcesso, setNumeroDoProcesso] = useState<string | null>(null)
+    const [arrayDeDadosDoProcesso, setArrayDeDadosDoProcesso] = useState<DadosDoProcessoType[] | null>(null)
+    const [idxProcesso, setIdxProcesso] = useState(0)
+    const [dadosDoProcesso, setDadosDoProcesso] = useState<DadosDoProcessoType | null>(null)
+    const [number, setNumber] = useState<string>('')
+    const [tramFromUrl, setTramFromUrl] = useState<number | null>(null)
+
+    useEffect(() => {
+        if (number?.length === 20) {
+            setNumeroDoProcesso(number)
+        } else {
+            setNumeroDoProcesso(null)
+        }
+    }, [number])
+
+    const loadProcess = async (numeroDoProcesso: string) => {
+        const response = await fetch(`/api/v1/process/${numeroDoProcesso}`)
+        if (response.ok) {
+            const data = await response.json()
+            if (data.errorMsg) {
+                toastMessage(data.errorMsg, 'danger')
+                setArrayDeDadosDoProcesso(null)
+                setDadosDoProcesso(null)
+                setNumeroDoProcesso(null)
+                return
+            }
+            setArrayDeDadosDoProcesso(data.arrayDeDadosDoProcesso)
+            const idx = data.arrayDeDadosDoProcesso?.length > 1 
+                ? data.arrayDeDadosDoProcesso?.length - 1 
+                : 0
+            setIdxProcesso(idx)
+            const dadosDoProc = data.arrayDeDadosDoProcesso[idx]
+            setDadosDoProcesso(dadosDoProc)
+        }
+    }
+
+    useEffect(() => {
+        if (numeroDoProcesso) {
+            loadProcess(numeroDoProcesso)
+        } else {
+            setDadosDoProcesso(null)
+            setArrayDeDadosDoProcesso(null)
+            setIdxProcesso(0)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [numeroDoProcesso])
+
+    useEffect(() => {
+        if (!dadosDoProcesso) return
+        
+        if (tramFromUrl !== null && arrayDeDadosDoProcesso?.length > 1) {
+            if (tramFromUrl >= 0 && tramFromUrl < arrayDeDadosDoProcesso.length) {
+                setIdxProcesso(tramFromUrl)
+                setDadosDoProcesso(arrayDeDadosDoProcesso[tramFromUrl])
+            }
+            setTramFromUrl(null)
+        }
+    }, [arrayDeDadosDoProcesso, dadosDoProcesso, tramFromUrl])
+
+    return {
+        numeroDoProcesso,
+        setNumeroDoProcesso,
+        arrayDeDadosDoProcesso,
+        dadosDoProcesso,
+        idxProcesso,
+        setIdxProcesso,
+        setDadosDoProcesso,
+        number,
+        setNumber,
+        tramFromUrl,
+        setTramFromUrl,
+        toastMessage
+    }
+}
