@@ -50,7 +50,7 @@ async function POST_HANDLER(req: Request) {
     const ret = await generateAndStreamContent(
         model,
         undefined, // structuredOutputs
-        false, // cacheControl
+        true, // cacheControl
         'chat', // kind
         modelRef,
         convertToModelMessages(messages),

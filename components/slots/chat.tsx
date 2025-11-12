@@ -50,7 +50,7 @@ function convertToUIMessages(modelMsgs: ModelMessage[]): UIMessage[] {
     modelMsgs.forEach((m, i) => {
         if (m.content) {
             ui.push({
-                id: m.role === 'system' ? 'system' : `${m.role}-${i}`,
+                id: `${m.role}-${i}`,
                 role: m.role as any,
                 parts: [{ type: 'text', text: m.content }]
             })
