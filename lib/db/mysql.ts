@@ -1333,8 +1333,10 @@ export class Dao {
 
         const records = await knex('ia_user_daily_usage as udu')
             .select(
-                'u.username', 'u.id as user_id',
+                'u.username', 'u.name', 'u.id as user_id',
                 knex.raw('SUM(udu.usage_count) as usage_count'),
+                knex.raw('SUM(udu.input_tokens_count) as input_tokens_count'),
+                knex.raw('SUM(udu.output_tokens_count) as output_tokens_count'),
                 knex.raw('SUM(udu.approximate_cost) as approximate_cost')
             )
             .join('ia_user as u', 'udu.user_id', 'u.id')
@@ -1342,13 +1344,35 @@ export class Dao {
             .andWhere('udu.court_id', court_id)
             .andWhere('udu.usage_date', '>=', startDate)
             .andWhere('udu.usage_date', '<', endDate)
-            .groupBy('u.id', 'u.username')
+            .groupBy('u.id', 'u.username', 'u.name')
             .orderBy('approximate_cost', 'desc');
 
         return records.map(record => ({
             id: record.user_id,
             username: record.username,
+            name: record.name,
             usage_count: Number(record.usage_count),
+            input_tokens_count: Number(record.input_tokens_count),
+            output_tokens_count: Number(record.output_tokens_count),
+            approximate_cost: Number(record.approximate_cost)
+        }));
+    }
+
+    static async retrieveUserDailyUsage(user_id: number, court_id: number, startDate: string, endDate: string): Promise<mysqlTypes.DailyUsageData[]> {
+        if (!knex) return [];
+
+        const records = await knex('ia_user_daily_usage')
+            .select('usage_date', 'usage_count', 'input_tokens_count', 'output_tokens_count', 'approximate_cost')
+            .where({ user_id, court_id })
+            .andWhere('usage_date', '>=', startDate)
+            .andWhere('usage_date', '<', endDate)
+            .orderBy('usage_date', 'asc');
+
+        return records.map(record => ({
+            date: record.usage_date.toISOString().split('T')[0],
+            usage_count: Number(record.usage_count),
+            input_tokens_count: Number(record.input_tokens_count),
+            output_tokens_count: Number(record.output_tokens_count),
             approximate_cost: Number(record.approximate_cost)
         }));
     }

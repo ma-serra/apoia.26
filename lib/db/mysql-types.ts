@@ -354,7 +354,18 @@ export type CourtUsageData = {
 export type UserUsageData = {
     id: string
     username: string
+    name?: string | null
     usage_count: number
+    input_tokens_count: number
+    output_tokens_count: number
+    approximate_cost: number
+}
+
+export type DailyUsageData = {
+    date: string
+    usage_count: number
+    input_tokens_count: number
+    output_tokens_count: number
     approximate_cost: number
 }
 

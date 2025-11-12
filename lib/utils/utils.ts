@@ -264,3 +264,13 @@ export const isValidCPF = (d: string): boolean => {
   const dig2 = rev < 2 ? 0 : 11 - rev;
   return dig2 === nums[10];
 }
+
+export const displayUserName = (name: string | null | undefined, username: string): string => {
+  if (name && name.trim()) {
+    return name.trim();
+  }
+  if (isValidCPF(username)) {
+    return obfuscateString(username);
+  }
+  return username;
+}
