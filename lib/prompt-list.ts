@@ -41,7 +41,7 @@ export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao 
             content: {
                 ...base.content,
                 author: def.author || '-',
-                target: key === 'CHAT_STANDALONE' ? 'CHAT' : 'PROCESSO',
+                target: def.target || 'PROCESSO',
                 scope: def.scope?.length ? def.scope : Object.keys(Scope),
                 instance: def.instance?.length ? def.instance : Object.keys(Instance),
                 matter: def.matter?.length ? def.matter : Object.keys(Matter),

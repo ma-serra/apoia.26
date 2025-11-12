@@ -14,7 +14,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
     const html: string = json.get('html') as string
     if (!html) throw new BadRequestError('Campo html é obrigatório')
     const skipTemplate: boolean = json.get('skipTemplate') === 'true'
-    const formated = skipTemplate ? html : template.replace('<div class="content"></div>', html)
+    const formatted = skipTemplate ? html : template.replace('<div class="content"></div>', html)
 
     const httpsAgent = new https.Agent({
         rejectUnauthorized: false,
@@ -22,7 +22,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
 
     const { data } = await axios.post('https://siga.jfrj.jus.br/sigaex/public/app/util/html-pdf', {
         conv: '2',
-        html: formated
+        html: formatted
     }, {
         headers: {
             'Content-Type': 'application/json',

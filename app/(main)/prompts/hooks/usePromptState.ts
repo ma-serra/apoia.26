@@ -4,6 +4,9 @@ import { IAPromptList, IALibrary } from "@/lib/db/mysql-types"
 import { slugify } from "@/lib/utils/utils"
 import { decodeEnumParam, findPromptFromParam } from "../utils/promptFilters"
 import { Instance, Matter, Scope } from "@/lib/proc/process-types"
+import { html2md } from "@/lib/utils/html2md"
+import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, MessageWithType, SourceMessageFromParentType, SourceMessageToParentType } from "@/lib/utils/messaging"
+import devLog from "@/lib/utils/log"
 
 export interface UsePromptStateResult {
     prompt: IAPromptList | null
@@ -18,6 +21,8 @@ export interface UsePromptStateResult {
     setActiveTab: (tab: string) => void
     pieceContent: any
     setPieceContent: (content: any) => void
+    source: string | null
+    setSource: (source: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
 }
@@ -38,7 +43,7 @@ export function usePromptState(
     const router = useRouter()
     const pathname = usePathname()
     const lastQueryRef = useRef<string>('')
-    
+
     const [prompt, setPrompt] = useState<IAPromptList | null>(null)
     const [scope, setScope] = useState<string | undefined>()
     const [instance, setInstance] = useState<string | undefined>()
@@ -47,6 +52,9 @@ export function usePromptState(
     const [pieceContent, setPieceContent] = useState({})
     const [allLibraryDocuments, setAllLibraryDocuments] = useState<IALibrary[]>([])
     const [activeTab, setActiveTab] = useState<string>('principal')
+    const [sourceFromURL, setSourceFromURL] = useState<string | null>(null)
+    const [source, setSource] = useState<string | null>(null)
+    const hasRunSource = useRef(false)
 
     useEffect(() => {
         const loadLibraryDocuments = async () => {
@@ -66,7 +74,7 @@ export function usePromptState(
 
     useEffect(() => {
         if (promptInitialized) return
-        
+
         const p = currentSearchParams.get('prompt')
         const proc = currentSearchParams.get('process')
         const sc = currentSearchParams.get('scope')
@@ -74,27 +82,29 @@ export function usePromptState(
         const mat = currentSearchParams.get('matter')
         const tram = currentSearchParams.get('tram')
         const tab = currentSearchParams.get('tab')
+        const sourceFromURL = currentSearchParams.get('source')
 
         if (p) {
             const found = findPromptFromParam(prompts, p)
             if (found) setPrompt(found)
         }
-        
+
         if (proc && proc.length === 20) {
             setNumeroDoProcesso(proc)
             setNumber(proc)
         }
-        
+
         const scName = decodeEnumParam(sc, Scope)
         const instName = decodeEnumParam(inst, Instance)
         const matName = decodeEnumParam(mat, Matter)
-        
+
         if (scName) setScope(scName)
         if (instName) setInstance(instName)
         if (matName) setMatter(matName)
         if (tram && /^\d+$/.test(tram)) setTramFromUrl(parseInt(tram))
         if (tab === 'comunidade') setActiveTab('comunidade')
-        
+        if (sourceFromURL) setSourceFromURL(sourceFromURL)
+
         setPromptInitialized(true)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -111,9 +121,9 @@ export function usePromptState(
 
     useEffect(() => {
         if (!promptInitialized) return
-        
+
         const params = new URLSearchParams(currentSearchParams.toString())
-        
+
         if (prompt) {
             if (prompt.kind?.startsWith('^')) {
                 params.set('prompt', slugify(prompt.kind.substring(1)))
@@ -123,10 +133,10 @@ export function usePromptState(
         } else {
             params.delete('prompt')
         }
-        
+
         if (numeroDoProcesso?.length === 20) params.set('process', numeroDoProcesso)
         else params.delete('process')
-        
+
         if (arrayDeDadosDoProcesso?.length > 1) {
             const defaultIdx = arrayDeDadosDoProcesso.length - 1
             if (idxProcesso !== defaultIdx) params.set('tram', String(idxProcesso))
@@ -134,16 +144,16 @@ export function usePromptState(
         } else {
             params.delete('tram')
         }
-        
+
         if (scope) params.set('scope', slugify(scope))
         else params.delete('scope')
-        
+
         if (instance) params.set('instance', slugify(instance))
         else params.delete('instance')
-        
+
         if (matter) params.set('matter', slugify(matter))
         else params.delete('matter')
-        
+
         if (activeTab === 'comunidade') params.set('tab', 'comunidade')
         else params.delete('tab')
 
@@ -153,10 +163,42 @@ export function usePromptState(
 
         const qs = params.toString()
         if (qs === lastQueryRef.current) return
-        
+
         lastQueryRef.current = qs
         router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
     }, [prompt, numeroDoProcesso, idxProcesso, scope, instance, matter, activeTab, arrayDeDadosDoProcesso, promptInitialized, pathname, router, currentSearchParams])
+
+    useEffect(() => {
+        devLog('*** Source from URL:', sourceFromURL)
+        if (sourceFromURL !== SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT) return
+
+        // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
+        if (hasRunSource.current) return
+        hasRunSource.current = true
+        parent.postMessage({ type: 'get-source' } satisfies SourceMessageToParentType, '*')
+
+        // Listener para mensagem do popup
+        const handleMessage = (event: MessageEvent) => {
+            switch (event.data?.type) {
+                case 'set-source':
+                    const receivedMessage = event.data as SourceMessageFromParentType
+                    if (receivedMessage.payload.markdownContent) {
+                        const markdownContent = html2md(receivedMessage.payload.markdownContent)
+                        setSource(markdownContent)
+                        devLog(`Converted HTML to Markdown source from parent message.\n\n${markdownContent}`)
+                    } else if (receivedMessage.payload.htmlContent) {
+                        setSource(receivedMessage.payload.htmlContent)
+                        devLog(`Received source from parent message.\n\n${receivedMessage.payload.htmlContent}`)
+                    } else {
+                        devLog('No content received in set-source message from parent.')
+                    }
+            }
+        }
+        window.addEventListener('message', handleMessage)
+        return () => {
+            window.removeEventListener('message', handleMessage)
+        }
+    }, [sourceFromURL])
 
     return {
         prompt,
@@ -171,6 +213,8 @@ export function usePromptState(
         setActiveTab,
         pieceContent,
         setPieceContent,
+        source,
+        setSource,
         allLibraryDocuments,
         promptInitialized
     }

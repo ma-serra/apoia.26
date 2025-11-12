@@ -160,7 +160,7 @@ export function modelCalcUsage(model: string, usage: UsageType): { input_tokens:
     const inputTokens = (usage.inputTokens || 0) - cachedInputTokens
     const outputTokens = usage.outputTokens || 0
 
-    const approximate_cost = outputTokens > 0
+    const approximate_cost = (reasoningTokens + outputTokens) > 0
         ? (cachedInputTokens * cachedInputTokenPPM
             + inputTokens * inputTokenPPM
             + reasoningTokens * reasoningTokenPPM

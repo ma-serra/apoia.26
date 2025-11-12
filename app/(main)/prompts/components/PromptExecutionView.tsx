@@ -20,6 +20,7 @@ interface PromptExecutionViewProps {
     allLibraryDocuments: IALibrary[]
     setPrompt: (prompt: IAPromptList | null) => void
     setNumber: (number: string) => void
+    source: string | null
 }
 
 export function PromptExecutionView({
@@ -32,7 +33,8 @@ export function PromptExecutionView({
     model,
     allLibraryDocuments,
     setPrompt,
-    setNumber
+    setNumber,
+    source
 }: PromptExecutionViewProps) {
     return (
         <Container className="mt-4" fluid={false}>
@@ -47,13 +49,13 @@ export function PromptExecutionView({
                         {dadosDoProcesso ? (
                             <>
                                 <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
-                                <ProcessContents 
-                                    prompt={prompt} 
-                                    dadosDoProcesso={dadosDoProcesso} 
-                                    pieceContent={pieceContent} 
-                                    setPieceContent={setPieceContent} 
-                                    apiKeyProvided={apiKeyProvided} 
-                                    model={model} 
+                                <ProcessContents
+                                    prompt={prompt}
+                                    dadosDoProcesso={dadosDoProcesso}
+                                    pieceContent={pieceContent}
+                                    setPieceContent={setPieceContent}
+                                    apiKeyProvided={apiKeyProvided}
+                                    model={model}
                                     allLibraryDocuments={allLibraryDocuments}
                                 >
                                     <PromptHeader prompt={prompt} onPromptChange={() => setPrompt(null)} />
@@ -69,9 +71,9 @@ export function PromptExecutionView({
                     </div>
                 )
             ) : prompt.content.target === 'TEXTO' ? (
-                <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
+                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} />
             ) : prompt.content.target === 'REFINAMENTO' ? (
-                <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
+                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} />
             ) : null}
         </Container>
     )

@@ -39,7 +39,7 @@ export default async function Home({ searchParams }) {
         textos: []
     }
 
-    return <div className="mb-5">
+    return <div className="mb-3">
         <ServerContents sidekick />
     </div>
 

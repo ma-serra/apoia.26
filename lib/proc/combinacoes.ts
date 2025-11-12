@@ -122,7 +122,8 @@ export type TipoDeSinteseType = {
     nome: string,
     author?: string,
     // tipos: T[][],
-    padroes: MatchOperator[][],
+    target?: 'PROCESSO' | 'TEXTO' | 'CHAT' | 'REFINAMENTO',
+    padroes?: MatchOperator[][],
     produtos: (P | ProdutoCompleto)[],
     sort: number,
     status: StatusDeLancamento,
@@ -466,7 +467,7 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         status: StatusDeLancamento.PUBLICO,
         sort: 7,
         nome: 'Chat Padrão',
-        padroes: undefined,
+        target: 'CHAT',
         produtos: [P.CHAT_STANDALONE]
     },
 
@@ -564,6 +565,14 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         produtos: [P.PREV_BI_SENTENCA_LAUDO_DESFAVORAVEL, P.CHAT]
     },
 
+    REFINAMENTO_DE_TEXTO: {
+        status: StatusDeLancamento.PUBLICO,
+        sort: 1001,
+        nome: 'Refinamento de Texto',
+        target: 'REFINAMENTO',
+        produtos: [P.REFINAMENTO]
+    }
+
 
     // RESUMOS_ACORDAO: {
     //     sort: 4,
@@ -580,7 +589,7 @@ export type TipoDeSinteseEnum = keyof typeof TipoDeSinteseMap;
 export interface TipoDeSinteseValido {
     id: TipoDeSinteseEnum,
     nome: string,
-    padroes: MatchOperator[][],
+    padroes?: MatchOperator[][],
     produtos: InfoDeProduto[],
     status: StatusDeLancamento,
     relatorioDeAcervo?: boolean,

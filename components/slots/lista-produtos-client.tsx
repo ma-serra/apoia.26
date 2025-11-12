@@ -48,7 +48,7 @@ function textosAnteriores(Frm: FormHelper, requests: GeneratedContent[], idx: nu
         if (r.produto === P.CHAT) break
         const content = Frm.get(`generated[${i}]`)
         if (!content) break
-        textos.push({ numeroDoProcesso: r?.data?.numeroDoProcesso || '', slug: slugify(r.title), descr: r.title, texto: content?.json ? content.formated : content.raw, sigilo: '0' })
+        textos.push({ numeroDoProcesso: r?.data?.numeroDoProcesso || '', slug: slugify(r.title), descr: r.title, texto: content?.json ? content.formatted : content.raw, sigilo: '0' })
         i++
     }
     return textos

@@ -28,6 +28,7 @@ interface SidekickViewProps {
     resetToHome: () => void
     resetProcess: () => void
     resetPrompt: () => void
+    source: string | null
 }
 
 export function SidekickView({
@@ -44,7 +45,8 @@ export function SidekickView({
     setNumber,
     resetToHome,
     resetProcess,
-    resetPrompt
+    resetPrompt,
+    source
 }: SidekickViewProps) {
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -80,13 +82,13 @@ export function SidekickView({
     }, [promptsSidekick, prompt, setPrompt])
 
     return (
-        <Container className="mt-0 mb-4" fluid={true}>
-            <BreadCrumbs 
-                numeroDoProcesso={numeroDoProcesso} 
-                prompt={prompt} 
-                resetToHome={resetToHome} 
-                resetProcess={resetProcess} 
-                resetPrompt={resetPrompt} 
+        <Container className="mt-0 mb-3" fluid={true}>
+            <BreadCrumbs
+                numeroDoProcesso={numeroDoProcesso}
+                prompt={prompt}
+                resetToHome={resetToHome}
+                resetProcess={resetProcess}
+                resetPrompt={resetPrompt}
             />
             {prompt ? (
                 <>
@@ -98,13 +100,13 @@ export function SidekickView({
                                 {dadosDoProcesso ? (
                                     <>
                                         <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
-                                        <ProcessContents 
-                                            prompt={prompt} 
-                                            dadosDoProcesso={dadosDoProcesso} 
-                                            pieceContent={pieceContent} 
+                                        <ProcessContents
+                                            prompt={prompt}
+                                            dadosDoProcesso={dadosDoProcesso}
+                                            pieceContent={pieceContent}
                                             setPieceContent={setPieceContent}
-                                            apiKeyProvided={apiKeyProvided} 
-                                            model={model} 
+                                            apiKeyProvided={apiKeyProvided}
+                                            model={model}
                                             allLibraryDocuments={allLibraryDocuments}
                                             sidekick={true}
                                             promptButtons={
@@ -129,15 +131,15 @@ export function SidekickView({
                             </div>
                         )
                     ) : prompt.content.target === 'TEXTO' ? (
-                        <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} />
                     ) : prompt.content.target === 'REFINAMENTO' ? (
-                        <TargetText prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} />
                     ) : prompt.content.target === 'CHAT' ? (
-                        <Chat 
-                            definition={{ ...prompt, kind: slugify(prompt.kind) }} 
-                            data={{ textos: [] }} 
-                            model={model} 
-                            withTools={true} 
+                        <Chat
+                            definition={{ ...prompt, kind: slugify(prompt.kind) }}
+                            data={{ textos: [] }}
+                            model={model}
+                            withTools={true}
                             key={1}
                             footer={
                                 <div className="text-body-tertiary h-print">
@@ -149,7 +151,7 @@ export function SidekickView({
                                 <>
                                     <p className="text-center mt-3 ms-3 me-3">
                                         <img src="/apoia-logo-horiz-cor-fundo-claro.png" className="mb-3" style={{ height: "3em" }} />
-                                        <br/>
+                                        <br />
                                         Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma{' '}
                                         <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.
                                     </p>
@@ -163,11 +165,11 @@ export function SidekickView({
                 </>
             ) : numeroDoProcesso ? (
                 <>
-                    <ProcessTitle 
-                        id={dadosDoProcesso?.numeroDoProcesso} 
-                        onRemove={() => { 
+                    <ProcessTitle
+                        id={dadosDoProcesso?.numeroDoProcesso}
+                        onRemove={() => {
                             resetProcess()
-                        }} 
+                        }}
                     />
                     <p className="text-center mt-3 ms-3 me-3">
                         Selecione um dos seus prompts favoritos ou lance a Apoia em uma{' '}

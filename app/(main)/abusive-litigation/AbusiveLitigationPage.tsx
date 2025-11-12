@@ -26,9 +26,9 @@ type DadosDoProcessoAndControlType =
 const formatSimilarity = (value: number) => {
     if (isNaN(value)) return ''
     if (value === -1) return ''
-    const formated = `${(value * 100).toFixed(1)}`
-    if (formated === '100.0' && value < 1) return '99.9'
-    return formated
+    const formatted = `${(value * 100).toFixed(1)}`
+    if (formatted === '100.0' && value < 1) return '99.9'
+    return formatted
 }
 
 const fixOutrosNumerosDeProcessos = (outrosNumerosDeProcessos: string, numeroDoProcesso: string): string => {

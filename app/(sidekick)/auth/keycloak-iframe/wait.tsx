@@ -1,6 +1,6 @@
 'use client'
 
-import { envString } from '@/lib/utils/env'
+import { AuthPopupMessageType, MessageWithType } from '@/lib/utils/messaging'
 import { useEffect, useRef, useState } from 'react'
 
 const Wait = (props: { baseUrl: string }) => {
@@ -12,7 +12,7 @@ const Wait = (props: { baseUrl: string }) => {
         if (hasRun.current) return
         hasRun.current = true
         if (true) {
-            parent.postMessage(`auth-popup:${props.baseUrl}/auth/keycloak?popup=true&redirect=/auth/ready`, '*')
+            parent.postMessage({ type: 'auth-popup', payload: { url: `${props.baseUrl}/auth/keycloak?popup=true&redirect=/auth/ready` } } satisfies AuthPopupMessageType, '*')
         } else {
             const popup = window.open('/auth/keycloak?popup=true&redirect=/auth/ready', '_blank')
             if (!popup) {
@@ -23,14 +23,20 @@ const Wait = (props: { baseUrl: string }) => {
 
         // Listener para mensagem do popup
         const handleMessage = (event: MessageEvent) => {
-            if (event.data === 'auth-completed') {
-                window.removeEventListener('message', handleMessage)
-                // Recarrega a página principal para verificar autenticação
-                window.location.reload()
+            const data = event.data as MessageWithType
+            switch (data.type) {
+                case 'auth-completed': {
+                    window.removeEventListener('message', handleMessage)
+                    // Recarrega a página principal para verificar autenticação
+                    window.location.reload()
+                    break
+                }
             }
         }
-
         window.addEventListener('message', handleMessage)
+        return () => {
+            window.removeEventListener('message', handleMessage)
+        }
     }, [])
 
     return (

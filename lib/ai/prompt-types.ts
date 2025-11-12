@@ -96,7 +96,7 @@ export type PromptExecutionResultsType = {
 // Tipo que representa o resultado da execução de um prompt pelo componente AiContent
 export type ContentType = {
     raw: string
-    formated: string
+    formatted: string
     json: any
 }
 

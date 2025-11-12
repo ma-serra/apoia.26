@@ -82,7 +82,8 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         setActiveTab,
         pieceContent,
         setPieceContent,
-        allLibraryDocuments
+        allLibraryDocuments,
+        source
     } = promptState
 
     const promptOnClick = (kind: string, row: any) => {
@@ -161,6 +162,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                 resetToHome={resetToHome}
                 resetProcess={resetProcess}
                 resetPrompt={resetPrompt}
+                source={source}
             />
         )
     }
@@ -214,6 +216,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
             allLibraryDocuments={allLibraryDocuments}
             setPrompt={setPrompt}
             setNumber={setNumber}
+            source={source}
         />
     )
 }

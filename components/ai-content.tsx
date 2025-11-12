@@ -75,7 +75,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         if (params.onReady)
             params.onReady({
                 raw: text,
-                formated: preprocess(text, params.definition, params.data, complete, visualizationId, params.diffSource).text,
+                formatted: preprocess(text, params.definition, params.data, complete, visualizationId, params.diffSource).text,
                 json
             })
 

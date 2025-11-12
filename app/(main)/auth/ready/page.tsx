@@ -1,5 +1,6 @@
 'use client'
 
+import { AuthCompletedMessageType } from '@/lib/utils/messaging'
 import { useEffect } from 'react'
 
 export default function AuthReady() {
@@ -7,7 +8,7 @@ export default function AuthReady() {
     useEffect(() => {
         // Envia mensagem para o window.opener (página que abriu o popup)
         if (window.opener) {
-            window.opener.postMessage('auth-completed', '*')
+            window.opener.postMessage({ type: 'auth-completed' } satisfies AuthCompletedMessageType, '*')
             setTimeout(() => {
                 window.close()
             }, 50)

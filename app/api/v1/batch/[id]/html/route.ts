@@ -298,7 +298,7 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
             count++
         }
     }
-    return new NextResponse(formated(html, slugPrintTitle), { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    return new NextResponse(formatted(html, slugPrintTitle), { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 }
 
 const buildPDF = async (html: string, filename: string, disposition) => {
@@ -327,7 +327,7 @@ const buildPDF = async (html: string, filename: string, disposition) => {
     return new NextResponse(pdf, { headers })
 }
 
-const formated = (html: string, title?: string) => {
+const formatted = (html: string, title?: string) => {
     return `<html>
 <head>
 <title>${(title || 'Relatório Apoia').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>

@@ -1,29 +1,31 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import AiContent from '@/components/ai-content'
-import { Button } from 'react-bootstrap'
-import { PromptConfigType, PromptDefinitionType } from '@/lib/ai/prompt-types'
+import { Button, Col, Row } from 'react-bootstrap'
+import { ContentType, PromptConfigType, PromptDefinitionType } from '@/lib/ai/prompt-types'
 import { slugify } from '@/lib/utils/utils'
 import { IAPrompt } from '@/lib/db/mysql-types'
 import { VisualizationEnum } from '@/lib/ui/preprocess'
 import Print from '@/components/slots/print'
-import { promptExecuteBuilder } from '@/lib/ai/prompt'
+import { getInternalPrompt, promptExecuteBuilder } from '@/lib/ai/prompt'
+import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
+import { infoDeProduto } from '@/lib/proc/info-de-produto'
+import { ApproveMessageToParentType } from '@/lib/utils/messaging'
+import devLog from '@/lib/utils/log'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
 
-export default function TargetText({ prompt, visualization, apiKeyProvided }: { prompt: IAPrompt, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
-    const [markdown, setMarkdown] = useState('')
-    const [hidden, setHidden] = useState(true)
-    const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
-
-    const textChanged = (text) => {
-        setMarkdown(text)
-        setHidden(true)
+const buildDefinition = (prompt: IAPrompt): PromptDefinitionType => {
+    if (prompt.kind?.startsWith('^')) {
+        const key = prompt.kind.substring(1)
+        const def = TipoDeSinteseMap[key]
+        const produtos = def.produtos.map(p => infoDeProduto(p))
+        return getInternalPrompt(produtos[0].prompt)
     }
 
-    const definition: PromptDefinitionType = {
+    return {
         kind: `prompt-${prompt.id}`,
         prompt: prompt.content.prompt,
         systemPrompt: prompt.content.system_prompt,
@@ -31,8 +33,36 @@ export default function TargetText({ prompt, visualization, apiKeyProvided }: { 
         format: prompt.content.format,
         cacheControl: true,
     }
+}
+
+export default function TargetText({ prompt, source, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
+    devLog('TargetText source:', source)
+    const [markdown, setMarkdown] = useState(source || '')
+    const [hidden, setHidden] = useState(!source)
+    const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
+    const [content, setContent] = useState<ContentType>()
+
+    const textChanged = (text) => {
+        setMarkdown(text)
+        setHidden(true)
+    }
+
+    const definition: PromptDefinitionType = buildDefinition(prompt)
 
     const textoDescr = prompt.content.editor_label || 'Texto'
+
+    const onApprove = () => {
+        devLog('onApprove content:', content)
+        if (content) {
+            window.parent.postMessage({
+                type: 'approved',
+                payload: {
+                    markdownContent: content.raw,
+                    htmlContent: content.formatted,
+                }
+            } satisfies ApproveMessageToParentType, '*')
+        }
+    }
 
     const PromptParaCopiar = () => {
         if (!prompt || !markdown) return ''
@@ -52,15 +82,18 @@ export default function TargetText({ prompt, visualization, apiKeyProvided }: { 
         <div className="mb-3">
             {/* <h2 className="mt-3">{prompt.content.editor_label}</h2> */}
             {/* <PromptConfig kind="ementa" setPromptConfig={setPromptConfig} /> */}
-            <div className="form-group"><label>{textoDescr}</label></div>
-            <div className="alert alert-secondary mb-1 p-0">
-                <Suspense fallback={null}>
-                    <EditorComp markdown={markdown} onChange={textChanged} />
-                </Suspense>
-            </div>
-            {hidden && <>
-                <div className="text-body-tertiary">Cole o texto acima e clique em prosseguir.</div>
+            {!source && <>
+                <div className="form-group"><label>{textoDescr}</label></div>
+                <div className="alert alert-secondary mb-1 p-0">
+                    <Suspense fallback={null}>
+                        <EditorComp markdown={markdown} onChange={textChanged} />
+                    </Suspense>
+                </div>
+                {hidden && <>
+                    <div className="text-body-tertiary">Cole o texto acima e clique em prosseguir.</div>
+                </>}
             </>}
+
             {hidden && <>
                 {/* <Button disabled={!markdown || !orgaoJulgador} className="mt-3" onClick={() => setHidden(false)}>Gerar Ementa</Button> */}
                 <Button disabled={!markdown} className="mt-3" onClick={() => setHidden(false)}>Prosseguir</Button>
@@ -73,8 +106,11 @@ export default function TargetText({ prompt, visualization, apiKeyProvided }: { 
                         <AiContent
                             definition={definition}
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
-                            options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} />
-                        <Print numeroDoProcesso={slugify(prompt.name)} />
+                            options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={setContent} />
+                        <Row>
+                            {!!source && <Col><Button variant="success" onClick={onApprove}>Aprovar</Button></Col>}
+                            <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col>
+                        </Row>
                     </>
                     : <PromptParaCopiar></PromptParaCopiar>
                 }
