@@ -13,6 +13,16 @@ export const primeiroEUltimoNome = (nome: string): string => {
   return partes[0] + ' ' + partes[partes.length - 1]
 }
 
+export const primeiroNomeEIniciaisDosSobrenomes = (nome: string): string => {
+  const partes = nome.split(' ')
+  if (partes.length === 1) return nome
+  let resultado = partes[0] + ' '
+  for (let i = 1; i < partes.length; i++) {
+    resultado += partes[i].charAt(0) + '.'
+  }
+  return resultado
+}
+
 export const maiusculasEMinusculasOuSigla = (s) => {
   if (!s) return s
   const splited = s.split(' - ', 2)
@@ -267,7 +277,7 @@ export const isValidCPF = (d: string): boolean => {
 
 export const displayUserName = (name: string | null | undefined, username: string): string => {
   if (name && name.trim()) {
-    return name.trim();
+    return primeiroNomeEIniciaisDosSobrenomes(name.trim());
   }
   if (isValidCPF(username)) {
     return obfuscateString(username);
