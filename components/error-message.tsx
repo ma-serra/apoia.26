@@ -2,7 +2,7 @@
 
 function ErrorMsg(msg: string) {
 
-    
+
     if (msg.match(/O tempo de resposta do serviço Codex excedeu o limite/)) {
         return <>
             <p>A Apoia utiliza o Datalake para obter informações sobre os processos e também o conteúdo das peças processuais.</p>
@@ -14,10 +14,9 @@ function ErrorMsg(msg: string) {
 
     if (msg.match(/You exceeded your current quota, please check your plan and billing details/)) {
         return <>
-            <span>Você excedeu sua cota atual, por favor verifique seu plano e detalhes de cobrança.</span>
-            <p>Dependendo do seu plano e do modelo escolhido, você terá direito a determinado número de solicitações de IA por minuto. Quando esse limite é atingido, esse erro é lançado.</p>
-            <p>Atenção, <strong>não utilize o plano gratuito do Gemini API</strong>, pois os dados enviados são utilizados para treinar futuras versões da IA. O plano gratuito não está de acordo a LGPD e a Resolução 615/2025 do CNJ.</p>
-            <p>Para mais informações sobre este erro, acesse: https://ai.google.dev/gemini-api/docs/rate-limits</p>
+            <p>Você atingiu o limite de uso do seu plano atual. Por favor, verifique os detalhes do seu plano e a cota disponível para continuar utilizando o serviço normalmente.</p>
+            <p>Dependendo do tipo de plano e do modelo selecionado, há um número máximo de solicitações por minuto. Quando esse limite é atingido, o sistema pausa temporariamente o processamento.</p>
+            <p>Importante: evite utilizar o plano gratuito do Gemini API, pois ele armazena e utiliza os dados enviados para treinar versões futuras da IA. Esse uso não está em conformidade com a LGPD nem com a Resolução CNJ nº 615/2025.</p>
         </>
     }
 
@@ -25,7 +24,7 @@ function ErrorMsg(msg: string) {
         return <span>A chave da API informada não é válida. Por favor, forneça uma chave de API válida.</span>
     }
 
-    if (msg.match(/Não foram encontrados registros/) || msg.match(/ConsultaProcessoException - The specified key does not exist/)) 
+    if (msg.match(/Não foram encontrados registros/) || msg.match(/ConsultaProcessoException - The specified key does not exist/))
         return <>
             <p>A Apoia utiliza o Datalake para obter informações sobre os processos e também o conteúdo das peças processuais.</p>
             <p>A Apoia solicitou os metadados de um processo e o Datalake respondeu com um erro indicando que o processo não foi encontrado.</p>
