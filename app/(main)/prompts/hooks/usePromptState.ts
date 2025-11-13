@@ -5,7 +5,7 @@ import { slugify } from "@/lib/utils/utils"
 import { decodeEnumParam, findPromptFromParam } from "../utils/promptFilters"
 import { Instance, Matter, Scope } from "@/lib/proc/process-types"
 import { html2md } from "@/lib/utils/html2md"
-import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, MessageWithType, SourceMessageFromParentType, SourceMessageToParentType } from "@/lib/utils/messaging"
+import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 
 export interface UsePromptStateResult {
@@ -23,6 +23,10 @@ export interface UsePromptStateResult {
     setPieceContent: (content: any) => void
     source: string | null
     setSource: (source: string | null) => void
+    sinkFromURL: SinkFromURLType | null
+    setSinkFromURL: (sink: SinkFromURLType | null) => void
+    sinkMessageFromURL: string | null
+    setSinkMessageFromURL: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
 }
@@ -53,6 +57,8 @@ export function usePromptState(
     const [allLibraryDocuments, setAllLibraryDocuments] = useState<IALibrary[]>([])
     const [activeTab, setActiveTab] = useState<string>('principal')
     const [sourceFromURL, setSourceFromURL] = useState<string | null>(null)
+    const [sinkFromURL, setSinkFromURL] = useState<SinkFromURLType | null>(null)
+    const [sinkMessageFromURL, setSinkMessageFromURL] = useState<string | null>(null)
     const [source, setSource] = useState<string | null>(null)
     const hasRunSource = useRef(false)
 
@@ -83,6 +89,8 @@ export function usePromptState(
         const tram = currentSearchParams.get('tram')
         const tab = currentSearchParams.get('tab')
         const sourceFromURL = currentSearchParams.get('source')
+        const sinkFromURL = currentSearchParams.get('sink') as SinkFromURLType
+        const sinkMessageFromURL = currentSearchParams.get('sinkMessage')
 
         if (p) {
             const found = findPromptFromParam(prompts, p)
@@ -104,6 +112,8 @@ export function usePromptState(
         if (tram && /^\d+$/.test(tram)) setTramFromUrl(parseInt(tram))
         if (tab === 'comunidade') setActiveTab('comunidade')
         if (sourceFromURL) setSourceFromURL(sourceFromURL)
+        if (sinkFromURL) setSinkFromURL(sinkFromURL)
+        if (sinkMessageFromURL) setSinkMessageFromURL(sinkMessageFromURL)
 
         setPromptInitialized(true)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -215,6 +225,10 @@ export function usePromptState(
         setPieceContent,
         source,
         setSource,
+        sinkFromURL,
+        setSinkFromURL,
+        sinkMessageFromURL,
+        setSinkMessageFromURL,
         allLibraryDocuments,
         promptInitialized
     }

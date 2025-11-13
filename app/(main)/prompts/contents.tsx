@@ -83,7 +83,8 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         pieceContent,
         setPieceContent,
         allLibraryDocuments,
-        source
+        source,
+        sinkFromURL
     } = promptState
 
     const promptOnClick = (kind: string, row: any) => {
@@ -163,6 +164,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                 resetProcess={resetProcess}
                 resetPrompt={resetPrompt}
                 source={source}
+                sinkFromURL={sinkFromURL}
             />
         )
     }
@@ -217,6 +219,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
             setPrompt={setPrompt}
             setNumber={setNumber}
             source={source}
+            sinkFromURL={sinkFromURL}
         />
     )
 }

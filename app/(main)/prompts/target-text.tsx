@@ -12,7 +12,7 @@ import Print from '@/components/slots/print'
 import { getInternalPrompt, promptExecuteBuilder } from '@/lib/ai/prompt'
 import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { infoDeProduto } from '@/lib/proc/info-de-produto'
-import { ApproveMessageToParentType } from '@/lib/utils/messaging'
+import { ApproveMessageToParentType, SinkFromURLType } from '@/lib/utils/messaging'
 import devLog from '@/lib/utils/log'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
@@ -35,8 +35,7 @@ const buildDefinition = (prompt: IAPrompt): PromptDefinitionType => {
     }
 }
 
-export default function TargetText({ prompt, source, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
-    devLog('TargetText source:', source)
+export default function TargetText({ prompt, source, sinkFromURL, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
     const [markdown, setMarkdown] = useState(source || '')
     const [hidden, setHidden] = useState(!source)
     const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
@@ -51,7 +50,7 @@ export default function TargetText({ prompt, source, visualization, apiKeyProvid
 
     const textoDescr = prompt.content.editor_label || 'Texto'
 
-    const onApprove = () => {
+    const onApprove = (content: ContentType) => {
         devLog('onApprove content:', content)
         if (content) {
             window.parent.postMessage({
@@ -61,6 +60,13 @@ export default function TargetText({ prompt, source, visualization, apiKeyProvid
                     htmlContent: content.formatted,
                 }
             } satisfies ApproveMessageToParentType, '*')
+        }
+    }
+
+    const handleReady = (content: ContentType) => {
+        setContent(content)
+        if (sinkFromURL === 'to-parent-automatic') {
+            onApprove(content)
         }
     }
 
@@ -106,9 +112,9 @@ export default function TargetText({ prompt, source, visualization, apiKeyProvid
                         <AiContent
                             definition={definition}
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
-                            options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={setContent} />
+                            options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {!!source && <Col><Button variant="success" onClick={onApprove}>Aprovar</Button></Col>}
+                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => onApprove(content)}>Aprovar</Button></Col>}
                             <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col>
                         </Row>
                     </>

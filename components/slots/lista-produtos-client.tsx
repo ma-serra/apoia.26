@@ -18,6 +18,9 @@ import { InformationExtractionForm } from '@/components/InformationExtractionFor
 import { Pedidos } from './pedidos'
 import { PedidosFundamentacoesEDispositivos } from './pedidos-fundamentacoes-e-dispositivos'
 import { devLog } from '@/lib/utils/log'
+import { Button, Col, Row } from 'react-bootstrap'
+import Print from './print'
+import { ApproveMessageToParentType, SinkFromURLType } from '@/lib/utils/messaging'
 
 const Frm = new FormHelper(true)
 
@@ -115,8 +118,21 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
     </div>
 }
 
-export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode }) => {
+export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons, sinkFromURL }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType }) => {
     const [data, setData] = useState({ pending: 0 } as any)
+
+    const onApprove = (content: ContentType) => {
+        devLog('onApprove content:', content)
+        if (content) {
+            window.parent.postMessage({
+                type: 'approved',
+                payload: {
+                    markdownContent: content.raw,
+                    htmlContent: content.formatted,
+                }
+            } satisfies ApproveMessageToParentType, '*')
+        }
+    }
 
     if (!dadosDoProcesso || dadosDoProcesso.errorMsg) return ''
 
@@ -134,7 +150,21 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, pr
         ctrls.push(ctrl)
     }
 
-    return ctrls
+    let idxLastRequest = -1
+    for (let i = requests.length - 1; i >= 0; i--) {
+        if (Frm.get(`generated[${i}]`)) {
+            idxLastRequest = i
+            break
+        }
+    }
+
+    return <>
+        {ctrls}
+        {!!sidekick && <Row>
+            {sinkFromURL === 'to-parent' && idxLastRequest !== -1 && <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idxLastRequest}]`))}>Aprovar</Button></Col>}
+            <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col>
+        </Row>}
+    </>
 }
 
 

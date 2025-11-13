@@ -71,6 +71,10 @@
  * Usado em: `?source=from-parent`
  */
 export const SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT = 'from-parent'
+export const SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT = 'to-parent'
+export const SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY = 'to-parent-automatic'
+export type SourceFromURLType = 'from-parent'
+export type SinkFromURLType = 'to-parent' | 'to-parent-automatic'
 
 // ============================================================================
 // TIPOS DE MENSAGENS

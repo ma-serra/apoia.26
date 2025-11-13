@@ -8,6 +8,7 @@ import { SubtituloLoading } from "@/components/slots/subtitulo"
 import TargetText from "../target-text"
 import { VisualizationEnum } from "@/lib/ui/preprocess"
 import { PromptHeader } from "./PromptHeader"
+import { SinkFromURLType } from "@/lib/utils/messaging"
 
 interface PromptExecutionViewProps {
     prompt: IAPromptList
@@ -21,6 +22,7 @@ interface PromptExecutionViewProps {
     setPrompt: (prompt: IAPromptList | null) => void
     setNumber: (number: string) => void
     source: string | null
+    sinkFromURL: SinkFromURLType | null
 }
 
 export function PromptExecutionView({
@@ -34,7 +36,8 @@ export function PromptExecutionView({
     allLibraryDocuments,
     setPrompt,
     setNumber,
-    source
+    source,
+    sinkFromURL
 }: PromptExecutionViewProps) {
     return (
         <Container className="mt-4" fluid={false}>
@@ -57,6 +60,7 @@ export function PromptExecutionView({
                                     apiKeyProvided={apiKeyProvided}
                                     model={model}
                                     allLibraryDocuments={allLibraryDocuments}
+                                    sinkFromURL={sinkFromURL}
                                 >
                                     <PromptHeader prompt={prompt} onPromptChange={() => setPrompt(null)} />
                                 </ProcessContents>

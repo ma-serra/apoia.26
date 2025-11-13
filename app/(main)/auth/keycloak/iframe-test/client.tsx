@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Container } from "react-bootstrap"
-import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, MessageTypeType, SourceMessageFromParentType, MessageWithType, AuthPopupMessageType } from "@/lib/utils/messaging"
+import { SourceMessageFromParentType, MessageWithType, AuthPopupMessageType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 
 export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }) => {
@@ -57,10 +57,11 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
         }
     }, [])
 
-    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}`
+    //    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY}`
+    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025113%26prompt=minuta-de-sentenca%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}`
 
     return <Container className="mt-3 text-center">
         <h1>Keycloak Authentication Test Page</h1>
-        <iframe id="authFrame" style={{ "width": "500px", "height": "800px", border: "1px solid black" }} src={src}></iframe>
+        <iframe id="authFrame" style={{ "width": "500px", "height": "800px", border: "1px solid black" }} src={src} allow="clipboard-write"></iframe>
     </Container>
 }

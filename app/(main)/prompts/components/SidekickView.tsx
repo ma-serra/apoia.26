@@ -12,6 +12,7 @@ import Chat from "@/components/slots/chat"
 import { slugify } from "@/lib/utils/utils"
 import BreadCrumbs from "../breadcrumbs"
 import { useMemo, useState, useEffect } from "react"
+import { SinkFromURLType } from "@/lib/utils/messaging"
 
 interface SidekickViewProps {
     prompt: IAPromptList | null
@@ -28,7 +29,8 @@ interface SidekickViewProps {
     resetToHome: () => void
     resetProcess: () => void
     resetPrompt: () => void
-    source: string | null
+    source: string | null,
+    sinkFromURL: SinkFromURLType | null
 }
 
 export function SidekickView({
@@ -46,7 +48,8 @@ export function SidekickView({
     resetToHome,
     resetProcess,
     resetPrompt,
-    source
+    source,
+    sinkFromURL
 }: SidekickViewProps) {
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -109,6 +112,7 @@ export function SidekickView({
                                             model={model}
                                             allLibraryDocuments={allLibraryDocuments}
                                             sidekick={true}
+                                            sinkFromURL={sinkFromURL}
                                             promptButtons={
                                                 prompt?.kind === '^CHAT' ? (
                                                     <>
@@ -131,9 +135,9 @@ export function SidekickView({
                             </div>
                         )
                     ) : prompt.content.target === 'TEXTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} />
                     ) : prompt.content.target === 'REFINAMENTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} />
                     ) : prompt.content.target === 'CHAT' ? (
                         <Chat
                             definition={{ ...prompt, kind: slugify(prompt.kind) }}
