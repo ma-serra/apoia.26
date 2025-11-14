@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, Suspense, useState } from 'react'
-import { maiusculasEMinusculas, slugify } from '@/lib/utils/utils'
+import { slugify } from '@/lib/utils/utils'
 import { ResumoDePecaLoading } from '@/components/loading'
 import { calcMd5 } from '@/lib/utils/hash'
 import { ContentType, GeneratedContent, PromptDataType, TextoType } from '@/lib/ai/prompt-types'
@@ -19,9 +19,7 @@ import { Pedidos } from './pedidos'
 import { PedidosFundamentacoesEDispositivos } from './pedidos-fundamentacoes-e-dispositivos'
 import { devLog } from '@/lib/utils/log'
 import { Button, Col, Row } from 'react-bootstrap'
-import Print from './print'
 import { ApproveMessageToParentType, SinkFromURLType } from '@/lib/utils/messaging'
-import { on } from 'node:events'
 
 const Frm = new FormHelper(true)
 
@@ -121,8 +119,8 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
                 visualization={request.internalPrompt.template ? VisualizationEnum.DIFF_HIGHLIGHT_INCLUSIONS : undefined} diffSource={request.internalPrompt.template ? preprocessTemplate(request.internalPrompt.template) : undefined} dossierCode={dossierCode} />
         </Suspense>
         {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx}]`) && <Row className="h-print mb-3">
-                    <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idx}]`))} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
-                </Row>}
+            <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idx}]`))} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+        </Row>}
 
     </div>
 }
