@@ -466,7 +466,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     return (<div className={params.sidekick ? 'sidekick-container' : (messages.find(m => m.role === 'assistant') ? '' : 'd-print-none h-print')}>
         {params.sidekick
             ? <>
-                <div className="sidekick-chat-box ps-3 pe-3 pb-3">
+                <div className="sidekick-chat-box pb-3">
                     {messagesContent}
                     {params.promptButtons && !messages.find(m => m.role === 'user') && <div className="pb-0">{params.promptButtons}</div>}
                 </div>

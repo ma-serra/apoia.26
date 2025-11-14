@@ -57,8 +57,8 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
         }
     }, [])
 
-    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
-    // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025113%26prompt=minuta-de-sentenca%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
+    // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
+    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025113%26prompt=minuta-de-sentenca%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
 
     return <Container className="mt-3 text-center">
         <h1>Keycloak Authentication Test Page</h1>
