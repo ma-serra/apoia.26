@@ -17,6 +17,7 @@ import { parseSSEToUIMessageChunkStream } from '@/lib/ai/message-stream'
 import ErrorMessage from './error-message'
 import MessageStatus from './message-status'
 import MessageFooter from './message-footer'
+import { html2md } from '@/lib/utils/html2md'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -95,14 +96,32 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const handleShow = () => setShow(true)
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(preprocessed.text).then(() => {
-            setCopySuccess(true);
-            setTimeout(() => {
-                setCopySuccess(false);
-            }, 1000);
-        }, (err) => {
-            console.error('Erro ao copiar para a área de transferência: ', err);
-        });
+        if (navigator.clipboard && navigator.clipboard.write) {
+            // Use modern Clipboard API to copy as HTML
+            const clipboardItem = new ClipboardItem({
+                'text/html': new Blob([preprocessed.text], { type: 'text/html' }),
+                'text/plain': new Blob([html2md(preprocessed.text)], { type: 'text/plain' })
+            });
+
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                setCopySuccess(true);
+                setTimeout(() => {
+                    setCopySuccess(false);
+                }, 1000);
+            }).catch((err) => {
+                console.error('Erro ao copiar HTML para a área de transferência: ', err);
+            });
+        } else {
+            // Fallback to plain text copy
+            navigator.clipboard.writeText(htmlContent.replace(/<[^>]*>/g, '')).then(() => {
+                setCopySuccess(true);
+                setTimeout(() => {
+                    setCopySuccess(false);
+                }, 1000);
+            }).catch((err) => {
+                console.error('Erro ao copiar para a área de transferência: ', err);
+            });
+        }
     }
 
     const fetchStream = async () => {
