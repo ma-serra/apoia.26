@@ -1,0 +1,121 @@
+'use client'
+
+import { createContext, useContext, ReactNode, useMemo } from 'react'
+import { IAPromptList, IALibrary } from '@/lib/db/mysql-types'
+import { DadosDoProcessoType } from '@/lib/proc/process-types'
+import { useProcessData } from '../hooks/useProcessData'
+import { usePromptState } from '../hooks/usePromptState'
+import { SinkFromURLType } from '@/lib/utils/messaging'
+
+interface PromptContextValue {
+    // Process Data
+    numeroDoProcesso: string | null
+    setNumeroDoProcesso: (numero: string | null) => void
+    arrayDeDadosDoProcesso: DadosDoProcessoType[] | null
+    dadosDoProcesso: DadosDoProcessoType | null
+    idxProcesso: number
+    setIdxProcesso: (idx: number) => void
+    setDadosDoProcesso: (dados: DadosDoProcessoType | null) => void
+    number: string
+    setNumber: (number: string) => void
+    
+    // Prompt State
+    prompt: IAPromptList | null
+    setPrompt: (prompt: IAPromptList | null) => void
+    scope: string | undefined
+    setScope: (scope: string | undefined) => void
+    instance: string | undefined
+    setInstance: (instance: string | undefined) => void
+    matter: string | undefined
+    setMatter: (matter: string | undefined) => void
+    activeTab: string
+    setActiveTab: (tab: string) => void
+    pieceContent: any
+    setPieceContent: (content: any) => void
+    source: string | null
+    setSource: (source: string | null) => void
+    sinkFromURL: SinkFromURLType | null
+    setSinkFromURL: (sink: SinkFromURLType | null) => void
+    sinkButtonText: string | null
+    setSinkButtonText: (message: string | null) => void
+    allLibraryDocuments: IALibrary[]
+    promptInitialized: boolean
+}
+
+const PromptContext = createContext<PromptContextValue | undefined>(undefined)
+
+interface PromptProviderProps {
+    children: ReactNode
+    prompts: IAPromptList[]
+    toastMessage: (message: string, variant: string) => void
+}
+
+export function PromptProvider({ children, prompts, toastMessage }: PromptProviderProps) {
+    const processData = useProcessData(toastMessage)
+    const {
+        numeroDoProcesso,
+        setNumeroDoProcesso,
+        arrayDeDadosDoProcesso,
+        dadosDoProcesso,
+        idxProcesso,
+        setIdxProcesso,
+        setDadosDoProcesso,
+        number,
+        setNumber,
+        setTramFromUrl
+    } = processData
+
+    const promptState = usePromptState(
+        prompts,
+        numeroDoProcesso,
+        idxProcesso,
+        arrayDeDadosDoProcesso,
+        setNumeroDoProcesso,
+        setNumber,
+        setDadosDoProcesso as any,
+        setDadosDoProcesso,
+        setIdxProcesso,
+        setTramFromUrl
+    )
+
+    const value = useMemo(() => ({
+        // Process Data
+        numeroDoProcesso,
+        setNumeroDoProcesso,
+        arrayDeDadosDoProcesso,
+        dadosDoProcesso,
+        idxProcesso,
+        setIdxProcesso,
+        setDadosDoProcesso,
+        number,
+        setNumber,
+        
+        // Prompt State
+        ...promptState
+    }), [
+        numeroDoProcesso,
+        setNumeroDoProcesso,
+        arrayDeDadosDoProcesso,
+        dadosDoProcesso,
+        idxProcesso,
+        setIdxProcesso,
+        setDadosDoProcesso,
+        number,
+        setNumber,
+        promptState
+    ])
+
+    return (
+        <PromptContext.Provider value={value}>
+            {children}
+        </PromptContext.Provider>
+    )
+}
+
+export function usePromptContext() {
+    const context = useContext(PromptContext)
+    if (context === undefined) {
+        throw new Error('usePromptContext must be used within a PromptProvider')
+    }
+    return context
+}

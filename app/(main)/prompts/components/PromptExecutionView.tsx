@@ -1,6 +1,5 @@
 import { Container } from "react-bootstrap"
-import { IAPromptList, IALibrary } from "@/lib/db/mysql-types"
-import { DadosDoProcessoType } from "@/lib/proc/process-types"
+import { IAPromptList } from "@/lib/db/mysql-types"
 import ProcessNumberForm from "../process-number-form"
 import ProcessContents from "../process-contents"
 import ProcessTitle from "@/components/slots/process-title"
@@ -8,39 +7,32 @@ import { SubtituloLoading } from "@/components/slots/subtitulo"
 import TargetText from "../target-text"
 import { VisualizationEnum } from "@/lib/ui/preprocess"
 import { PromptHeader } from "./PromptHeader"
-import { SinkFromURLType } from "@/lib/utils/messaging"
+import { usePromptContext } from "../context/PromptContext"
 
 interface PromptExecutionViewProps {
-    prompt: IAPromptList
-    numeroDoProcesso: string | null
-    dadosDoProcesso: DadosDoProcessoType | null
-    pieceContent: any
-    setPieceContent: (content: any) => void
     apiKeyProvided: boolean
     model?: string
-    allLibraryDocuments: IALibrary[]
-    setPrompt: (prompt: IAPromptList | null) => void
-    setNumber: (number: string) => void
-    source: string | null
-    sinkFromURL: SinkFromURLType | null
-    sinkButtonText?: string | null
 }
 
 export function PromptExecutionView({
-    prompt,
-    numeroDoProcesso,
-    dadosDoProcesso,
-    pieceContent,
-    setPieceContent,
     apiKeyProvided,
-    model,
-    allLibraryDocuments,
-    setPrompt,
-    setNumber,
-    source,
-    sinkFromURL,
-    sinkButtonText
+    model
 }: PromptExecutionViewProps) {
+    const {
+        prompt,
+        numeroDoProcesso,
+        dadosDoProcesso,
+        pieceContent,
+        setPieceContent,
+        allLibraryDocuments,
+        setPrompt,
+        setNumber,
+        source,
+        sinkFromURL,
+        sinkButtonText
+    } = usePromptContext()
+    
+    if (!prompt) return null
     return (
         <Container className="mt-4" fluid={false}>
             {(prompt.content.target !== 'PROCESSO' || !numeroDoProcesso) && (

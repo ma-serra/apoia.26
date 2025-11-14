@@ -7,8 +7,7 @@ import { Toast, ToastContainer } from "react-bootstrap"
 import ErrorMessage from "@/components/error-message"
 import { addGenericCookie } from "./add-cookie"
 import TermosDeUso from "./termos-de-uso"
-import { usePromptState } from "./hooks/usePromptState"
-import { useProcessData } from "./hooks/useProcessData"
+import { PromptProvider, usePromptContext } from "./context/PromptContext"
 import { filterPrompts, getPromptsPrincipais, getPromptsComunidade, getPromptsSidekick } from "./utils/promptFilters"
 import { MainView } from "./components/MainView"
 import { SidekickView } from "./components/SidekickView"
@@ -21,10 +20,21 @@ export const copyPromptToClipboard = (prompt: IAPromptList) => {
     navigator.clipboard.writeText(s)
 }
 
-export function Contents({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean }) {
+function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean }) {
     const [toast, setToast] = useState<string>()
     const [toastVariant, setToastVariant] = useState<string>()
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
+
+    const {
+        prompt,
+        setPrompt,
+        numeroDoProcesso,
+        setNumeroDoProcesso,
+        setNumber,
+        scope,
+        instance,
+        matter
+    } = usePromptContext()
 
     useEffect(() => {
         const getCookie = (name: string): string | null => {
@@ -41,52 +51,6 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         setToast(message)
         setToastVariant(variant)
     }
-
-    const processData = useProcessData(toastMessage)
-    const {
-        numeroDoProcesso,
-        setNumeroDoProcesso,
-        arrayDeDadosDoProcesso,
-        dadosDoProcesso,
-        idxProcesso,
-        setIdxProcesso,
-        setDadosDoProcesso,
-        number,
-        setNumber,
-        setTramFromUrl
-    } = processData
-
-    const promptState = usePromptState(
-        prompts,
-        numeroDoProcesso,
-        idxProcesso,
-        arrayDeDadosDoProcesso,
-        setNumeroDoProcesso,
-        setNumber,
-        setDadosDoProcesso as any,
-        setDadosDoProcesso,
-        setIdxProcesso,
-        setTramFromUrl
-    )
-
-    const {
-        prompt,
-        setPrompt,
-        scope,
-        setScope,
-        instance,
-        setInstance,
-        matter,
-        setMatter,
-        activeTab,
-        setActiveTab,
-        pieceContent,
-        setPieceContent,
-        allLibraryDocuments,
-        source,
-        sinkFromURL,
-        sinkButtonText
-    } = promptState
 
     const promptOnClick = (kind: string, row: any) => {
         switch (kind) {
@@ -150,23 +114,12 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
 
         return (
             <SidekickView
-                prompt={prompt}
-                numeroDoProcesso={numeroDoProcesso}
-                dadosDoProcesso={dadosDoProcesso}
-                pieceContent={pieceContent}
-                setPieceContent={setPieceContent}
                 apiKeyProvided={apiKeyProvided}
                 model={model}
-                allLibraryDocuments={allLibraryDocuments}
                 promptsSidekick={promptsSidekick}
-                setPrompt={setPrompt}
-                setNumber={setNumber}
                 resetToHome={resetToHome}
                 resetProcess={resetProcess}
                 resetPrompt={resetPrompt}
-                source={source}
-                sinkFromURL={sinkFromURL}
-                sinkButtonText={sinkButtonText}
             />
         )
     }
@@ -180,22 +133,6 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                 onProcessNumberChange={setNumeroDoProcesso}
                 isModerator={isModerator}
                 apiKeyProvided={apiKeyProvided}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                number={number}
-                setNumber={setNumber}
-                numeroDoProcesso={numeroDoProcesso}
-                dadosDoProcesso={dadosDoProcesso}
-                arrayDeDadosDoProcesso={arrayDeDadosDoProcesso}
-                idxProcesso={idxProcesso}
-                setIdxProcesso={setIdxProcesso}
-                setDadosDoProcesso={setDadosDoProcesso}
-                scope={scope}
-                setScope={setScope}
-                instance={instance}
-                setInstance={setInstance}
-                matter={matter}
-                setMatter={setMatter}
             />
             <ToastContainer className="p-3" position="bottom-end" style={{ zIndex: 1 }}>
                 <Toast onClose={() => setToast('')} show={!!toast} delay={10000} bg={toastVariant} autohide key={toast}>
@@ -210,19 +147,32 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
         </>
     ) : (
         <PromptExecutionView
-            prompt={prompt}
-            numeroDoProcesso={numeroDoProcesso}
-            dadosDoProcesso={dadosDoProcesso}
-            pieceContent={pieceContent}
-            setPieceContent={setPieceContent}
             apiKeyProvided={apiKeyProvided}
             model={model}
-            allLibraryDocuments={allLibraryDocuments}
-            setPrompt={setPrompt}
-            setNumber={setNumber}
-            source={source}
-            sinkFromURL={sinkFromURL}
-            sinkButtonText={sinkButtonText}
         />
+    )
+}
+
+export function Contents({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean }) {
+    const [toast, setToast] = useState<string>()
+    const [toastVariant, setToastVariant] = useState<string>()
+
+    const toastMessage = (message: string, variant: string) => {
+        setToast(message)
+        setToastVariant(variant)
+    }
+
+    return (
+        <PromptProvider prompts={prompts} toastMessage={toastMessage}>
+            <ContentsInner 
+                prompts={prompts}
+                user={user}
+                user_id={user_id}
+                apiKeyProvided={apiKeyProvided}
+                model={model}
+                isModerator={isModerator}
+                sidekick={sidekick}
+            />
+        </PromptProvider>
     )
 }

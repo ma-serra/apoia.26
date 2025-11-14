@@ -1,6 +1,5 @@
 import { Container, Button } from "react-bootstrap"
-import { IAPromptList, IALibrary } from "@/lib/db/mysql-types"
-import { DadosDoProcessoType } from "@/lib/proc/process-types"
+import { IAPromptList } from "@/lib/db/mysql-types"
 import ProcessNumberForm from "../process-number-form"
 import ProcessContents from "../process-contents"
 import ProcessTitle from "@/components/slots/process-title"
@@ -12,47 +11,38 @@ import Chat from "@/components/slots/chat"
 import { slugify } from "@/lib/utils/utils"
 import BreadCrumbs from "../breadcrumbs"
 import { useMemo, useState, useEffect } from "react"
-import { SinkFromURLType } from "@/lib/utils/messaging"
+import { usePromptContext } from "../context/PromptContext"
 
 interface SidekickViewProps {
-    prompt: IAPromptList | null
-    numeroDoProcesso: string | null
-    dadosDoProcesso: DadosDoProcessoType | null
-    pieceContent: any
-    setPieceContent: (content: any) => void
     apiKeyProvided: boolean
     model?: string
-    allLibraryDocuments: IALibrary[]
     promptsSidekick: IAPromptList[]
-    setPrompt: (prompt: IAPromptList | null) => void
-    setNumber: (number: string) => void
     resetToHome: () => void
     resetProcess: () => void
     resetPrompt: () => void
-    source: string | null,
-    sinkFromURL: SinkFromURLType | null
-    sinkButtonText?: string | null
 }
 
 export function SidekickView({
-    prompt,
-    numeroDoProcesso,
-    dadosDoProcesso,
-    pieceContent,
-    setPieceContent,
     apiKeyProvided,
     model,
-    allLibraryDocuments,
     promptsSidekick,
-    setPrompt,
-    setNumber,
     resetToHome,
     resetProcess,
-    resetPrompt,
-    source,
-    sinkFromURL,
-    sinkButtonText,
+    resetPrompt
 }: SidekickViewProps) {
+    const {
+        prompt,
+        numeroDoProcesso,
+        dadosDoProcesso,
+        pieceContent,
+        setPieceContent,
+        allLibraryDocuments,
+        setPrompt,
+        setNumber,
+        source,
+        sinkFromURL,
+        sinkButtonText
+    } = usePromptContext()
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
     useEffect(() => {

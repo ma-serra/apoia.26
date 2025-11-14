@@ -1,40 +1,25 @@
 import { Form, FormGroup, FormLabel, FormSelect, Row, Spinner, Container } from "react-bootstrap"
 import { enumSorted } from "@/lib/ai/model-types"
-import { Instance, Matter, Scope, DadosDoProcessoType } from "@/lib/proc/process-types"
+import { Instance, Matter, Scope } from "@/lib/proc/process-types"
+import { usePromptContext } from "../context/PromptContext"
 
-interface ProcessFiltersProps {
-    number: string
-    setNumber: (number: string) => void
-    numeroDoProcesso: string | null
-    dadosDoProcesso: DadosDoProcessoType | null
-    arrayDeDadosDoProcesso: DadosDoProcessoType[] | null
-    idxProcesso: number
-    setIdxProcesso: (idx: number) => void
-    setDadosDoProcesso: (dados: DadosDoProcessoType) => void
-    scope: string | undefined
-    setScope: (scope: string | undefined) => void
-    instance: string | undefined
-    setInstance: (instance: string | undefined) => void
-    matter: string | undefined
-    setMatter: (matter: string | undefined) => void
-}
-
-export function ProcessFilters({
-    number,
-    setNumber,
-    numeroDoProcesso,
-    dadosDoProcesso,
-    arrayDeDadosDoProcesso,
-    idxProcesso,
-    setIdxProcesso,
-    setDadosDoProcesso,
-    scope,
-    setScope,
-    instance,
-    setInstance,
-    matter,
-    setMatter
-}: ProcessFiltersProps) {
+export function ProcessFilters() {
+    const {
+        number,
+        setNumber,
+        numeroDoProcesso,
+        dadosDoProcesso,
+        arrayDeDadosDoProcesso,
+        idxProcesso,
+        setIdxProcesso,
+        setDadosDoProcesso,
+        scope,
+        setScope,
+        instance,
+        setInstance,
+        matter,
+        setMatter
+    } = usePromptContext()
     return (
         <div className="bg-primary text-white">
             <Container className="p-2 pb-3" fluid={false}>

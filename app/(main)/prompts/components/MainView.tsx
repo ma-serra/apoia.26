@@ -3,7 +3,7 @@ import { IAPromptList } from "@/lib/db/mysql-types"
 import PromptsTable from "../prompts-table"
 import Link from "next/link"
 import { ProcessFilters } from "./ProcessFilters"
-import { DadosDoProcessoType } from "@/lib/proc/process-types"
+import { usePromptContext } from "../context/PromptContext"
 
 interface MainViewProps {
     promptsPrincipais: IAPromptList[]
@@ -12,22 +12,6 @@ interface MainViewProps {
     onProcessNumberChange: (numero: string) => void
     isModerator: boolean
     apiKeyProvided: boolean
-    activeTab: string
-    setActiveTab: (tab: string) => void
-    number: string
-    setNumber: (number: string) => void
-    numeroDoProcesso: string | null
-    dadosDoProcesso: DadosDoProcessoType | null
-    arrayDeDadosDoProcesso: DadosDoProcessoType[] | null
-    idxProcesso: number
-    setIdxProcesso: (idx: number) => void
-    setDadosDoProcesso: (dados: DadosDoProcessoType) => void
-    scope: string | undefined
-    setScope: (scope: string | undefined) => void
-    instance: string | undefined
-    setInstance: (instance: string | undefined) => void
-    matter: string | undefined
-    setMatter: (matter: string | undefined) => void
 }
 
 export function MainView({
@@ -36,42 +20,12 @@ export function MainView({
     promptOnClick,
     onProcessNumberChange,
     isModerator,
-    apiKeyProvided,
-    activeTab,
-    setActiveTab,
-    number,
-    setNumber,
-    numeroDoProcesso,
-    dadosDoProcesso,
-    arrayDeDadosDoProcesso,
-    idxProcesso,
-    setIdxProcesso,
-    setDadosDoProcesso,
-    scope,
-    setScope,
-    instance,
-    setInstance,
-    matter,
-    setMatter
+    apiKeyProvided
 }: MainViewProps) {
+    const { activeTab, setActiveTab } = usePromptContext()
     return (
         <>
-            <ProcessFilters
-                number={number}
-                setNumber={setNumber}
-                numeroDoProcesso={numeroDoProcesso}
-                dadosDoProcesso={dadosDoProcesso}
-                arrayDeDadosDoProcesso={arrayDeDadosDoProcesso}
-                idxProcesso={idxProcesso}
-                setIdxProcesso={setIdxProcesso}
-                setDadosDoProcesso={setDadosDoProcesso}
-                scope={scope}
-                setScope={setScope}
-                instance={instance}
-                setInstance={setInstance}
-                matter={matter}
-                setMatter={setMatter}
-            />
+            <ProcessFilters />
             <Container className="mt-2 mb-3" fluid={false}>
                 {!apiKeyProvided && (
                     <p className="text-center mt-3 mb-3">
