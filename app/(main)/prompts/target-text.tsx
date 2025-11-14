@@ -35,7 +35,7 @@ const buildDefinition = (prompt: IAPrompt): PromptDefinitionType => {
     }
 }
 
-export default function TargetText({ prompt, source, sinkFromURL, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
+export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, sinkButtonText?: string | null, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
     const [markdown, setMarkdown] = useState(source || '')
     const [hidden, setHidden] = useState(!source)
     const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
@@ -114,8 +114,8 @@ export default function TargetText({ prompt, source, sinkFromURL, visualization,
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
                             options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => onApprove(content)}>Aprovar</Button></Col>}
-                            <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col>
+                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => onApprove(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
+                            {/* <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col> */}
                         </Row>
                     </>
                     : <PromptParaCopiar></PromptParaCopiar>

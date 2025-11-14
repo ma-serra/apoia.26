@@ -21,6 +21,7 @@ import { devLog } from '@/lib/utils/log'
 import { Button, Col, Row } from 'react-bootstrap'
 import Print from './print'
 import { ApproveMessageToParentType, SinkFromURLType } from '@/lib/utils/messaging'
+import { on } from 'node:events'
 
 const Frm = new FormHelper(true)
 
@@ -77,7 +78,7 @@ function previousArePending(Frm: FormHelper, requests: GeneratedContent[], idx: 
     return false
 }
 
-function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string, sidekick?: boolean, promptButtons?: ReactNode) {
+function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number, dossierCode: string, model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType | null, sinkButtonText?: string | null, onApprove?: (content: ContentType) => void) {
     const request = requests[idx]
     let requestComTextosAnteriores = request
 
@@ -89,7 +90,6 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
         Frm.set(informationExtractionVariableName, undefined)
     }
     const information_extraction = Frm.get(informationExtractionVariableName)
-
     const pedidos = Frm.get('pedidos')
     if (request.produto === P.PEDIDOS && pedidos) {
         return <Pedidos pedidos={pedidos} request={request} Frm={Frm} key={idx} />
@@ -97,7 +97,12 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
         if (previousArePending(Frm, requests, idx)) return null
         requestComTextosAnteriores = { ...requestComTextosAnteriores, data: dataComTextosAnteriores(Frm, requests, idx) }
         if (pedidos) {
-            return <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} onBusy={() => onBusy(Frm, requests, idx + 1)} onReady={(content) => onReady(Frm, requests, idx + 1, content)} />
+            return <>
+                <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} onBusy={() => onBusy(Frm, requests, idx + 1)} onReady={(content) => onReady(Frm, requests, idx + 1, content)} />
+                {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx + 1}]`) && <Row className="h-print mb-3">
+                    <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idx + 1}]`))} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+                </Row>}
+            </>
         }
     } else if (isInformationExtractionPrompt(request.internalPrompt?.prompt) && information_extraction) {
         return <div key={idx}>
@@ -115,10 +120,14 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
             <AiContent definition={request.internalPrompt} data={requestComTextosAnteriores.data} key={`prompt: ${request.promptSlug} data: ${dataHash}`} onBusy={() => onBusy(Frm, requests, idx)} onReady={(content) => onReady(Frm, requests, idx, content)}
                 visualization={request.internalPrompt.template ? VisualizationEnum.DIFF_HIGHLIGHT_INCLUSIONS : undefined} diffSource={request.internalPrompt.template ? preprocessTemplate(request.internalPrompt.template) : undefined} dossierCode={dossierCode} />
         </Suspense>
+        {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx}]`) && <Row className="h-print mb-3">
+                    <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idx}]`))} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+                </Row>}
+
     </div>
 }
 
-export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons, sinkFromURL }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType }) => {
+export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons, sinkFromURL, sinkButtonText }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType, sinkButtonText?: string }) => {
     const [data, setData] = useState({ pending: 0 } as any)
 
     const onApprove = (content: ContentType) => {
@@ -145,26 +154,12 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, pr
     const ctrls = []
     for (let idx = 0; idx < requests.length; idx++) {
         if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) continue
-        const ctrl = requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons)
+        const ctrl = requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons, sinkFromURL, sinkButtonText, onApprove)
         if (ctrl === null) break
         ctrls.push(ctrl)
     }
 
-    let idxLastRequest = -1
-    for (let i = requests.length - 1; i >= 0; i--) {
-        if (Frm.get(`generated[${i}]`)) {
-            idxLastRequest = i
-            break
-        }
-    }
-
-    return <>
-        {ctrls}
-        {!!sidekick && <Row>
-            {sinkFromURL === 'to-parent' && idxLastRequest !== -1 && <Col><Button variant="success" onClick={() => onApprove(Frm.get(`generated[${idxLastRequest}]`))}>Aprovar</Button></Col>}
-            <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col>
-        </Row>}
-    </>
+    return ctrls
 }
 
 

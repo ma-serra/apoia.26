@@ -25,8 +25,8 @@ export interface UsePromptStateResult {
     setSource: (source: string | null) => void
     sinkFromURL: SinkFromURLType | null
     setSinkFromURL: (sink: SinkFromURLType | null) => void
-    sinkMessageFromURL: string | null
-    setSinkMessageFromURL: (message: string | null) => void
+    sinkButtonText: string | null
+    setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
 }
@@ -58,7 +58,7 @@ export function usePromptState(
     const [activeTab, setActiveTab] = useState<string>('principal')
     const [sourceFromURL, setSourceFromURL] = useState<string | null>(null)
     const [sinkFromURL, setSinkFromURL] = useState<SinkFromURLType | null>(null)
-    const [sinkMessageFromURL, setSinkMessageFromURL] = useState<string | null>(null)
+    const [sinkButtonText, setSinkButtonText] = useState<string | null>(null)
     const [source, setSource] = useState<string | null>(null)
     const hasRunSource = useRef(false)
 
@@ -90,7 +90,7 @@ export function usePromptState(
         const tab = currentSearchParams.get('tab')
         const sourceFromURL = currentSearchParams.get('source')
         const sinkFromURL = currentSearchParams.get('sink') as SinkFromURLType
-        const sinkMessageFromURL = currentSearchParams.get('sinkMessage')
+        const sinkButtonText = currentSearchParams.get('sink-button-text')
 
         if (p) {
             const found = findPromptFromParam(prompts, p)
@@ -113,7 +113,7 @@ export function usePromptState(
         if (tab === 'comunidade') setActiveTab('comunidade')
         if (sourceFromURL) setSourceFromURL(sourceFromURL)
         if (sinkFromURL) setSinkFromURL(sinkFromURL)
-        if (sinkMessageFromURL) setSinkMessageFromURL(sinkMessageFromURL)
+        if (sinkButtonText) setSinkButtonText(sinkButtonText)
 
         setPromptInitialized(true)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,8 +227,8 @@ export function usePromptState(
         setSource,
         sinkFromURL,
         setSinkFromURL,
-        sinkMessageFromURL,
-        setSinkMessageFromURL,
+        sinkButtonText,
+        setSinkButtonText,
         allLibraryDocuments,
         promptInitialized
     }

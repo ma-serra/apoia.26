@@ -7,7 +7,7 @@ import Wait from "./wait"
 const AuthKeycloakInAIFrame = async ({ searchParams }) => {
     const sp = await searchParams
     const raw = sp?.redirect || sp?.callbackUrl
-    const callbackUrl = (typeof raw === 'string' && /^(\/|http:\/\/|https:\/\/)\S+$/.test(raw)) ? raw : '/'
+    const callbackUrl = (typeof raw === 'string' && /^(\/|http:\/\/|https:\/\/).+$/.test(raw)) ? raw : '/'
     const url = process.env.NEXT_PUBLIC_URL
 
     const session = await getServerSession(authOptions)

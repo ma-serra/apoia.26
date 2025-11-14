@@ -23,6 +23,7 @@ interface PromptExecutionViewProps {
     setNumber: (number: string) => void
     source: string | null
     sinkFromURL: SinkFromURLType | null
+    sinkButtonText?: string | null
 }
 
 export function PromptExecutionView({
@@ -37,7 +38,8 @@ export function PromptExecutionView({
     setPrompt,
     setNumber,
     source,
-    sinkFromURL
+    sinkFromURL,
+    sinkButtonText
 }: PromptExecutionViewProps) {
     return (
         <Container className="mt-4" fluid={false}>
@@ -61,6 +63,7 @@ export function PromptExecutionView({
                                     model={model}
                                     allLibraryDocuments={allLibraryDocuments}
                                     sinkFromURL={sinkFromURL}
+                                    sinkButtonText={sinkButtonText}
                                 >
                                     <PromptHeader prompt={prompt} onPromptChange={() => setPrompt(null)} />
                                 </ProcessContents>

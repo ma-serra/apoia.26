@@ -31,6 +31,7 @@ interface SidekickViewProps {
     resetPrompt: () => void
     source: string | null,
     sinkFromURL: SinkFromURLType | null
+    sinkButtonText?: string | null
 }
 
 export function SidekickView({
@@ -49,7 +50,8 @@ export function SidekickView({
     resetProcess,
     resetPrompt,
     source,
-    sinkFromURL
+    sinkFromURL,
+    sinkButtonText,
 }: SidekickViewProps) {
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -113,6 +115,7 @@ export function SidekickView({
                                             allLibraryDocuments={allLibraryDocuments}
                                             sidekick={true}
                                             sinkFromURL={sinkFromURL}
+                                            sinkButtonText={sinkButtonText || undefined}
                                             promptButtons={
                                                 prompt?.kind === '^CHAT' ? (
                                                     <>
@@ -135,9 +138,9 @@ export function SidekickView({
                             </div>
                         )
                     ) : prompt.content.target === 'TEXTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} />
                     ) : prompt.content.target === 'REFINAMENTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} />
                     ) : prompt.content.target === 'CHAT' ? (
                         <Chat
                             definition={{ ...prompt, kind: slugify(prompt.kind) }}

@@ -20,7 +20,7 @@ import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
 import { SinkFromURLType } from "@/lib/utils/messaging";
 
-export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons, sinkFromURL }: {
+export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons, sinkFromURL, sinkButtonText }: {
     prompt: IAPrompt,
     dadosDoProcesso: DadosDoProcessoType,
     pieceContent: any,
@@ -32,6 +32,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     sidekick?: boolean
     promptButtons?: ReactNode
     sinkFromURL?: SinkFromURLType
+    sinkButtonText?: string
 }) {
     const [selectedPieces, setSelectedPieces] = useState<PecaType[] | null>(null)
     const [defaultPieceIds, setDefaultPieceIds] = useState<string[] | null>(null)
@@ -209,7 +210,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             {readyToStartAI && requests?.length > 0 && (
                 apiKeyProvided
                     ? <>
-                        <ListaDeProdutos dadosDoProcesso={dadosDoProcesso} requests={requests} model={model} sidekick={sidekick} promptButtons={promptButtons} sinkFromURL={sinkFromURL} />
+                        <ListaDeProdutos dadosDoProcesso={dadosDoProcesso} requests={requests} model={model} sidekick={sidekick} promptButtons={promptButtons} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} />
                         {!sidekick && <Print numeroDoProcesso={dadosDoProcesso.numeroDoProcesso} />}
                     </>
                     : <PromptParaCopiar dadosDoProcesso={dadosDoProcesso} requests={requests} />
