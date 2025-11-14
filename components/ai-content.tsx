@@ -96,11 +96,13 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const handleShow = () => setShow(true)
 
     const handleCopy = () => {
+        const html = preprocessed.text
+        const markdown = html2md(preprocessed.text)
         if (navigator.clipboard && navigator.clipboard.write) {
             // Use modern Clipboard API to copy as HTML
             const clipboardItem = new ClipboardItem({
-                'text/html': new Blob([preprocessed.text], { type: 'text/html' }),
-                'text/plain': new Blob([html2md(preprocessed.text)], { type: 'text/plain' })
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([markdown], { type: 'text/plain' })
             });
 
             navigator.clipboard.write([clipboardItem]).then(() => {
@@ -113,7 +115,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
             });
         } else {
             // Fallback to plain text copy
-            navigator.clipboard.writeText(htmlContent.replace(/<[^>]*>/g, '')).then(() => {
+            navigator.clipboard.writeText(markdown).then(() => {
                 setCopySuccess(true);
                 setTimeout(() => {
                     setCopySuccess(false);
