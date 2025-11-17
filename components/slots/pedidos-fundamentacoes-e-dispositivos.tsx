@@ -84,9 +84,9 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
 
     return <>
         <h2>{maiusculasEMinusculas(request.title)}</h2>
-        <div className="alert alert-warning pt-2 pb-3">
+        <div className="alert alert-warning pt-2 pb-0">
             {pedidos.pedidos.map((pedido, i) =>
-                <div className="mb-4" key={i}>
+                <div className="mb-3" key={i}>
                     {false && <div className="row">
                         <Frm.Select label="Liminar" name={`pedidos.pedidos[${i}].liminar`} options={tiposDeLiminar} width={2} />
                         <Frm.Select label="Tipo de Pedido" name={`pedidos.pedidos[${i}].tipoDePedido`} options={tiposDePedido} width={2} />
@@ -94,8 +94,11 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
                         {Frm.get(`pedidos.pedidos[${i}].verba`) !== 'NENHUMA' && <Frm.Input label="Valor" name={`pedidos.pedidos[${i}].valor`} width={2} />}
                     </div>}
                     <div className="row mt-1">
-                        <Frm.TextArea label={`${i + 1}) Pedido`} name={`pedidos.pedidos[${i}].texto`} width={''} />
+                        <div className="col"><span><strong>{i + 1})</strong></span>{` ${Frm.get(`pedidos.pedidos[${i}].texto`)}`}</div>
                     </div>
+                    {/* <div className="row">
+                        <Frm.TextArea label={`${i + 1}) Pedido`} name={`pedidos.pedidos[${i}].texto`} width={''} />
+                    </div> */}
                     {pedidos.pedidos[i]?.fundamentacoes?.length > 0 && <div className="row mt-1">
                         <div className="col-6">
                             <Frm.CheckBoxes label="Sugestões de fundamentações pró autor" labelsAndNames={pedidos.pedidos[i].fundamentacoes.map((p, idx) => (p.tipo === 'PROCEDENTE' ? { label: p.texto, name: `pedidos.pedidos[${i}].fundamentacoes[${idx}].selecionada` } : null))} onClick={(label, name, checked) => { if (checked) Frm.set(`pedidos.pedidos[${i}].dispositivo`, 'PROCEDENTE') }} width={12} />
@@ -105,8 +108,8 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
                         </div>
                     </div>}
                     <div className="row mt-1">
-                        <Frm.TextArea label="Fundamentação (opcional)" name={`pedidos.pedidos[${i}].fundamentacao`} width={''} />
-                        <Frm.Select label="Dispositivo" name={`pedidos.pedidos[${i}].dispositivo`} options={tiposDeDispositivo} width={2} />
+                        <Frm.TextArea label="Fundamentação (opcional)" name={`pedidos.pedidos[${i}].fundamentacao`} width={'col-12 col-sm-8'} />
+                        <Frm.Select label="Dispositivo" name={`pedidos.pedidos[${i}].dispositivo`} options={tiposDeDispositivo} width={'col-12 col-sm-4'} />
                     </div>
                 </div>
             )}
