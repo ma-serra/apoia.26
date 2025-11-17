@@ -2,6 +2,36 @@
 
 function ErrorMsg(msg: string) {
 
+    if (msg.match(/Não é possível armazenar um resultado de IA vazio/)) {
+        return <>
+            <p>Ocorreu um erro ao processar a solicitação de IA porque o resultado retornado pela API de IA está vazio.</p>
+            <p>Isso pode acontecer por diversos motivos, o prompt pode estar incorreto, os dados do processo podem estar incompletos ou incorretos, ou podem haver problemas temporários na API de IA.</p>
+            <p>Sugiro tentar novamente mais tarde. Se o problema persistir, tente outro prompt.</p>
+        </>
+    }
+
+    if (msg.match(/Tipo de conteúdo não suportado: application\/octet-stream/)) {
+        return <>
+            <p>A Apoia acessar o conteúdo de uma peça processual que está em um formato não suportado.</p>
+            <p>Esse erro normalmente acontece quando a peça processual está em um formato diferente de PDF, como por exemplo um arquivo de imagem (JPG, PNG, etc) ou um arquivo compactado (ZIP, RAR, etc).</p>
+            <p>Por favor, verifique o conteúdo da peça processual no sistema do tribunal para confirmar o formato do arquivo.</p>
+        </>
+    }
+
+    if (msg.match(/Your credit balance is too low/)) {
+        return <>
+            <p>Seu saldo de créditos está muito baixo.</p>
+            <p>Por favor, adicione mais créditos para continuar utilizando o serviço normalmente.</p>
+        </>
+    }
+
+    if (msg.match(/The input token count exceeds the maximum number of tokens allowed/) || msg.match(/prompt is too long/)) {
+        return <>
+            <p>Cada modelo de inteligência artificial tem um limite da quantidade de texto que consegue processar.</p>
+            <p>Esse erro significa que o texto que você está tentando processar é muito grande para o modelo que você escolheu.</p>
+            <p>Por favor, tente reduzir o tamanho do texto ou escolher um modelo que aceite textos maiores.</p>
+        </>
+    }
 
     if (msg.match(/O tempo de resposta do serviço Codex excedeu o limite/)) {
         return <>
