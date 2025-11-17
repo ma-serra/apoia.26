@@ -42,6 +42,8 @@ export const applyTextsAndVariables = (text: string, data: PromptDataType, jsonS
         return promptText
     })
 
+    text = text.replace(/{{semPromptPadrao}}\n?/g, '')
+
     text = text.replace('{{jsonSchema}}', jsonSchema || 'JSON Schema não definido')
 
     text = text.replace('{{textos}}', allTexts)
@@ -98,7 +100,7 @@ export async function getPiecesWithContent(dadosDoProcesso: DadosDoProcessoType,
 
 export const promptExecuteBuilder = (definition: PromptDefinitionType, data: PromptDataType, libraryPrompt?: string): PromptExecuteType => {
     const message: ModelMessage[] = []
-    if (definition?.kind !== 'chat' && definition?.kind !== 'chat_standalone') {
+    if (definition?.kind !== 'chat' && definition?.kind !== 'chat_standalone' && !(definition?.systemPrompt?.includes('{{semPromptPadrao}}') || definition?.prompt?.includes('{{semPromptPadrao}}'))) {
         sistema.split('\n---\n').forEach(part => {
             const content = applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt)
             devLog('System message content type:', typeof content, 'isArray:', Array.isArray(content))

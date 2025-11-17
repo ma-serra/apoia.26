@@ -571,6 +571,14 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         nome: 'Refinamento de Texto',
         target: 'REFINAMENTO',
         produtos: [P.REFINAMENTO]
+    },
+
+    REVISAO_DE_TEXTO: {
+        status: StatusDeLancamento.PUBLICO,
+        sort: 1001,
+        nome: 'Revisão Ortográfica',
+        target: 'REFINAMENTO',
+        produtos: [P.REVISAO]
     }
 
 
