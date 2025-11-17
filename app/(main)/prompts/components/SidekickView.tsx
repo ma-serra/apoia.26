@@ -41,7 +41,8 @@ export function SidekickView({
         setNumber,
         source,
         sinkFromURL,
-        sinkButtonText
+        sinkButtonText,
+        promptInitialized
     } = usePromptContext()
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -75,6 +76,10 @@ export function SidekickView({
             </div>
         )
     }, [promptsSidekick, prompt, setPrompt])
+
+    if (!promptInitialized) {
+        return null
+    }
 
     return (
         <Container className="mt-0 mb-3" fluid={true}>
