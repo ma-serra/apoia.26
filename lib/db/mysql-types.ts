@@ -549,3 +549,23 @@ export type PromptUsageDetailRow = {
     username: string | null
     usage_count: number
 }
+
+// AI Generations Report Types
+export type AIGenerationReportRow = {
+    id: number
+    created_at: Date
+    user_id: number | null
+    user_name: string | null
+    username: string | null
+    court_id: number | null
+    prompt_key: string
+    prompt_name: string
+    model: string
+    dossier_code: string | null
+    cached_input_tokens: number | null
+    input_tokens: number | null
+    output_tokens: number | null
+    reasoning_tokens: number | null
+    total_tokens: number
+    approximate_cost: number | null
+}
