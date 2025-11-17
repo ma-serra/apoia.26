@@ -1871,5 +1871,90 @@ export class Dao {
             return del > 0
         })
     }
+
+    // Prompt Usage Report
+    static async retrievePromptUsageReport(params: { court_id?: number, startDate?: string, endDate?: string }): Promise<mysqlTypes.PromptUsageReportRow[]> {
+        if (!knex) return []
+        const { court_id, startDate, endDate } = params
+
+        // Load all prompts to map prompt-[id] to name
+        const prompts = await knex('ia_prompt').select('id', 'name')
+        const promptMap = new Map<number, string>()
+        prompts.forEach(p => promptMap.set(p.id, p.name))
+
+        const query = knex('ia_generation as g')
+            .leftJoin('ia_user as u', 'u.id', 'g.created_by')
+            .select(
+                knex.raw('g.prompt as prompt_key'),
+                knex.raw('EXTRACT(MONTH FROM g.created_at) as month'),
+                knex.raw('EXTRACT(YEAR FROM g.created_at) as year'),
+                knex.raw('COUNT(g.id) as usage_count')
+            )
+
+        if (court_id) {
+            query.where('u.court_id', court_id)
+        }
+        if (startDate) {
+            query.andWhere('g.created_at', '>=', startDate + ' 00:00:00')
+        }
+        if (endDate) {
+            query.andWhere('g.created_at', '<=', endDate + ' 23:59:59')
+        }
+
+        query.groupBy('g.prompt', knex.raw('EXTRACT(MONTH FROM g.created_at)'), knex.raw('EXTRACT(YEAR FROM g.created_at)'))
+        query.orderBy('year', 'desc').orderBy('month', 'desc').orderBy('g.prompt')
+
+        const rows: any[] = await query
+
+        return rows.map(r => {
+            let promptName = r.prompt_key
+            // Check if it's in format prompt-[number]
+            const match = /^prompt-(\d+)$/.exec(r.prompt_key)
+            if (match) {
+                const promptId = parseInt(match[1], 10)
+                promptName = promptMap.get(promptId) || r.prompt_key
+            }
+            return {
+                prompt_key: r.prompt_key,
+                prompt_name: promptName,
+                month: Number(r.month),
+                year: Number(r.year),
+                usage_count: Number(r.usage_count) || 0,
+            }
+        })
+    }
+
+    static async retrievePromptUsageDetail(params: { prompt_key: string, month: number, year: number, court_id?: number }): Promise<mysqlTypes.PromptUsageDetailRow[]> {
+        if (!knex) return []
+        const { prompt_key, month, year, court_id } = params
+
+        const query = knex('ia_generation as g')
+            .leftJoin('ia_user as u', 'u.id', 'g.created_by')
+            .select(
+                knex.raw('u.id as user_id'),
+                knex.raw('u.name as user_name'),
+                knex.raw('u.username as username'),
+                knex.raw('COUNT(g.id) as usage_count')
+            )
+            .where('g.prompt', prompt_key)
+            .whereRaw('EXTRACT(MONTH FROM g.created_at) = ?', [month])
+            .whereRaw('EXTRACT(YEAR FROM g.created_at) = ?', [year])
+
+        if (court_id) {
+            query.where('u.court_id', court_id)
+        }
+
+        query.groupBy('u.id', 'u.name', 'u.username')
+        query.orderBy('usage_count', 'desc')
+
+        const rows: any[] = await query
+
+        return rows.map(r => ({
+            user_id: Number(r.user_id) || 0,
+            user_name: r.user_name ?? null,
+            username: r.username ?? null,
+            usage_count: Number(r.usage_count) || 0,
+        }))
+    }
 }
 

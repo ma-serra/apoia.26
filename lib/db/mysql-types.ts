@@ -533,3 +533,19 @@ export type IABatchSummary = {
     avgDurationMs: number | null
     etaMs: number | null
 }
+
+// Prompt Usage Report Types
+export type PromptUsageReportRow = {
+    prompt_key: string
+    prompt_name: string
+    month: number
+    year: number
+    usage_count: number
+}
+
+export type PromptUsageDetailRow = {
+    user_id: number
+    user_name: string | null
+    username: string | null
+    usage_count: number
+}
