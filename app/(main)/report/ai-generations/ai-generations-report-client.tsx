@@ -1,16 +1,25 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import dayjs from 'dayjs'
 import { Container, Row, Col, Form, Button, Spinner, Alert } from 'react-bootstrap'
-import PivotTableUI from 'react-pivottable/PivotTableUI'
 import 'react-pivottable/pivottable.css'
-import TableRenderers from 'react-pivottable/TableRenderers'
-import Plot from 'react-plotly.js'
-import createPlotlyRenderers from 'react-pivottable/PlotlyRenderers'
 import ErrorMessage from '@/components/error-message'
 
-const PlotlyRenderers = createPlotlyRenderers(Plot)
+// Fix para compatibilidade do react-pivottable com React 18+
+if (typeof window !== 'undefined') {
+    const ReactDOM = require('react-dom')
+    if (!ReactDOM.hasOwnProperty) {
+        ReactDOM.hasOwnProperty = Object.prototype.hasOwnProperty.bind(ReactDOM)
+    }
+    if (!ReactDOM.findDOMNode) {
+        ReactDOM.findDOMNode = (instance: any) => {
+            if (instance == null) return null
+            if (instance.nodeType === 1) return instance
+            return instance.current || null
+        }
+    }
+}
 
 interface AIGenerationRow {
     id: number
@@ -61,6 +70,26 @@ export default function AIGenerationsReportClient() {
     const [rows, setRows] = useState<AIGenerationRow[]>([])
     const [error, setError] = useState<string | null>(null)
     const [pivotState, setPivotState] = useState({})
+    const [renderers, setRenderers] = useState<any>(null)
+    const [PivotTableUI, setPivotTableUI] = useState<any>(null)
+
+    // Carregar componentes dinamicamente
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            import('react-pivottable/PivotTableUI').then(module => {
+                setPivotTableUI(() => module.default)
+            })
+            
+            import('react-pivottable/TableRenderers').then(TableRend => {
+                import('react-plotly.js').then(PlotModule => {
+                    import('react-pivottable/PlotlyRenderers').then(createPlotlyRend => {
+                        const PlotlyRend = createPlotlyRend.default(PlotModule.default)
+                        setRenderers({ ...TableRend.default, ...PlotlyRend })
+                    })
+                })
+            })
+        }
+    }, [])
 
     async function load(e?: React.FormEvent) {
         e?.preventDefault()
@@ -190,14 +219,21 @@ export default function AIGenerationsReportClient() {
                         <strong> Custo total:</strong> ${totalCost.toFixed(4)}
                     </Alert>
 
-                    <div className="pivot-container">
-                        <PivotTableUI
-                            data={pivotData}
-                            onChange={s => setPivotState(s)}
-                            renderers={{...TableRenderers, ...PlotlyRenderers}}
-                            {...pivotState}
-                        />
-                    </div>
+                    {PivotTableUI && renderers ? (
+                        <div className="pivot-container">
+                            <PivotTableUI
+                                data={pivotData}
+                                onChange={s => setPivotState(s)}
+                                renderers={renderers}
+                                {...pivotState}
+                            />
+                        </div>
+                    ) : (
+                        <div className="text-center p-5">
+                            <Spinner animation="border" />
+                            <p className="mt-2 text-muted">Carregando componente pivot...</p>
+                        </div>
+                    )}
                 </>
             )}
 
