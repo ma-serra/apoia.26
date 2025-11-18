@@ -91,7 +91,8 @@
         "tls": "^0.0.1",
         "turndown": "^7.2.2",
         "zod": "^3.25.76",
-        "zod-to-json-schema": "^3.24.6"
+        "zod-to-json-schema": "^3.24.6",
+        "glob": ">=11.1.0"
     },
     "devDependencies": {
         "@types/jest": "^30.0.0",
@@ -104,7 +105,8 @@
         "ts-jest": "^29.4.5",
         "ts-node": "^10.9.2",
         "tsconfig-paths": "^4.2.0",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "glob": ">=11.1.0"
     },
     "jest": {
         "preset": "ts-jest",
