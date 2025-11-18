@@ -14,9 +14,9 @@ const formatHtmlToEprocStandard = (html: string) => {
         return formattedContent
     })
     html = html.replace(/<p>/g, '<p class="paragrafoPadrao">')
-    html = html.replace(/<h1>/g, '<p class="titulo">')
-    html = html.replace(/<h2>/g, '<p class="titulo">')
-    html = html.replace(/<h3>/g, '<p class="subtitulo">')
+    html = html.replace(/<h1[^>]*>/g, '<p class="titulo">')
+    html = html.replace(/<h2[^>]*>/g, '<p class="titulo">')
+    html = html.replace(/<h3[^>]*>/g, '<p class="subtitulo">')
     html = html.replace(/<\/h1>/g, '</p>')
     html = html.replace(/<\/h2>/g, '</p>')
     html = html.replace(/<\/h3>/g, '</p>')
