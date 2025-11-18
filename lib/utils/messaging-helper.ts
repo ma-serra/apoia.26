@@ -6,13 +6,20 @@ import { ApproveMessageToParentType } from "./messaging"
 // Também não usa títulos, mas sim parágrafos com classes "titulo" e "subtitulo".
 
 const formatHtmlToEprocStandard = (html: string) => {
+
+    // Os parágrafos entre <blockquote> e </blockquote>, marcados com <p> viram <p class="citacao">
+    const blockquoteRegex = /<blockquote>([\s\S]*?)<\/blockquote>/g
+    html = html.replace(blockquoteRegex, (match, p1) => {
+        const formattedContent = p1.replace(/<p>/g, '<p class="citacao">')
+        return formattedContent
+    })
     html = html.replace(/<p>/g, '<p class="paragrafoPadrao">')
     html = html.replace(/<h1>/g, '<p class="titulo">')
-    html = html.replace(/<h2>/g, '<p class="subtitulo">')
-    html = html.replace(/<blockquote>/g, '<p class="citacao">')
+    html = html.replace(/<h2>/g, '<p class="titulo">')
+    html = html.replace(/<h3>/g, '<p class="subtitulo">')
     html = html.replace(/<\/h1>/g, '</p>')
     html = html.replace(/<\/h2>/g, '</p>')
-    html = html.replace(/<\/blockquote>/g, '</p>')
+    html = html.replace(/<\/h3>/g, '</p>')
     return html
 }
 
