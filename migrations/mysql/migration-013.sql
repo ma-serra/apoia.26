@@ -14,7 +14,7 @@ CREATE TABLE ia_library (
   created_by INT DEFAULT NULL,
   CONSTRAINT fk_ia_library_user FOREIGN KEY (user_id) REFERENCES ia_user (id) ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT fk_ia_library_created_by FOREIGN KEY (created_by) REFERENCES ia_user (id) ON UPDATE NO ACTION ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 CREATE INDEX idx_ia_library_user ON ia_library(user_id);
 
 CREATE TABLE ia_library_example (
@@ -31,6 +31,6 @@ CREATE TABLE ia_library_example (
   created_by INT DEFAULT NULL,
   CONSTRAINT fk_ia_library_example_library FOREIGN KEY (library_id) REFERENCES ia_library (id) ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT fk_ia_library_example_created_by FOREIGN KEY (created_by) REFERENCES ia_user (id) ON UPDATE NO ACTION ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 CREATE INDEX idx_ia_library_example_library ON ia_library_example(library_id);
 CREATE UNIQUE INDEX uk_ia_library_example_unique ON ia_library_example(library_id, process_number);

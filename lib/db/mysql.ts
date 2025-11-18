@@ -114,6 +114,64 @@ export class Dao {
         const del = await knex('ia_library_example').delete().where({ library_id, process_number })
         return del > 0
     }
+
+    // --- Library Attachments DAO ---
+    static async listLibraryAttachments(library_id: number): Promise<Omit<mysqlTypes.IALibraryAttachment, 'content_binary'>[]> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return []
+        const rows = await knex('ia_library_attachment')
+            .select('id', 'library_id', 'filename', 'content_type', 'file_size', 'word_count', 'created_at', 'created_by')
+            .where({ library_id })
+            .orderBy('created_at', 'desc')
+        return rows
+    }
+
+    static async getLibraryAttachmentById(id: number, library_id: number): Promise<mysqlTypes.IALibraryAttachment | undefined> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return undefined
+        const row = await knex('ia_library_attachment').select('*').where({ id, library_id }).first()
+        return row
+    }
+
+    static async insertLibraryAttachment(data: mysqlTypes.IALibraryAttachmentToInsert): Promise<number> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: data.library_id, user_id: userId }).first()
+        if (!lib) throw new Error('Library not found or access denied')
+        const [ret] = await knex('ia_library_attachment').insert({
+            library_id: data.library_id,
+            filename: data.filename,
+            content_type: data.content_type,
+            file_size: data.file_size,
+            word_count: data.word_count ?? null,
+            content_text: data.content_text ?? null,
+            content_binary: data.content_binary,
+            created_by: userId,
+        }).returning('id')
+        return getId(ret)
+    }
+
+    static async deleteLibraryAttachment(id: number, library_id: number): Promise<boolean> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return false
+        const del = await knex('ia_library_attachment').delete().where({ id, library_id })
+        return del > 0
+    }
+
+    static async countLibraryAttachments(library_id: number): Promise<number> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return 0
+        const result = await knex('ia_library_attachment').count('* as count').where({ library_id }).first()
+        return result?.count as number ?? 0
+    }
     
     // Rewrite all mappings for a batch: delete existing and insert the new set
     static async rewriteBatchFixIndexMap(batch_id: number, pairs: { descr_from: string, descr_to: string }[]): Promise<number> {

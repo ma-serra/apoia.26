@@ -479,6 +479,30 @@ export type IALibraryExample = {
     created_at: Date | null
     created_by: number | null
 }
+
+export type IALibraryAttachment = {
+    id: number
+    library_id: number
+    filename: string
+    content_type: string
+    file_size: number
+    word_count: number | null
+    content_text: string | null
+    content_binary: Buffer
+    created_at: Date | null
+    created_by: number | null
+}
+
+export type IALibraryAttachmentToInsert = {
+    library_id: number
+    filename: string
+    content_type: string
+    file_size: number
+    word_count?: number | null
+    content_text?: string | null
+    content_binary: Buffer
+}
+
 // New: Batch and Job types
 export type IABatch = {
     id: number

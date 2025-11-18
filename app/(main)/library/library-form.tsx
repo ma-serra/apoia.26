@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, Suspense } from 'react'
 import { Button, Form, Modal, Table } from 'react-bootstrap'
 import AiContent from '@/components/ai-content'
 import { findUnclosedMarking } from '@/lib/ai/template'
+import LibraryAttachments from '@/components/library-attachments'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
 import { IALibraryKind, IALibraryKindLabels, IALibraryInclusion, IALibraryInclusionLabels, IAModelSubtype, IAModelSubtypeLabels } from '@/lib/db/mysql-types'
@@ -43,7 +44,12 @@ export default function LibraryForm({ record }: { record: any }) {
     return isModel ? findUnclosedMarking(data.content_markdown || '') : null
   }, [isModel, data.content_markdown])
 
-  const save = async () => {
+  const save = async (stayOnPage = false) => {
+    if (!data.title || data.title.trim() === '') {
+      alert('O título é obrigatório')
+      return
+    }
+
     setPending(true)
     try {
       if (data.id) {
@@ -97,9 +103,18 @@ export default function LibraryForm({ record }: { record: any }) {
           console.error('Error creating library item:', j)
           return
         }
+
+        // If staying on page, update state with new id
+        if (stayOnPage) {
+          const j = await res.json()
+          setData((d: any) => ({ ...d, id: j.id }))
+          return
+        }
       }
 
-      router.push(`/library`)
+      if (!stayOnPage) {
+        router.push(`/library`)
+      }
     } finally {
       setPending(false)
     }
@@ -326,10 +341,32 @@ export default function LibraryForm({ record }: { record: any }) {
             )}
           </div>
           <div className="col text-end">
-            <Button variant="primary" disabled={pending} onClick={save}>Salvar</Button>
+            {!data.id && (
+              <Button 
+                variant="outline-primary" 
+                disabled={pending || !data.title || data.title.trim() === ''} 
+                onClick={() => save(true)}
+                className="me-2"
+              >
+                Incluir Anexos
+              </Button>
+            )}
+            <Button 
+              variant="primary" 
+              disabled={pending || !data.title || data.title.trim() === ''} 
+              onClick={() => save(false)}
+            >
+              Salvar
+            </Button>
           </div>
         </div>
       </div>
+
+      {data.id && (
+        <div className="col-12 mt-4">
+          <LibraryAttachments libraryId={data.id} />
+        </div>
+      )}
 
       {
         examples.length > 0 && (
