@@ -12,8 +12,8 @@ import Print from '@/components/slots/print'
 import { getInternalPrompt, promptExecuteBuilder } from '@/lib/ai/prompt'
 import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { infoDeProduto } from '@/lib/proc/info-de-produto'
-import { ApproveMessageToParentType, SinkFromURLType } from '@/lib/utils/messaging'
-import devLog from '@/lib/utils/log'
+import { SinkFromURLType } from '@/lib/utils/messaging'
+import { sendApproveMessageToParent } from '@/lib/utils/messaging-helper'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
 
@@ -50,23 +50,10 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
 
     const textoDescr = prompt.content.editor_label || 'Texto'
 
-    const onApprove = (content: ContentType) => {
-        devLog('onApprove content:', content)
-        if (content) {
-            window.parent.postMessage({
-                type: 'approved',
-                payload: {
-                    markdownContent: content.raw,
-                    htmlContent: content.formatted,
-                }
-            } satisfies ApproveMessageToParentType, '*')
-        }
-    }
-
     const handleReady = (content: ContentType) => {
         setContent(content)
         if (sinkFromURL === 'to-parent-automatic') {
-            onApprove(content)
+            sendApproveMessageToParent(content)
         }
     }
 
@@ -114,7 +101,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
                             options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => onApprove(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
+                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
                             {/* <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col> */}
                         </Row>
                     </>
