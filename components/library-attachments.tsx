@@ -88,8 +88,8 @@ export default function LibraryAttachments({ libraryId }: { libraryId: number })
         errors.push(`"${file.name}" não é PDF`)
         continue
       }
-      if (file.size > 10 * 1024 * 1024) {
-        errors.push(`"${file.name}" maior que 10MB`)
+      if (file.size > 1 * 1024 * 1024) {
+        errors.push(`"${file.name}" maior que 1MB`)
         continue
       }
       if (existingFilenames.has(file.name)) {
@@ -275,7 +275,7 @@ export default function LibraryAttachments({ libraryId }: { libraryId: number })
           <>
             <FontAwesomeIcon icon={faUpload} className="me-2" size="lg" />
             <div>Arraste PDFs aqui ou clique para selecionar</div>
-            <small className="text-muted">Máximo 10 anexos, 10MB por arquivo, múltiplos arquivos permitidos</small>
+            <small className="text-muted">Máximo 10 anexos, 1MB por arquivo, múltiplos arquivos permitidos</small>
           </>
         )}
       </div>

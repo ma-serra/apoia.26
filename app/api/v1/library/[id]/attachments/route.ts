@@ -6,7 +6,7 @@ import { assertCurrentUser } from '@/lib/user'
 import { pdfToText } from '@/lib/pdf/pdf'
 import { withErrorHandler } from '@/lib/utils/api-error'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
 const MAX_ATTACHMENTS = 10
 
 const countWords = (text: string): number => {
@@ -48,7 +48,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
 
   // Validate file size
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ errormsg: 'Arquivo maior que 10MB' }, { status: 400 })
+    return NextResponse.json({ errormsg: 'Arquivo maior que 1MB' }, { status: 400 })
   }
 
   try {
