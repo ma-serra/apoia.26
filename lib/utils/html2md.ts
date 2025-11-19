@@ -5,6 +5,7 @@ turndownService.remove('style')
 turndownService.remove('img')
 
 export const html2md = (html: string | ArrayBuffer) => {
+  if (!html) return ''
   let markdown = turndownService.turndown(html)
 
   // Remove images
