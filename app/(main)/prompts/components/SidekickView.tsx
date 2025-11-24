@@ -12,6 +12,8 @@ import { slugify } from "@/lib/utils/utils"
 import BreadCrumbs from "../breadcrumbs"
 import { useMemo, useState, useEffect } from "react"
 import { usePromptContext } from "../context/PromptContext"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faExternalLink } from "@fortawesome/free-solid-svg-icons"
 
 interface SidekickViewProps {
     apiKeyProvided: boolean
@@ -83,6 +85,7 @@ export function SidekickView({
 
     return (
         <Container className="mt-0 mb-3" fluid={true}>
+            <div className="float-end"><a href={urlNovaAba} target="_blank" rel="noopener noreferrer" title="Abrir em nova aba"><FontAwesomeIcon icon={faExternalLink} /></a></div>
             <BreadCrumbs
                 numeroDoProcesso={numeroDoProcesso}
                 prompt={prompt}
@@ -114,10 +117,10 @@ export function SidekickView({
                                             promptButtons={
                                                 prompt?.kind === '^CHAT' ? (
                                                     <>
-                                                        <p className="text-center mt-1x ms-3 me-3">
+                                                        {/* <p className="text-center mt-1x ms-3 me-3">
                                                             Converse sobre o processo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma{' '}
                                                             <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.
-                                                        </p>
+                                                        </p> */}
                                                         {promptButtons}
                                                     </>
                                                 ) : undefined
@@ -154,8 +157,8 @@ export function SidekickView({
                                     <p className="text-center mt-3 ms-3 me-3">
                                         <img src="/apoia-logo-horiz-cor-fundo-claro.png" className="mb-3" style={{ height: "3em" }} />
                                         <br />
-                                        Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma{' '}
-                                        <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.
+                                        {/* Converse comigo, selecione um dos seus prompts favoritos, ou lance a Apoia em uma{' '}
+                                        <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>. */}
                                     </p>
                                     {promptButtons}
                                 </>
@@ -173,19 +176,19 @@ export function SidekickView({
                             resetProcess()
                         }}
                     />
-                    <p className="text-center mt-3 ms-3 me-3">
+                    {/* <p className="text-center mt-3 ms-3 me-3">
                         Selecione um dos seus prompts favoritos ou lance a Apoia em uma{' '}
                         <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.
-                    </p>
+                    </p> */}
                     <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
                 </>
             ) : (
                 <>
                     <h1 className="text-center mt-5">Bem vindo à Apoia</h1>
-                    <p className="text-center mt-3 ms-3 me-3">
+                    {/* <p className="text-center mt-3 ms-3 me-3">
                         Selecione um dos seus prompts favoritos ou lance a Apoia em uma{' '}
                         <a href={urlNovaAba} target="_blank" rel="noopener noreferrer">nova aba</a>.
-                    </p>
+                    </p> */}
                     <div className="ps-3 pe-3 pb-3">{promptButtons}</div>
                 </>
             )}

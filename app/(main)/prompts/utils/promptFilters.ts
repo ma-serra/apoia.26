@@ -32,40 +32,44 @@ export function getPromptsComunidade(prompts: IAPromptList[]): IAPromptList[] {
 export function getPromptsSidekick(
     prompts: IAPromptList[],
     selectedPrompt: IAPromptList | null,
-    numeroDoProcesso: string | null
+    numeroDoProcesso: string | null,
+    instanceFromURL: string | null
 ): IAPromptList[] {
     const chatIsCurrentPrompt = selectedPrompt?.kind === '^CHAT'
+
+    const chat = prompts.find((p) => p.kind === '^CHAT')
+    if (chat) chat.name = 'Chat com Peças Selecionadas'
+
     let list = prompts.filter(
         (p) =>
             p.is_favorite ||
+            (p.kind === '^MINUTA_DE_SENTENCA') ||
+            (p.kind === '^MINUTA_DE_VOTO') ||
+            (p.kind === '^REFINAMENTO_DE_TEXTO') ||
+            (p.kind === '^REVISAO_DE_TEXTO') ||
             (p.kind === '^CHAT' && !chatIsCurrentPrompt) ||
             (p.kind === '^CHAT_STANDALONE' && !numeroDoProcesso)
     )
-    
-    if (!prompts.find((p) => p.is_favorite)) {
-        list = prompts.filter(
-            (p) =>
-                p.share === 'PADRAO' ||
-                p.is_favorite ||
-                (p.kind === '^CHAT' && !chatIsCurrentPrompt)
-        )
+
+    if (instanceFromURL) {
+        list = list.filter((p) => {
+            if (!p.content.instance || p.content.instance.length === 0) return true
+            return p.content.instance.map(name => Instance[name].param).includes(instanceFromURL)
+        })
     }
-    
-    const chat = list.find((p) => p.kind === '^CHAT')
-    if (chat) chat.name = 'Chat com Peças Selecionadas'
 
     list.sort((a, b) => {
         if (a.kind === '^CHAT_STANDALONE' && b.kind !== '^CHAT_STANDALONE') return -1
         if (a.kind !== '^CHAT_STANDALONE' && b.kind === '^CHAT_STANDALONE') return 1
         if (a.kind === '^CHAT' && b.kind !== '^CHAT') return -1
         if (a.kind !== '^CHAT' && b.kind === '^CHAT') return 1
-        if (a.is_favorite && !b.is_favorite) return -1
-        if (!a.is_favorite && b.is_favorite) return 1
+        if (a.is_favorite && !b.is_favorite) return 1
+        if (!a.is_favorite && b.is_favorite) return -1
         if (a.name < b.name) return -1
         if (a.name > b.name) return 1
         return 0
     })
-    
+
     return list
 }
 

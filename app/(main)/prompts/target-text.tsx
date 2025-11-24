@@ -44,6 +44,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
     const textChanged = (text) => {
         setMarkdown(text)
         setHidden(true)
+        setContent(undefined)
     }
 
     const definition: PromptDefinitionType = buildDefinition(prompt)
@@ -101,7 +102,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
                             options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
+                            {content && sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
                             {/* <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col> */}
                         </Row>
                     </>

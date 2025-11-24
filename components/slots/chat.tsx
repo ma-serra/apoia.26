@@ -18,6 +18,8 @@ import type { SuggestionContext } from '@/components/suggestions/context'
 import { Suggestion } from '../suggestions/base';
 import MessageStatus from '../message-status';
 import MessageFooter from '../message-footer';
+import { usePromptContext } from '@/app/(main)/prompts/context/PromptContext';
+import { Instance } from '@/lib/proc/process-types';
 
 const converter = new showdown.Converter({ tables: true })
 
@@ -64,6 +66,7 @@ function convertToUIMessages(modelMsgs: ModelMessage[]): UIMessage[] {
 let loadingMessages = false
 
 export default function Chat(params: { definition: PromptDefinitionType, data: PromptDataType, model: string, footer?: ReactElement, withTools?: boolean, setProcessNumber?: (number: string) => void, sidekick?: boolean, promptButtons?: ReactNode }) {
+    const { instanceFromURL } = usePromptContext()
     const [processNumber, setProcessNumber] = useState(params?.data?.numeroDoProcesso || '');
     const [input, setInput] = useState('')
     const [files, setFiles] = useState<FileList | undefined>(undefined)
@@ -447,12 +450,14 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             </div>
 
             <div className="mt-1 text-center">
-                {getAllSuggestions().map(s => (
-                    <button className="btn btn-sm btn-outline-secondary mt-2 ms-1 me-1" onClick={() => runSuggestion(s.id)} key={s.id}>
-                        {s.icon && <FontAwesomeIcon icon={s.icon} className="me-2" />}
-                        {s.label}
-                    </button>
-                ))}
+                {getAllSuggestions()
+                    .filter(s => !instanceFromURL || !s.instance || s.instance.map(name => Instance[name].param).includes(instanceFromURL))
+                    .map(s => (
+                        <button className="btn btn-sm btn-outline-secondary mt-2 ms-1 me-1" onClick={() => runSuggestion(s.id)} key={s.id}>
+                            {s.icon && <FontAwesomeIcon icon={s.icon} className="me-2" />}
+                            {s.label}
+                        </button>
+                    ))}
             </div></>
     ), [input, files, params.sidekick, handleSubmitAndSetFocus, fileInputRef, setInput, setFiles, btnClass, inputClass])
 

@@ -74,14 +74,15 @@ export const Scope: ScopeType = ScopeArray.reduce((acc, cur, idx) => {
 
 
 const InstanceArray = [
-    { id: 1, name: 'PRIMEIRO_GRAU', descr: 'Primeira', acronym: '1º' },
-    { id: 2, name: 'SEGUNDO_GRAU', descr: 'Segunda', acronym: '2º' },
-    { id: 3, name: 'TERCEIRO_GRAU', descr: 'Terceira', acronym: '3º' },
+    { id: 1, name: 'PRIMEIRO_GRAU', descr: 'Primeira', acronym: '1º', param: 'first' },
+    { id: 2, name: 'SEGUNDO_GRAU', descr: 'Segunda', acronym: '2º', param: 'second' },
+    { id: 3, name: 'TERCEIRO_GRAU', descr: 'Terceira', acronym: '3º', param: 'third' },
 ]
-export type InstanceValueType = EnumOfObjectsValueType & { name: string, descr: string, acronym: string }
-export type InstanceType = { [key: string]: InstanceValueType }
+export type InstanceKeyType = 'PRIMEIRO_GRAU' | 'SEGUNDO_GRAU' | 'TERCEIRO_GRAU'
+export type InstanceValueType = EnumOfObjectsValueType & { name: InstanceKeyType, descr: string, acronym: string, param: string }
+export type InstanceType = { [key in InstanceKeyType]: InstanceValueType }
 export const Instance: InstanceType = InstanceArray.reduce((acc, cur, idx) => {
-    acc[slugify(cur.name).replaceAll('-', '_').toUpperCase()] = { ...cur, sort: idx + 1 }
+    acc[cur.name] = { ...cur, sort: idx + 1 }
     return acc
 }, {} as InstanceType)
 

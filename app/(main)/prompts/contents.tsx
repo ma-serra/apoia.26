@@ -24,6 +24,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     const [toast, setToast] = useState<string>()
     const [toastVariant, setToastVariant] = useState<string>()
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
+    const [viewKey, setViewKey] = useState<number>(0)
 
     const {
         prompt,
@@ -33,7 +34,11 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         setNumber,
         scope,
         instance,
-        matter
+        matter,
+        setSource,
+        setSinkFromURL,
+        setSinkButtonText,
+        instanceFromURL
     } = usePromptContext()
 
     useEffect(() => {
@@ -75,16 +80,26 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     const resetProcess = () => {
         setNumeroDoProcesso(null)
         setNumber('')
+        setViewKey(vk => vk + 1)
     }
 
     const resetPrompt = () => {
-        setPrompt(null)
+        // setPrompt(null)
+        setPrompt(prompts.find(p => p.kind === '^CHAT') || null)
+        setSource(null)
+        setSinkFromURL(null)
+        setSinkButtonText(null)
+        setViewKey(vk => vk + 1)
     }
 
     const resetToHome = () => {
         setNumeroDoProcesso(null)
         setNumber('')
         setPrompt(prompts.find(p => p.kind === '^CHAT_STANDALONE') || null)
+        setSource(null)
+        setSinkFromURL(null)
+        setSinkButtonText(null)
+        setViewKey(vk => vk + 1)
     }
 
     const filteredPromptsBase = useMemo(
@@ -103,7 +118,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     )
 
     const promptsSidekick = useMemo(
-        () => getPromptsSidekick(filteredPromptsBase, prompt, numeroDoProcesso),
+        () => getPromptsSidekick(filteredPromptsBase, prompt, numeroDoProcesso, instanceFromURL),
         [filteredPromptsBase, prompt, numeroDoProcesso]
     )
 
@@ -114,6 +129,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
 
         return (
             <SidekickView
+                key={`sidekick-${viewKey}`}
                 apiKeyProvided={apiKeyProvided}
                 model={model}
                 promptsSidekick={promptsSidekick}
@@ -163,7 +179,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
     }
 
     return (
-        <PromptProvider prompts={prompts} toastMessage={toastMessage}>
+        <PromptProvider prompts={prompts} toastMessage={toastMessage} sidekick={sidekick}>
             <ContentsInner 
                 prompts={prompts}
                 user={user}

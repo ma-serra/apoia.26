@@ -5,7 +5,7 @@ import { slugify } from "@/lib/utils/utils"
 import { decodeEnumParam, findPromptFromParam } from "../utils/promptFilters"
 import { Instance, Matter, Scope } from "@/lib/proc/process-types"
 import { html2md } from "@/lib/utils/html2md"
-import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType } from "@/lib/utils/messaging"
+import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY, SinkMessageToParentType, SinkMessageFromParentType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 
 export interface UsePromptStateResult {
@@ -29,6 +29,8 @@ export interface UsePromptStateResult {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
+    instanceFromURL: string | null
+    setInstanceFromURL: (instance: string | null) => void
 }
 
 export function usePromptState(
@@ -41,7 +43,8 @@ export function usePromptState(
     setArrayDeDadosDoProcesso: (array: any[] | null) => void,
     setDadosDoProcesso: (dados: any | null) => void,
     setIdxProcesso: (idx: number) => void,
-    setTramFromUrl: (tram: number | null) => void
+    setTramFromUrl: (tram: number | null) => void,
+    sidekick?: boolean
 ): UsePromptStateResult {
     const currentSearchParams = useSearchParams()
     const router = useRouter()
@@ -60,7 +63,9 @@ export function usePromptState(
     const [sinkFromURL, setSinkFromURL] = useState<SinkFromURLType | null>(null)
     const [sinkButtonText, setSinkButtonText] = useState<string | null>(null)
     const [source, setSource] = useState<string | null>(null)
+    const [instanceFromURL, setInstanceFromURL] = useState<string | null>(null)
     const hasRunSource = useRef(false)
+    const hasRunSink = useRef(false)
 
     useEffect(() => {
         const loadLibraryDocuments = async () => {
@@ -91,6 +96,7 @@ export function usePromptState(
         const sourceFromURL = currentSearchParams.get('source')
         const sinkFromURL = currentSearchParams.get('sink') as SinkFromURLType
         const sinkButtonText = currentSearchParams.get('sink-button-text')
+        const instanceFromURL = currentSearchParams.get('instance')
 
         if (p) {
             const found = findPromptFromParam(prompts, p)
@@ -114,13 +120,14 @@ export function usePromptState(
         if (sourceFromURL) setSourceFromURL(sourceFromURL)
         if (sinkFromURL) setSinkFromURL(sinkFromURL)
         if (sinkButtonText) setSinkButtonText(sinkButtonText)
+        if (instanceFromURL) setInstanceFromURL(instanceFromURL)
 
         setPromptInitialized(true)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
-        if (prompt && prompt.content?.target && prompt.content.target !== 'PROCESSO') {
+        if (!sidekick && prompt && prompt.content?.target && prompt.content.target !== 'PROCESSO') {
             if (numeroDoProcesso) setNumeroDoProcesso(null)
             if (arrayDeDadosDoProcesso) setArrayDeDadosDoProcesso(null)
             if (setDadosDoProcesso) setDadosDoProcesso(null)
@@ -210,6 +217,32 @@ export function usePromptState(
         }
     }, [sourceFromURL])
 
+    useEffect(() => {
+        devLog('*** Sink from URL:', sinkFromURL)
+        if (sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT || sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY) return
+
+        if (!["^MINUTA_DE_SENTENCA", "^MINUTA_DE_VOTO", "^REFINAMENTO_DE_TEXTO", "^REVISAO_DE_TEXTO"].includes(prompt?.kind || '')) return
+
+        // // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
+        // if (hasRunSink.current) return
+        // hasRunSink.current = true
+        parent.postMessage({ type: 'get-sink' } satisfies SinkMessageToParentType, '*')
+
+        // Listener para mensagem do popup
+        const handleMessage = (event: MessageEvent) => {
+            switch (event.data?.type) {
+                case 'set-sink':
+                    const receivedMessage = event.data as SinkMessageFromParentType
+                    setSinkFromURL(receivedMessage.payload.kind as SinkFromURLType)
+                    setSinkButtonText(receivedMessage.payload.buttonText ?? '')
+            }
+        }
+        window.addEventListener('message', handleMessage)
+        return () => {
+            window.removeEventListener('message', handleMessage)
+        }
+    }, [sinkFromURL, prompt])
+
     return {
         prompt,
         setPrompt,
@@ -230,6 +263,8 @@ export function usePromptState(
         sinkButtonText,
         setSinkButtonText,
         allLibraryDocuments,
-        promptInitialized
+        promptInitialized,
+        instanceFromURL,
+        setInstanceFromURL
     }
 }

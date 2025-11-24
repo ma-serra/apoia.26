@@ -62,9 +62,16 @@
  * - Sanitizar HTML com DOMPurify quando aplicável
  */
 
+import { InstanceType } from "../proc/process-types"
+
 // ============================================================================
 // CONSTANTES
 // ============================================================================
+
+export const INSTANCE_PARAM = 'instance'
+export const INSTANCE_PARAM_FIRST = 'first'
+export const INSTANCE_PARAM_SECOND = 'second'
+export const INSTANCE_PARAM_THIRD = 'third'
 
 /** 
  * Parâmetro URL que indica para buscar conteúdo via postMessage.
@@ -81,7 +88,7 @@ export type SinkFromURLType = 'to-parent' | 'to-parent-automatic'
 // ============================================================================
 
 /** Tipos de mensagens suportados pelo sistema */
-export type MessageTypeType = 'auth-popup' | 'auth-completed' | 'get-source' | 'set-source' | 'approved'
+export type MessageTypeType = 'auth-popup' | 'auth-completed' | 'get-source' | 'set-source' | 'approved' | 'get-sink' | 'set-sink'
 
 /** Union type de todas as mensagens possíveis */
 export type MessageWithType = {
@@ -92,6 +99,8 @@ export type MessageWithType = {
         | SourceMessageToParentType
         | SourceMessageFromParentType
         | ApproveMessageToParentType
+        | SinkMessageToParentType
+        | SinkMessageFromParentType
     )
 
 /** Solicita abertura de popup de autenticação */
@@ -138,3 +147,24 @@ export type ApproveMessageToParentType = {
         htmlContent: string
     }
 }
+
+/** 
+ * Iframe pergunta ao parent se deve devolver o resultado para a minuta.
+ * Direção: Iframe → Parent
+ */
+export type SinkMessageToParentType = {
+    type: 'get-sink'
+}
+
+/** 
+ * Parent informa 'to-parent' no kind e 'Enviar para a Minuta' no buttonText ao iframe.
+ * Direção: Parent → Iframe
+ */
+export type SinkMessageFromParentType = {
+    type: 'set-sink'
+    payload: {
+        kind?: 'to-parent' | 'to-parent-automatic' | null
+        buttonText?: string
+    }
+}
+

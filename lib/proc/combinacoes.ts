@@ -415,7 +415,8 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         sort: 3,
         nome: 'Minuta de Sentença',
         padroes: [...padroesConhecimento, padraoConhecimentoForcado],
-        produtos: [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.SENTENCA, P.CHAT]
+        produtos: [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.SENTENCA, P.CHAT],
+        instance: [Instance.PRIMEIRO_GRAU.name]
     },
     MINUTA_DE_VOTO: {
         status: StatusDeLancamento.PUBLICO,
@@ -526,7 +527,8 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         sort: 1000,
         nome: 'Relatório de Aposentadoria Especial - Primeira Instância',
         padroes: [...padroesConhecimento, padraoConhecimentoForcado],
-        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_PRIMEIRA_INSTANCIA, P.CHAT]
+        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_PRIMEIRA_INSTANCIA, P.CHAT],
+        instance: [Instance.PRIMEIRO_GRAU.name]
     },
 
     PREV_APESP_SEGUNDA_INSTANCIA: {
@@ -535,7 +537,8 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         nome: 'Relatório de Aposentadoria Especial - Segunda Instância',
         author: 'Caroline Tauk/JFRJ',
         padroes: [...padroesBasicosSegundaInstancia, padraoApelacaoForcado],
-        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_SEGUNDA_INSTANCIA, P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT]
+        produtos: [P.PREV_APESP_PONTOS_CONTROVERTIDOS_SEGUNDA_INSTANCIA, P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT],
+        instance: [Instance.SEGUNDO_GRAU.name]
     },
 
     PREV_BI_ANALISE_DE_LAUDO: {

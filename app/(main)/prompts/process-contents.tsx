@@ -109,7 +109,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
 
     const LoadingPieces = () => {
         if (loadingPiecesProgress === -1 || !selectedPieces || selectedPieces.length === 0) return null
-        return <>Carregando Peças...<ProgressBar variant="primary" striped={true} now={loadingPiecesProgress / selectedPieces.length * 100} label={`${loadingPiecesProgress}/${selectedPieces.length}`} /></>
+        return <div className="mb-4">Carregando Peças...<ProgressBar variant="primary" striped={true} now={loadingPiecesProgress / selectedPieces.length * 100} label={`${loadingPiecesProgress}/${selectedPieces.length}`} /></div>
     }
 
     useEffect(() => {

@@ -40,6 +40,8 @@ interface PromptContextValue {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
+    instanceFromURL: string | null
+    setInstanceFromURL: (instance: string | null) => void
 }
 
 const PromptContext = createContext<PromptContextValue | undefined>(undefined)
@@ -48,9 +50,10 @@ interface PromptProviderProps {
     children: ReactNode
     prompts: IAPromptList[]
     toastMessage: (message: string, variant: string) => void
+    sidekick?: boolean
 }
 
-export function PromptProvider({ children, prompts, toastMessage }: PromptProviderProps) {
+export function PromptProvider({ children, prompts, toastMessage, sidekick }: PromptProviderProps) {
     const processData = useProcessData(toastMessage)
     const {
         numeroDoProcesso,
@@ -75,7 +78,8 @@ export function PromptProvider({ children, prompts, toastMessage }: PromptProvid
         setDadosDoProcesso as any,
         setDadosDoProcesso,
         setIdxProcesso,
-        setTramFromUrl
+        setTramFromUrl,
+        sidekick
     )
 
     const value = useMemo(() => ({

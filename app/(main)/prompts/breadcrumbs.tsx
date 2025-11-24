@@ -7,10 +7,9 @@ export default function BreadCrumbs({ numeroDoProcesso, resetToHome, resetProces
     if (!numeroDoProcesso && !prompt) return null
     return (
         <Breadcrumb className="mt-2" style={{ fontSize: '1em' }}>
-            <Breadcrumb.Item onClick={resetToHome}><FontAwesomeIcon icon={faHome} /></Breadcrumb.Item>
-            {numeroDoProcesso && (
-                <Breadcrumb.Item onClick={resetPrompt} active={!prompt}>{numeroDoProcesso}</Breadcrumb.Item>
-            )}
+            {numeroDoProcesso
+                ? <Breadcrumb.Item onClick={resetPrompt} title="Página inicial"><FontAwesomeIcon icon={faHome} /></Breadcrumb.Item>
+                : <Breadcrumb.Item onClick={resetToHome} title="Página inicial"><FontAwesomeIcon icon={faHome} /></Breadcrumb.Item>}
             {prompt && (
                 <Breadcrumb.Item active>{prompt.name}</Breadcrumb.Item>
             )}

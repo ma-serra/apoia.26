@@ -1,9 +1,10 @@
 import { SuggestionContext, SuggestionActionResult } from './context'
 import type { ComponentType } from 'react'
 import AskProcessNumberModal from './modals/AskProcessNumberModal'
+import { InstanceKeyType } from '@/lib/proc/process-types'
 
 export abstract class Suggestion {
-  constructor(public id: string, public label: string, public icon: any, public modalComponent: ComponentType<any> = AskProcessNumberModal) { }
+  constructor(public id: string, public label: string, public icon: any, public modalComponent: ComponentType<any> = AskProcessNumberModal, public instance?: InstanceKeyType[]) { }
   abstract resolve(ctx: SuggestionContext): SuggestionActionResult
 
   protected processAwarePrompt(ctx: SuggestionContext, prompt: string): SuggestionActionResult {
