@@ -7,6 +7,7 @@ import { Instance, Matter, Scope } from "@/lib/proc/process-types"
 import { html2md } from "@/lib/utils/html2md"
 import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY, SinkMessageToParentType, SinkMessageFromParentType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
+import { formatEprocStandardToHtml } from "@/lib/utils/messaging-helper"
 
 export interface UsePromptStateResult {
     prompt: IAPromptList | null
@@ -200,12 +201,15 @@ export function usePromptState(
                 case 'set-source':
                     const receivedMessage = event.data as SourceMessageFromParentType
                     if (receivedMessage.payload.markdownContent) {
-                        const markdownContent = html2md(receivedMessage.payload.markdownContent)
+                        const markdownContent = receivedMessage.payload.markdownContent
+                        setSource(markdownContent)
+                        devLog(`Received source from parent message.\n\n${markdownContent}`)
+                    } else if (receivedMessage.payload.htmlContent) {
+                        let content = receivedMessage.payload.htmlContent
+                        content = formatEprocStandardToHtml(content)
+                        const markdownContent = html2md(content)
                         setSource(markdownContent)
                         devLog(`Converted HTML to Markdown source from parent message.\n\n${markdownContent}`)
-                    } else if (receivedMessage.payload.htmlContent) {
-                        setSource(receivedMessage.payload.htmlContent)
-                        devLog(`Received source from parent message.\n\n${receivedMessage.payload.htmlContent}`)
                     } else {
                         devLog('No content received in set-source message from parent.')
                     }

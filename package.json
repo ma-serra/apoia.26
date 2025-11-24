@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "cross-env DOTENV_CONFIG_QUIET=true next dev --turbopack -p 8081",
-        "build": "npm run copy-lamejs && cross-env DOTENV_CONFIG_QUIET=true npx next-swagger-doc-cli next-swagger-doc.json && cross-env DOTENV_CONFIG_QUIET=true next build",
+        "build": "npm run copy-lamejs && cross-env DOTENV_CONFIG_QUIET=true NODE_OPTIONS=\"--max-old-space-size=4096\" npx next-swagger-doc-cli next-swagger-doc.json && cross-env DOTENV_CONFIG_QUIET=true NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
         "start": "cross-env DOTENV_CONFIG_QUIET=true next start -p 8088",
         "lint": "next lint",
         "typecheck": "tsc --noEmit -p tsconfig.json",
