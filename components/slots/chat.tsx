@@ -66,7 +66,7 @@ function convertToUIMessages(modelMsgs: ModelMessage[]): UIMessage[] {
 let loadingMessages = false
 
 export default function Chat(params: { definition: PromptDefinitionType, data: PromptDataType, model: string, footer?: ReactElement, withTools?: boolean, setProcessNumber?: (number: string) => void, sidekick?: boolean, promptButtons?: ReactNode }) {
-    const { instanceFromURL } = usePromptContext()
+    const { instanceFromURL } = params.sidekick ? usePromptContext() : { instanceFromURL: null };
     const [processNumber, setProcessNumber] = useState(params?.data?.numeroDoProcesso || '');
     const [input, setInput] = useState('')
     const [files, setFiles] = useState<FileList | undefined>(undefined)
