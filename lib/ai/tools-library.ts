@@ -3,6 +3,7 @@ import { UserType } from "../user"
 import { z } from "zod"
 import { Dao } from "../db/mysql"
 import { IALibrary } from "../db/mysql-types"
+import { formatLibraryDocument } from "./library"
 
 export const getLibraryDocumentTool = (pUser: Promise<UserType>) => tool({
     description: 'Obtém o conteúdo de um ou mais documentos da biblioteca do usuário a partir dos IDs dos documentos.',
@@ -24,18 +25,18 @@ export const getLibraryDocumentTool = (pUser: Promise<UserType>) => tool({
             for (const doc of documents) {
                 // Check if it's a binary file
                 if (doc.kind === 'ARQUIVO' && doc.content_binary) {
-                    formattedDocuments.push(`<library id="${doc.id}" title="${doc.title}">O documento é um arquivo binário e não pode ser processado como texto.</library>`)
+                    formattedDocuments.push(`<library-document title="${doc.title}">O documento é um arquivo binário e não pode ser processado como texto.</library-document>`)
                     continue
                 }
 
                 // Check if there's markdown content
                 if (!doc.content_markdown) {
-                    formattedDocuments.push(`<library id="${doc.id}" title="${doc.title}">O documento não possui conteúdo de texto.</library>`)
+                    formattedDocuments.push(`<library-document title="${doc.title}">O documento não possui conteúdo de texto.</library-document>`)
                     continue
                 }
 
                 // Format the document with XML-like tags
-                formattedDocuments.push(`<library id="${doc.id}" title="${doc.title}">${doc.content_markdown}</library>`)
+                formattedDocuments.push(await formatLibraryDocument(doc))
             }
 
             // Return all formatted documents joined together

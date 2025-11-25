@@ -2094,5 +2094,49 @@ export class Dao {
             }
         })
     }
+
+    static async getLibraryAttachmentsText(library_id: number): Promise<Pick<mysqlTypes.IALibraryAttachment, 'filename' | 'content_text'>[]> {
+        const userId = await getCurrentUserId()
+        // validate ownership
+        const lib = await knex('ia_library').select('id').where({ id: library_id, user_id: userId }).first()
+        if (!lib) return []
+        const rows = await knex('ia_library_attachment')
+            .select('filename', 'content_text')
+            .where({ library_id })
+            .whereNotNull('content_text')
+        return rows
+    }
+
+    static async listLibraryHeaders(): Promise<Omit<mysqlTypes.IALibrary, 'content_markdown' | 'content_binary'>[]> {
+        const userId = await getCurrentUserId()
+        const rows = await knex('ia_library')
+            .select('id', 'user_id', 'kind', 'model_subtype', 'title', 'content_type', 'inclusion', 'context', 'created_at', 'created_by')
+            .where({ user_id: userId })
+            .orderBy('created_at', 'desc')
+        return rows
+    }
+
+    static async listLibraryForPrompt(ids?: number[]): Promise<Omit<mysqlTypes.IALibrary, 'content_binary'>[]> {
+        const userId = await getCurrentUserId()
+        const query = knex('ia_library')
+            .select('id', 'user_id', 'kind', 'model_subtype', 'title', 'content_type', 'content_markdown', 'inclusion', 'context', 'created_at', 'created_by')
+            .where({ user_id: userId })
+            .whereNotNull('content_markdown')
+            .where('content_markdown', '!=', '')
+
+        if (ids !== undefined) {
+            query.where(builder => {
+                if (ids.length > 0) {
+                    builder.whereIn('id', ids)
+                }
+                builder.orWhere('inclusion', mysqlTypes.IALibraryInclusion.CONTEXTUAL)
+            })
+        } else {
+            query.whereIn('inclusion', [mysqlTypes.IALibraryInclusion.SIM, mysqlTypes.IALibraryInclusion.CONTEXTUAL])
+        }
+
+        query.orderBy('created_at', 'desc')
+        return await query
+    }
 }
 

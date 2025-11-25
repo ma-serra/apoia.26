@@ -47,28 +47,29 @@ export type LibraryDocumentsType = {
 
 export async function getLibraryDocuments(ids: string[] | undefined): Promise<LibraryDocumentsType> {
     try {
-        const numericIds = ids ? ids.map(id => parseInt(id)).filter(id => !isNaN(id)) : []
+        const numericIds = ids ? ids.map(id => parseInt(id)).filter(id => !isNaN(id)) : undefined
+        const safeNumericIds = numericIds || []
 
-        // Busca todos os documentos da biblioteca do usuário
-        const documents: IALibrary[] = await Dao.listLibrary()
+        // Busca documentos otimizados (sem binário, filtrados por ID/Inclusão)
+        const documents = await Dao.listLibraryForPrompt(numericIds)
 
-        // Filtra documentos que têm conteúdo
+        // Filtra documentos que têm conteúdo (já filtrado no banco, mas mantendo por segurança/tipagem)
         const validDocuments = documents.filter(doc => doc.content_markdown)
 
         // Separa documentos por tipo de inclusão
         const alwaysInclude = validDocuments.filter(doc =>
-            doc.inclusion === IALibraryInclusion.SIM && ids === undefined || numericIds.includes(doc.id)
+            (doc.inclusion === IALibraryInclusion.SIM && ids === undefined) || safeNumericIds.includes(doc.id)
         )
 
         const contextualDocuments = validDocuments.filter(doc =>
-            doc.inclusion === IALibraryInclusion.CONTEXTUAL && !numericIds.includes(doc.id)
+            doc.inclusion === IALibraryInclusion.CONTEXTUAL && !safeNumericIds.includes(doc.id)
         )
 
         // Adiciona documentos com inclusão automática
         let included = ``
         if (alwaysInclude.length > 0) {
             for (const doc of alwaysInclude) {
-                included += `<library-document title="${doc.title}">\n${doc.content_markdown}\n</library-document>\n\n`
+                included += (await formatLibraryDocument(doc)) + '\n\n'
             }
         }
 
@@ -88,32 +89,26 @@ export async function getLibraryDocuments(ids: string[] | undefined): Promise<Li
     }
 }
 
-
 /**
- * Formata um documento específico da biblioteca para inclusão em um prompt.
+ * Formata um documento da biblioteca para inclusão em prompts, incluindo seus anexos.
  * 
- * @param documentId - ID do documento a ser formatado
- * @returns String formatada com o documento ou mensagem de erro
+ * @param doc - Objeto contendo id, título e conteúdo markdown do documento
+ * @returns String formatada com o documento e seus anexos
  */
-export async function getLibraryDocumentFormatted(documentId: number): Promise<string> {
-    try {
-        const document: IALibrary | undefined = await Dao.getLibraryById(documentId)
+export async function formatLibraryDocument(doc: { id: number, title: string, content_markdown: string | null }): Promise<string> {
+    let docContent = doc.content_markdown || ''
 
-        if (!document) {
-            return `Erro: Documento com ID ${documentId} não encontrado ou sem permissão de acesso.`
+    // Busca anexos do documento
+    const attachments = await Dao.getLibraryAttachmentsText(doc.id)
+    if (attachments.length > 0) {
+        for (const att of attachments) {
+            if (att.content_text) {
+                docContent += `\n\n<library-attachment filename="${att.filename}">\n${att.content_text}\n</library-attachment>`
+            }
         }
-
-        if (document.kind === 'ARQUIVO' && document.content_binary) {
-            return `Erro: O documento "${document.title}" é um arquivo binário e não pode ser processado como texto.`
-        }
-
-        if (!document.content_markdown) {
-            return `Erro: O documento "${document.title}" não possui conteúdo de texto.`
-        }
-
-        return `<library id="${document.id}" title="${document.title}">\n${document.content_markdown}\n</library>`
-    } catch (error) {
-        console.error('Error getting formatted library document:', error)
-        return `Erro ao obter documento ${documentId}: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
+
+    return `<library-document title="${doc.title}">\n${docContent}\n</library-document>`
 }
+
+

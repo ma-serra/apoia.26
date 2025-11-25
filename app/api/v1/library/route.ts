@@ -6,9 +6,8 @@ import { assertCurrentUser } from '@/lib/user'
 
 export async function GET() {
   await assertCurrentUser()
-  const items = await Dao.listLibrary()
-  const safe = items.map(({ content_binary, ...rest }: any) => rest)
-  return NextResponse.json({ items: safe })
+  const items = await Dao.listLibraryHeaders()
+  return NextResponse.json({ items })
 }
 
 export async function POST(req: Request) {

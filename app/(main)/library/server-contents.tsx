@@ -7,7 +7,7 @@ import Table from '@/components/table-records'
 
 export default async function ServerContents() {
   await assertCurrentUser()
-  const items = await Dao.listLibrary()
+  const items = await Dao.listLibraryHeaders()
 
   return (
     <div className="container">
