@@ -37,8 +37,8 @@ export default async function Home() {
             </Container>
         }>
             <Container id="printDiv" className="mt-3" fluid={false}>
-                <Chat definition={definition} data={data} model={model} withTools={true} key={1}
-                    footer={<div className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
+                <Chat definition={definition} data={data} model={model} withTools={true}
+                    footer={<div key="footer" className="text-body-tertiary h-print">O Agente de IA busca informações e peças de qualquer processo. Para contextualizar, inclua o número do processo na sua primeira pergunta.</div>}
                 />
                 <Print numeroDoProcesso={`chat-${slugify(formatYYYYMMDDHHMMSS(new Date()))}`} />
             </Container>
