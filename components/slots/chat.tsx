@@ -19,7 +19,7 @@ import { Suggestion } from '../suggestions/base';
 import MessageStatus from '../message-status';
 import MessageFooter from '../message-footer';
 import { usePromptContext } from '@/app/(main)/prompts/context/PromptContext';
-import { Instance } from '@/lib/proc/process-types';
+import { InstanceKeyType } from '@/lib/proc/process-types';
 
 const converter = new showdown.Converter({ tables: true })
 
@@ -81,11 +81,11 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const [initialMessages, setInitialMessages] = useState<UIMessage[]>([])
     const hasRun = useRef(false)
 
-    let instanceFromURL: string | null = null        
+    let instance: InstanceKeyType | null = null
     try {
         const context = usePromptContext()
-        instanceFromURL = context.instanceFromURL
-    } catch (error) {}
+        instance = context.instance
+    } catch (error) { }
 
     const handleProcessNumberChange = (number: string) => {
         setProcessNumber(number)
@@ -455,7 +455,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
 
             <div className="mt-1 text-center">
                 {getAllSuggestions()
-                    .filter(s => !instanceFromURL || !s.instance || s.instance.map(name => Instance[name].param).includes(instanceFromURL))
+                    .filter(s => !instance || !s.instance || s.instance.includes(instance))
                     .map(s => (
                         <button className="btn btn-sm btn-outline-secondary mt-2 ms-1 me-1" onClick={() => runSuggestion(s.id)} key={s.id}>
                             {s.icon && <FontAwesomeIcon icon={s.icon} className="me-2" />}

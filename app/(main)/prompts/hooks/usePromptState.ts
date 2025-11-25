@@ -3,7 +3,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { IAPromptList, IALibrary } from "@/lib/db/mysql-types"
 import { slugify } from "@/lib/utils/utils"
 import { decodeEnumParam, findPromptFromParam } from "../utils/promptFilters"
-import { Instance, Matter, Scope } from "@/lib/proc/process-types"
+import { Instance, InstanceKeyType, Matter, Scope } from "@/lib/proc/process-types"
 import { html2md } from "@/lib/utils/html2md"
 import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY, SinkMessageToParentType, SinkMessageFromParentType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
@@ -14,8 +14,8 @@ export interface UsePromptStateResult {
     setPrompt: (prompt: IAPromptList | null) => void
     scope: string | undefined
     setScope: (scope: string | undefined) => void
-    instance: string | undefined
-    setInstance: (instance: string | undefined) => void
+    instance: InstanceKeyType | undefined
+    setInstance: (instance: InstanceKeyType | undefined) => void
     matter: string | undefined
     setMatter: (matter: string | undefined) => void
     activeTab: string
@@ -30,8 +30,6 @@ export interface UsePromptStateResult {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
-    instanceFromURL: string | null
-    setInstanceFromURL: (instance: string | null) => void
 }
 
 export function usePromptState(
@@ -54,7 +52,7 @@ export function usePromptState(
 
     const [prompt, setPrompt] = useState<IAPromptList | null>(null)
     const [scope, setScope] = useState<string | undefined>()
-    const [instance, setInstance] = useState<string | undefined>()
+    const [instance, setInstance] = useState<InstanceKeyType | undefined>()
     const [matter, setMatter] = useState<string | undefined>()
     const [promptInitialized, setPromptInitialized] = useState(false)
     const [pieceContent, setPieceContent] = useState({})
@@ -64,7 +62,6 @@ export function usePromptState(
     const [sinkFromURL, setSinkFromURL] = useState<SinkFromURLType | null>(null)
     const [sinkButtonText, setSinkButtonText] = useState<string | null>(null)
     const [source, setSource] = useState<string | null>(null)
-    const [instanceFromURL, setInstanceFromURL] = useState<string | null>(null)
     const hasRunSource = useRef(false)
     const hasRunSink = useRef(false)
 
@@ -97,7 +94,6 @@ export function usePromptState(
         const sourceFromURL = currentSearchParams.get('source')
         const sinkFromURL = currentSearchParams.get('sink') as SinkFromURLType
         const sinkButtonText = currentSearchParams.get('sink-button-text')
-        const instanceFromURL = currentSearchParams.get('instance')
 
         if (p) {
             const found = findPromptFromParam(prompts, p)
@@ -114,14 +110,13 @@ export function usePromptState(
         const matName = decodeEnumParam(mat, Matter)
 
         if (scName) setScope(scName)
-        if (instName) setInstance(instName)
+        if (instName) setInstance(instName as InstanceKeyType)
         if (matName) setMatter(matName)
         if (tram && /^\d+$/.test(tram)) setTramFromUrl(parseInt(tram))
         if (tab === 'comunidade') setActiveTab('comunidade')
         if (sourceFromURL) setSourceFromURL(sourceFromURL)
         if (sinkFromURL) setSinkFromURL(sinkFromURL)
         if (sinkButtonText) setSinkButtonText(sinkButtonText)
-        if (instanceFromURL) setInstanceFromURL(instanceFromURL)
 
         setPromptInitialized(true)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,7 +263,5 @@ export function usePromptState(
         setSinkButtonText,
         allLibraryDocuments,
         promptInitialized,
-        instanceFromURL,
-        setInstanceFromURL
     }
 }

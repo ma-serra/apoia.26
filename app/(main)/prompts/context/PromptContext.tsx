@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useMemo } from 'react'
 import { IAPromptList, IALibrary } from '@/lib/db/mysql-types'
-import { DadosDoProcessoType } from '@/lib/proc/process-types'
+import { DadosDoProcessoType, InstanceKeyType } from '@/lib/proc/process-types'
 import { useProcessData } from '../hooks/useProcessData'
 import { usePromptState } from '../hooks/usePromptState'
 import { SinkFromURLType } from '@/lib/utils/messaging'
@@ -24,8 +24,8 @@ interface PromptContextValue {
     setPrompt: (prompt: IAPromptList | null) => void
     scope: string | undefined
     setScope: (scope: string | undefined) => void
-    instance: string | undefined
-    setInstance: (instance: string | undefined) => void
+    instance: InstanceKeyType | undefined
+    setInstance: (instance: InstanceKeyType | undefined) => void
     matter: string | undefined
     setMatter: (matter: string | undefined) => void
     activeTab: string
@@ -40,8 +40,6 @@ interface PromptContextValue {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
-    instanceFromURL: string | null
-    setInstanceFromURL: (instance: string | null) => void
 }
 
 const PromptContext = createContext<PromptContextValue | undefined>(undefined)

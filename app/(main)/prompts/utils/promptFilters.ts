@@ -33,7 +33,7 @@ export function getPromptsSidekick(
     prompts: IAPromptList[],
     selectedPrompt: IAPromptList | null,
     numeroDoProcesso: string | null,
-    instanceFromURL: string | null
+    instance: string | null
 ): IAPromptList[] {
     const chatIsCurrentPrompt = selectedPrompt?.kind === '^CHAT'
 
@@ -51,10 +51,10 @@ export function getPromptsSidekick(
             (p.kind === '^CHAT_STANDALONE' && !numeroDoProcesso)
     )
 
-    if (instanceFromURL) {
+    if (instance) {
         list = list.filter((p) => {
             if (!p.content.instance || p.content.instance.length === 0) return true
-            return p.content.instance.map(name => Instance[name].param).includes(instanceFromURL)
+            return p.content.instance.includes(instance)
         })
     }
 

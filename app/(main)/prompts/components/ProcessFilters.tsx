@@ -1,6 +1,6 @@
 import { Form, FormGroup, FormLabel, FormSelect, Row, Spinner, Container } from "react-bootstrap"
 import { enumSorted } from "@/lib/ai/model-types"
-import { Instance, Matter, Scope } from "@/lib/proc/process-types"
+import { Instance, InstanceKeyType, Matter, Scope } from "@/lib/proc/process-types"
 import { usePromptContext } from "../context/PromptContext"
 
 export function ProcessFilters() {
@@ -90,7 +90,7 @@ export function ProcessFilters() {
                         <FormLabel className="mb-0">Instância</FormLabel>
                         <FormSelect 
                             value={instance} 
-                            onChange={(e) => setInstance(e.target.value)} 
+                            onChange={(e) => setInstance(e.target.value as InstanceKeyType | undefined)} 
                             className={`form-select w-auto${instance ? ' bg-warning' : ''}`}
                         >
                             <option value="">Todas</option>

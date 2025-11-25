@@ -37,8 +37,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         matter,
         setSource,
         setSinkFromURL,
-        setSinkButtonText,
-        instanceFromURL
+        setSinkButtonText
     } = usePromptContext()
 
     useEffect(() => {
@@ -118,7 +117,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     )
 
     const promptsSidekick = useMemo(
-        () => getPromptsSidekick(filteredPromptsBase, prompt, numeroDoProcesso, instanceFromURL),
+        () => getPromptsSidekick(filteredPromptsBase, prompt, numeroDoProcesso, instance),
         [filteredPromptsBase, prompt, numeroDoProcesso]
     )
 
