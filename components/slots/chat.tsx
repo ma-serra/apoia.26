@@ -456,9 +456,10 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             <div className="mt-1 text-center">
                 {getAllSuggestions()
                     .filter(s => !instance || !s.instance || s.instance.includes(instance))
+                    .filter(s => params.sidekick ? s.sidekick !== false : true)
                     .map(s => (
                         <button className="btn btn-sm btn-outline-secondary mt-2 ms-1 me-1" onClick={() => runSuggestion(s.id)} key={s.id}>
-                            {s.icon && <FontAwesomeIcon icon={s.icon} className="me-2" />}
+                            {s.icon && <FontAwesomeIcon icon={s.icon} className="me-1" />}
                             {s.label}
                         </button>
                     ))}

@@ -9,7 +9,7 @@ export const id = 'draft-sentence'
 export const label = 'Sentença'
 
 export class MinutarSentencaSuggestion extends Suggestion {
-  constructor() { super(id, label, faGavel, DraftSentenceModal, ['PRIMEIRO_GRAU']) }
+  constructor() { super(id, label, faGavel, DraftSentenceModal, ['PRIMEIRO_GRAU'], false) }
   resolve(ctx: SuggestionContext) {
     return {
       type: 'modal' as const,

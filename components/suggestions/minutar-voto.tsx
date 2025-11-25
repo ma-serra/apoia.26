@@ -11,7 +11,7 @@ export const id = 'draft-voto'
 export const label = 'Voto'
 
 export class MinutarVotoSuggestion extends Suggestion {
-  constructor() { super(id, label, faGavel, DraftSentenceModal, ['SEGUNDO_GRAU']) }
+  constructor() { super(id, label, faGavel, DraftSentenceModal, ['SEGUNDO_GRAU'], false) }
   resolve(ctx: SuggestionContext) {
     return {
       type: 'modal' as const,
