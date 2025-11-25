@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Container } from "react-bootstrap"
-import { SourceMessageFromParentType, MessageWithType, AuthPopupMessageType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SinkMessageFromParentType } from "@/lib/utils/messaging"
+import { SourceMessageFromParentType, MessageWithType, AuthPopupMessageType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SinkMessageFromParentType, SinkMessageToParentType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 
 export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }) => {
@@ -49,7 +49,7 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
                     break
                 }
                 case 'get-sink': {
-                    devLog('Received get-sink message from iframe')
+                    devLog('Received get-sink message from iframe', (data as SinkMessageToParentType)?.payload?.promptSlug)
                     postMsgToIframe({ type: 'set-sink', payload: { kind: 'to-parent', buttonText: 'Enviar para a Minuta' } } satisfies SinkMessageFromParentType)
                     break
                 }

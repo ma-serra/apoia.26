@@ -225,7 +225,7 @@ export function usePromptState(
         // // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
         // if (hasRunSink.current) return
         // hasRunSink.current = true
-        parent.postMessage({ type: 'get-sink' } satisfies SinkMessageToParentType, '*')
+        parent.postMessage({ type: 'get-sink', payload: { promptSlug: prompt?.slug } } satisfies SinkMessageToParentType, '*')
 
         // Listener para mensagem do popup
         const handleMessage = (event: MessageEvent) => {

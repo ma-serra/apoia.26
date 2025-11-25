@@ -154,6 +154,9 @@ export type ApproveMessageToParentType = {
  */
 export type SinkMessageToParentType = {
     type: 'get-sink'
+    payload: {
+        promptSlug?: string
+    }
 }
 
 /** 
