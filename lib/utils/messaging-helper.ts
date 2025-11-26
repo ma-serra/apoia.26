@@ -24,15 +24,18 @@ export const formatHtmlToEprocStandard = (html: string) => {
 
 export const formatEprocStandardToHtml = (html: string) => {
     if (!html) return html
+
+    html = html.replace(/&nbsp;/g, ' ')
+
     // Converte <p class="titulo"> de volta para <h2>
-    html = html.replace(/<p class="titulo">/g, '<h2>')
+    html = html.replace(/<p[^>]*class="[^"]*titulo[^"]*"[^>]*>/g, '<h2>')
     
     // Converte <p class="subtitulo"> de volta para <h3>
-    html = html.replace(/<p class="subtitulo">/g, '<h3>')
+    html = html.replace(/<p[^>]*class="[^"]*subtitulo[^"]*"[^>]*>/g, '<h3>')
     
     // Agrupa parágrafos consecutivos com class="citacao" dentro de <blockquote>
     // Primeiro, substitui cada <p class="citacao"> por um marcador temporário
-    html = html.replace(/<p class="citacao">/g, '<p class="__citacao__">')
+    html = html.replace(/<p[^>]*class="[^"]*(citacao2?|paragrafoComRecuo)[^"]*"[^>]*>/g, '<p class="__citacao__">')
     
     // Agrupa sequências de parágrafos com class="__citacao__" em blockquotes
     const citacaoGroupRegex = /(<p class="__citacao__">[\s\S]*?<\/p>(?:\s*<p class="__citacao__">[\s\S]*?<\/p>)*)/g
@@ -42,7 +45,7 @@ export const formatEprocStandardToHtml = (html: string) => {
     })
     
     // Converte <p class="paragrafoPadrao"> de volta para <p>
-    html = html.replace(/<p class="paragrafoPadrao">/g, '<p>')
+    html = html.replace(/<p[^>]*class="[^"]*paragrafoPadrao[^"]*"[^>]*>/g, '<p>')
     
     // Fecha as tags h2 e h3 que foram convertidas de </p>
     // Procura por </p> que vem depois de <h2> ou <h3>
