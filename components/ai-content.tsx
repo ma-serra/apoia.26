@@ -18,6 +18,7 @@ import ErrorMessage from './error-message'
 import MessageStatus from './message-status'
 import MessageFooter from './message-footer'
 import { html2md } from '@/lib/utils/html2md'
+import { formatHtmlToEprocStandard } from '@/lib/utils/messaging-helper'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -96,8 +97,11 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const handleShow = () => setShow(true)
 
     const handleCopy = () => {
-        const html = preprocessed.text
-        const markdown = html2md(preprocessed.text)
+        console.log('Copying content to clipboard...')
+        const prep = preprocess(current, params.definition, params.data, complete)
+        console.log('Preprocessed for copy:', prep)
+        const html = formatHtmlToEprocStandard(prep.text)
+        const markdown = html2md(prep.text)
         if (navigator.clipboard && navigator.clipboard.write) {
             // Use modern Clipboard API to copy as HTML
             const clipboardItem = new ClipboardItem({
