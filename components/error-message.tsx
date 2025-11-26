@@ -42,7 +42,7 @@ function ErrorMsg(msg: string) {
         </>
     }
 
-    if (msg.match(/You exceeded your current quota, please check your plan and billing details/)) {
+    if (msg.match(/You exceeded your current quota, please check your plan and billing details/) || msg.match(/exceed the rate limit/)) {
         return <>
             <p>Você atingiu o limite de uso do seu plano atual. Por favor, verifique os detalhes do seu plano e a cota disponível para continuar utilizando o serviço normalmente.</p>
             <p>Dependendo do tipo de plano e do modelo selecionado, há um número máximo de solicitações por minuto. Quando esse limite é atingido, o sistema pausa temporariamente o processamento.</p>
@@ -50,7 +50,7 @@ function ErrorMsg(msg: string) {
         </>
     }
 
-    if (msg.match(/API key not valid. Please pass a valid API key/)) {
+    if (msg.match(/API key not valid. Please pass a valid API key/) || msg.match(/Incorrect API key provided/)) {
         return <span>A chave da API informada não é válida. Por favor, forneça uma chave de API válida.</span>
     }
 
