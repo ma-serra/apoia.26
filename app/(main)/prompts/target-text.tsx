@@ -12,7 +12,7 @@ import Print from '@/components/slots/print'
 import { getInternalPrompt, promptExecuteBuilder } from '@/lib/ai/prompt'
 import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { infoDeProduto } from '@/lib/proc/info-de-produto'
-import { SinkFromURLType } from '@/lib/utils/messaging'
+import { SinkFromURLType, SourcePayloadType } from '@/lib/utils/messaging'
 import { sendApproveMessageToParent } from '@/lib/utils/messaging-helper'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
@@ -35,7 +35,7 @@ const buildDefinition = (prompt: IAPrompt): PromptDefinitionType => {
     }
 }
 
-export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText, visualization, apiKeyProvided }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, sinkButtonText?: string | null, visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
+export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText, visualization, apiKeyProvided, sourcePayload }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, sinkButtonText?: string | null, visualization?: VisualizationEnum, apiKeyProvided: boolean, sourcePayload?: SourcePayloadType | null }) {
     const [markdown, setMarkdown] = useState(source || '')
     const [hidden, setHidden] = useState(!source)
     const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
@@ -54,7 +54,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
     const handleReady = (content: ContentType) => {
         setContent(content)
         if (sinkFromURL === 'to-parent-automatic') {
-            sendApproveMessageToParent(content)
+            sendApproveMessageToParent(content, sourcePayload)
         }
     }
 
@@ -102,7 +102,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
                             options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {content && sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
+                            {content && sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content, sourcePayload)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
                             {/* <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col> */}
                         </Row>
                     </>

@@ -1,6 +1,6 @@
 import { ContentType } from "../ai/prompt-types"
 import { devLog } from "./log"
-import { ApproveMessageToParentType } from "./messaging"
+import { ApproveMessageToParentType, SourcePayloadType } from "./messaging"
 
 // O Eproc não utiliza blockquote, mas sim parágrafos com classe "citacao". 
 // Também não usa títulos, mas sim parágrafos com classes "titulo" e "subtitulo".
@@ -43,7 +43,7 @@ export const formatEprocStandardToHtml = (html: string) => {
         const content = match.replace(/<p class="__citacao__">/g, '<p>')
         return `<blockquote>${content}</blockquote>`
     })
-    
+
     // Converte <p class="paragrafoPadrao"> de volta para <p>
     html = html.replace(/<p[^>]*class="[^"]*paragrafoPadrao[^"]*"[^>]*>/g, '<p>')
     
@@ -51,11 +51,11 @@ export const formatEprocStandardToHtml = (html: string) => {
     // Procura por </p> que vem depois de <h2> ou <h3>
     html = html.replace(/<h2>([\s\S]*?)<\/p>/g, '<h2>$1</h2>')
     html = html.replace(/<h3>([\s\S]*?)<\/p>/g, '<h3>$1</h3>')
-    
+
     return html
 }
 
-export const sendApproveMessageToParent = (content: ContentType) => {
+export const sendApproveMessageToParent = (content: ContentType, sourcePayload: SourcePayloadType | null) => {
     devLog('onApprove content:', content)
     if (content) {
         let htmlContent = formatHtmlToEprocStandard(content.formatted || '')
@@ -64,6 +64,7 @@ export const sendApproveMessageToParent = (content: ContentType) => {
             payload: {
                 markdownContent: content.raw,
                 htmlContent,
+                sourcePayload
             }
         } satisfies ApproveMessageToParentType, '*')
     }

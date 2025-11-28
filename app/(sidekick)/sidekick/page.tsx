@@ -1,21 +1,12 @@
 'use server'
 
-import { Suspense } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
-import { Container, Spinner } from 'react-bootstrap'
-import Chat from '@/components/slots/chat'
+import { Container } from 'react-bootstrap'
 import { getInternalPrompt } from '@/lib/ai/prompt'
 import { PromptDataType } from '@/lib/ai/prompt-types'
-import { faFileLines, faQuestionCircle } from '@fortawesome/free-regular-svg-icons'
-import { faSackDollar, faUsers, faGavel } from '@fortawesome/free-solid-svg-icons'
 import { assertCurrentUser, isUserCorporativo } from '@/lib/user'
-import Print from '@/components/slots/print'
-import { formatDateTime, formatYYYYMMDDHHMMSS } from '@/lib/utils/date'
-import { slugify } from '@/lib/utils/utils'
 import { assertModel, getSelectedModelName } from '@/lib/ai/model-server'
-import ProcessContents from '@/app/(main)/prompts/process-contents'
 import ServerContents from '@/app/(main)/prompts/server-contents'
-import { redirect } from 'next/navigation'
 
 export default async function Home({ searchParams }) {
     noStore()

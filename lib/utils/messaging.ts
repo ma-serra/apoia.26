@@ -124,16 +124,22 @@ export type SourceMessageToParentType = {
     type: 'get-source'
 }
 
+export type SourcePayloadType = {
+    markdownContent?: string
+    htmlContent?: string
+    selectionInfo?: {
+        startOffset: number
+        endOffset: number
+    }
+}
+
 /** 
  * Parent envia conteúdo fonte ao iframe.
  * Direção: Parent → Iframe
  */
 export type SourceMessageFromParentType = {
     type: 'set-source'
-    payload: {
-        markdownContent?: string
-        htmlContent?: string
-    }
+    payload: SourcePayloadType
 }
 
 /** 
@@ -145,6 +151,7 @@ export type ApproveMessageToParentType = {
     payload: {
         markdownContent: string
         htmlContent: string
+        sourcePayload: SourcePayloadType
     }
 }
 

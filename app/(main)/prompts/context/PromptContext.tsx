@@ -5,7 +5,7 @@ import { IAPromptList, IALibrary } from '@/lib/db/mysql-types'
 import { DadosDoProcessoType, InstanceKeyType } from '@/lib/proc/process-types'
 import { useProcessData } from '../hooks/useProcessData'
 import { usePromptState } from '../hooks/usePromptState'
-import { SinkFromURLType } from '@/lib/utils/messaging'
+import { SinkFromURLType, SourcePayloadType } from '@/lib/utils/messaging'
 
 interface PromptContextValue {
     // Process Data
@@ -40,6 +40,7 @@ interface PromptContextValue {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
+    sourcePayload: SourcePayloadType | null
 }
 
 const PromptContext = createContext<PromptContextValue | undefined>(undefined)
