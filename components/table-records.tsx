@@ -88,6 +88,17 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
         table.setGlobalFilter(`${filter}${apenasSelecionadas ? ' (selecionadas)' : ''}`)
     }, [filter, apenasSelecionadas, table])
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.altKey && e.key.toLowerCase() === 'f') {
+                e.preventDefault()
+                document.getElementById('filter-input')?.focus()
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [])
+
     return (
         <div>
             <table className={tableClassName || 'table table-sm table-striped'}>
@@ -171,10 +182,11 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                 }
                 <div className={`col col-auto mt-3 mb-0 ${options?.apenasSelecionadas ? '' : 'ms-auto'}`}>
                     <input
+                        id="filter-input"
                         list="filter-options"
                         value={filter}
                         onChange={e => { setFilter(String(e.target.value)) }}
-                        placeholder="Filtrar..."
+                        placeholder="Filtrar... (Alt+F)"
                         className="form-control" style={{ width: '8em' }}
                     />
                     <datalist id="filter-options">
