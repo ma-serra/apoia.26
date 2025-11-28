@@ -44,7 +44,8 @@ export function SidekickView({
         source,
         sinkFromURL,
         sinkButtonText,
-        promptInitialized
+        promptInitialized,
+        sourcePayload
     } = usePromptContext()
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -125,6 +126,7 @@ export function SidekickView({
                                                     </>
                                                 ) : undefined
                                             }
+                                            sourcePayload={sourcePayload}
                                         />
                                     </>
                                 ) : (
@@ -136,9 +138,9 @@ export function SidekickView({
                             </div>
                         )
                     ) : prompt.content.target === 'TEXTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} sourcePayload={sourcePayload} />
                     ) : prompt.content.target === 'REFINAMENTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} />
+                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} sourcePayload={sourcePayload} />
                     ) : prompt.content.target === 'CHAT' ? (
                         <Chat
                             definition={{ ...prompt, kind: slugify(prompt.kind) }}

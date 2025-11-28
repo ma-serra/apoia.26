@@ -1,6 +1,6 @@
 import { ContentType } from "../ai/prompt-types"
 import { devLog } from "./log"
-import { ApproveMessageToParentType } from "./messaging"
+import { ApproveMessageToParentType, SourcePayloadType } from "./messaging"
 
 // O Eproc não utiliza blockquote, mas sim parágrafos com classe "citacao". 
 // Também não usa títulos, mas sim parágrafos com classes "titulo" e "subtitulo".
@@ -26,33 +26,33 @@ export const formatEprocStandardToHtml = (html: string) => {
     if (!html) return html
     // Converte <p class="titulo"> de volta para <h2>
     html = html.replace(/<p class="titulo">/g, '<h2>')
-    
+
     // Converte <p class="subtitulo"> de volta para <h3>
     html = html.replace(/<p class="subtitulo">/g, '<h3>')
-    
+
     // Agrupa parágrafos consecutivos com class="citacao" dentro de <blockquote>
     // Primeiro, substitui cada <p class="citacao"> por um marcador temporário
     html = html.replace(/<p class="citacao">/g, '<p class="__citacao__">')
-    
+
     // Agrupa sequências de parágrafos com class="__citacao__" em blockquotes
     const citacaoGroupRegex = /(<p class="__citacao__">[\s\S]*?<\/p>(?:\s*<p class="__citacao__">[\s\S]*?<\/p>)*)/g
     html = html.replace(citacaoGroupRegex, (match) => {
         const content = match.replace(/<p class="__citacao__">/g, '<p>')
         return `<blockquote>${content}</blockquote>`
     })
-    
+
     // Converte <p class="paragrafoPadrao"> de volta para <p>
     html = html.replace(/<p class="paragrafoPadrao">/g, '<p>')
-    
+
     // Fecha as tags h2 e h3 que foram convertidas de </p>
     // Procura por </p> que vem depois de <h2> ou <h3>
     html = html.replace(/<h2>([\s\S]*?)<\/p>/g, '<h2>$1</h2>')
     html = html.replace(/<h3>([\s\S]*?)<\/p>/g, '<h3>$1</h3>')
-    
+
     return html
 }
 
-export const sendApproveMessageToParent = (content: ContentType) => {
+export const sendApproveMessageToParent = (content: ContentType, sourcePayload: SourcePayloadType | null) => {
     devLog('onApprove content:', content)
     if (content) {
         let htmlContent = formatHtmlToEprocStandard(content.formatted || '')
@@ -61,6 +61,7 @@ export const sendApproveMessageToParent = (content: ContentType) => {
             payload: {
                 markdownContent: content.raw,
                 htmlContent,
+                sourcePayload
             }
         } satisfies ApproveMessageToParentType, '*')
     }

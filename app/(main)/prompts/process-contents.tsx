@@ -18,9 +18,9 @@ import { buildFooterFromPieces } from "@/lib/utils/footer";
 import { nivelDeSigiloPermitido } from "@/lib/proc/sigilo";
 import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
-import { SinkFromURLType } from "@/lib/utils/messaging";
+import { SinkFromURLType, SourcePayloadType } from "@/lib/utils/messaging";
 
-export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons, sinkFromURL, sinkButtonText }: {
+export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons, sinkFromURL, sinkButtonText, sourcePayload }: {
     prompt: IAPrompt,
     dadosDoProcesso: DadosDoProcessoType,
     pieceContent: any,
@@ -33,6 +33,7 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
     promptButtons?: ReactNode
     sinkFromURL?: SinkFromURLType
     sinkButtonText?: string
+    sourcePayload?: SourcePayloadType | null
 }) {
     const [selectedPieces, setSelectedPieces] = useState<PecaType[] | null>(null)
     const [defaultPieceIds, setDefaultPieceIds] = useState<string[] | null>(null)

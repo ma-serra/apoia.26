@@ -29,7 +29,8 @@ export function PromptExecutionView({
         setNumber,
         source,
         sinkFromURL,
-        sinkButtonText
+        sinkButtonText,
+        sourcePayload
     } = usePromptContext()
     
     if (!prompt) return null
@@ -56,6 +57,7 @@ export function PromptExecutionView({
                                     allLibraryDocuments={allLibraryDocuments}
                                     sinkFromURL={sinkFromURL}
                                     sinkButtonText={sinkButtonText}
+                                    sourcePayload={sourcePayload}
                                 >
                                     <PromptHeader prompt={prompt} onPromptChange={() => setPrompt(null)} />
                                 </ProcessContents>
@@ -70,9 +72,9 @@ export function PromptExecutionView({
                     </div>
                 )
             ) : prompt.content.target === 'TEXTO' ? (
-                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} />
+                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sourcePayload={sourcePayload} />
             ) : prompt.content.target === 'REFINAMENTO' ? (
-                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} />
+                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sourcePayload={sourcePayload} />
             ) : null}
         </Container>
     )

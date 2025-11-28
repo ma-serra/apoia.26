@@ -5,7 +5,7 @@ import { slugify } from "@/lib/utils/utils"
 import { decodeEnumParam, findPromptFromParam } from "../utils/promptFilters"
 import { Instance, InstanceKeyType, Matter, Scope } from "@/lib/proc/process-types"
 import { html2md } from "@/lib/utils/html2md"
-import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY, SinkMessageToParentType, SinkMessageFromParentType } from "@/lib/utils/messaging"
+import { SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SourceMessageFromParentType, SourceMessageToParentType, SinkFromURLType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY, SinkMessageToParentType, SinkMessageFromParentType, SourcePayloadType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 import { formatEprocStandardToHtml } from "@/lib/utils/messaging-helper"
 
@@ -30,6 +30,7 @@ export interface UsePromptStateResult {
     setSinkButtonText: (message: string | null) => void
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
+    sourcePayload: SourcePayloadType | null
 }
 
 export function usePromptState(
@@ -62,6 +63,7 @@ export function usePromptState(
     const [sinkFromURL, setSinkFromURL] = useState<SinkFromURLType | null>(null)
     const [sinkButtonText, setSinkButtonText] = useState<string | null>(null)
     const [source, setSource] = useState<string | null>(null)
+    const [sourcePayload, setSourcePayload] = useState<SourcePayloadType | null>(null)
     const hasRunSource = useRef(false)
     const hasRunSink = useRef(false)
 
@@ -195,6 +197,7 @@ export function usePromptState(
             switch (event.data?.type) {
                 case 'set-source':
                     const receivedMessage = event.data as SourceMessageFromParentType
+                    setSourcePayload(receivedMessage.payload)
                     if (receivedMessage.payload.markdownContent) {
                         const markdownContent = receivedMessage.payload.markdownContent
                         setSource(markdownContent)
@@ -263,5 +266,6 @@ export function usePromptState(
         setSinkButtonText,
         allLibraryDocuments,
         promptInitialized,
+        sourcePayload,
     }
 }
