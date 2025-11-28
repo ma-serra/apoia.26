@@ -340,7 +340,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             m.role === 'user' ?
                 <div className="row justify-content-end ms-5 g-2 chat-user-container" key={m.id}>
                     <div className={`col col-auto mb-0 icon-container`}>
-                        <FontAwesomeIcon onClick={() => handleEditMessage(idx)} icon={faEdit} className="text-white align-bottom" />
+                        <FontAwesomeIcon onClick={() => handleEditMessage(idx + (initialMessages?.length || 0))} icon={faEdit} className="text-white align-bottom" />
                     </div>
                     <div className={`col col-auto mb-0`}>
                         <div className={`text-wrap mb-2 rounded chat-content chat-user${params.sidekick ? '-sidekick' : ''}`} dangerouslySetInnerHTML={{ __html: preprocessar(m, m.role) }} />
