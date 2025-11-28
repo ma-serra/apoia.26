@@ -20,9 +20,7 @@ export const copyPromptToClipboard = (prompt: IAPromptList) => {
     navigator.clipboard.writeText(s)
 }
 
-function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean }) {
-    const [toast, setToast] = useState<string>()
-    const [toastVariant, setToastVariant] = useState<string>()
+function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick, toastMessage }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean, toastMessage?: (message: string, variant: string) => void }) {
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
     const [viewKey, setViewKey] = useState<number>(0)
 
@@ -50,11 +48,6 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         const raw = getCookie('termos-de-uso')
         setTermosAceitos(raw === '1')
     }, [])
-
-    const toastMessage = (message: string, variant: string) => {
-        setToast(message)
-        setToastVariant(variant)
-    }
 
     const promptOnClick = (kind: string, row: any) => {
         switch (kind) {
@@ -149,16 +142,6 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
                 isModerator={isModerator}
                 apiKeyProvided={apiKeyProvided}
             />
-            <ToastContainer className="p-3" position="bottom-end" style={{ zIndex: 1 }}>
-                <Toast onClose={() => setToast('')} show={!!toast} delay={10000} bg={toastVariant} autohide key={toast}>
-                    <Toast.Header>
-                        <strong className="me-auto">Atenção</strong>
-                    </Toast.Header>
-                    <Toast.Body className={toastVariant !== 'Light' && 'text-white'}>
-                        <ErrorMessage message={toast} />
-                    </Toast.Body>
-                </Toast>
-            </ToastContainer>
         </>
     ) : (
         <PromptExecutionView
@@ -179,7 +162,7 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
 
     return (
         <PromptProvider prompts={prompts} toastMessage={toastMessage} sidekick={sidekick}>
-            <ContentsInner 
+            <ContentsInner
                 prompts={prompts}
                 user={user}
                 user_id={user_id}
@@ -187,7 +170,18 @@ export function Contents({ prompts, user, user_id, apiKeyProvided, model, isMode
                 model={model}
                 isModerator={isModerator}
                 sidekick={sidekick}
+                toastMessage={toastMessage}
             />
+            <ToastContainer className="p-3" position="bottom-end" style={{ zIndex: 1 }}>
+                <Toast onClose={() => setToast('')} show={!!toast} delay={10000} bg={toastVariant} autohide key={toast}>
+                    <Toast.Header>
+                        <strong className="me-auto">Atenção</strong>
+                    </Toast.Header>
+                    <Toast.Body className={toastVariant !== 'Light' && 'text-white'}>
+                        <ErrorMessage message={toast} />
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
         </PromptProvider>
     )
 }
