@@ -1,7 +1,7 @@
 import { streamContent } from '../../../../lib/ai/generate'
 import { PromptDefinitionType, PromptExecutionResultsType, PromptOptionsType } from '@/lib/ai/prompt-types'
 import { getInternalPrompt, promptDefinitionFromDefinitionAndOptions } from '@/lib/ai/prompt'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao, UserDao } from '@/lib/db/dao'
 import { IAPrompt } from '@/lib/db/mysql-types'
 import { assertApiUser } from '@/lib/user'
 import { preprocessTemplate } from '@/lib/ai/template'
@@ -14,7 +14,7 @@ export const maxDuration = 60
 async function getPromptDefinition(kind: string, promptSlug?: string, promptId?: number): Promise<PromptDefinitionType> {
     let prompt: IAPrompt | undefined = undefined
     if (promptId) {
-        prompt = await Dao.retrievePromptById(promptId)
+        prompt = await PromptDao.retrievePromptById(promptId)
         if (!prompt)
             throw new Error(`Prompt not found: ${promptId}`)
         if (!prompt.kind)
@@ -25,14 +25,14 @@ async function getPromptDefinition(kind: string, promptSlug?: string, promptId?:
             if (!prompt.content.system_prompt) prompt.content.system_prompt = promptTemplate.systemPrompt
         }
     } else if (kind && promptSlug) {
-        const prompts = await Dao.retrievePromptsByKindAndSlug(kind, promptSlug)
+        const prompts = await PromptDao.retrievePromptsByKindAndSlug(kind, promptSlug)
         if (prompts.length === 0)
             throw new Error(`Prompt not found: ${kind}/${promptSlug}`)
         let found = prompts.find(p => p.is_official)
         if (!found)
             found = prompts[0]
         if (found)
-            prompt = await Dao.retrievePromptById(found.id)
+            prompt = await PromptDao.retrievePromptById(found.id)
     }
 
     const definition: PromptDefinitionType =
@@ -144,7 +144,7 @@ async function POST_HANDLER(request: Request) {
         court_name: user.corporativo?.[0]?.dsc_tribunal_pai || null,
         state_abbreviation: user.corporativo?.[0]?.sig_uf || null,
     } : undefined
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name, userFields)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name, userFields)
 
     const body = await request.json()
     const kind: string = body.kind

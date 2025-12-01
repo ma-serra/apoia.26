@@ -1,7 +1,7 @@
-import { Dao } from "@/lib/db/mysql"
+import { SystemDao } from "@/lib/db/dao"
 
 export async function GET(req: Request) {
-    const systemId = await Dao.assertSystemId('PDPJ')
+    const systemId = await SystemDao.assertSystemId('PDPJ')
 
     const r: any = {
         pass: undefined,

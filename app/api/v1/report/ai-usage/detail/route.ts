@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { UserDao } from '@/lib/db/dao'
 import { assertApiUser, assertCurrentUser, isUserModerator } from '@/lib/user'
 
 export async function POST(req: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       effectiveUserCpf = String(userCpf).replace(/\D/g, '')
     }
 
-    const rows = await Dao.retrieveIAUsageDetail({ dossier_code, user_cpf: effectiveUserCpf, startDate, endDate, isModerator, currentUserCpf: effectiveUserCpf })
+    const rows = await UserDao.retrieveIAUsageDetail({ dossier_code, user_cpf: effectiveUserCpf, startDate, endDate, isModerator, currentUserCpf: effectiveUserCpf })
     return NextResponse.json({ rows })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 })

@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao, TestsetDao } from '@/lib/db/dao'
 import { formatDate, maiusculasEMinusculas } from '@/lib/utils/utils'
 import TablePlaceholder from '@/components/table-placeholder'
 import TableRecords from '@/components/table-records'
@@ -16,8 +16,8 @@ export default async function Home(props: { params: Promise<{ kind: string }> })
     const heads = await headers()
     const pathname = heads.get('next-url')
     const kind = params.kind
-    const prompts = await Dao.retrievePromptsByKind(null, kind)
-    const testsets = await Dao.retrieveTestsetsByKind(null, kind)
+    const prompts = await PromptDao.retrievePromptsByKind(null, kind)
+    const testsets = await TestsetDao.retrieveTestsetsByKind(null, kind)
 
     return (<Container className="mt-5" fluid={false}>
         <h1 className="mb-0">Prompts</h1>

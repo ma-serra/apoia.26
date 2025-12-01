@@ -1,4 +1,4 @@
-import { Dao } from "../db/mysql"
+import { LibraryDao } from "../db/dao"
 import { IALibrary, IALibraryInclusion } from "../db/mysql-types"
 
 /**
@@ -51,7 +51,7 @@ export async function getLibraryDocuments(ids: string[] | undefined): Promise<Li
         const safeNumericIds = numericIds || []
 
         // Busca documentos otimizados (sem binário, filtrados por ID/Inclusão)
-        const documents = await Dao.listLibraryForPrompt(numericIds)
+        const documents = await LibraryDao.listLibraryForPrompt(numericIds)
 
         // Filtra documentos que têm conteúdo (já filtrado no banco, mas mantendo por segurança/tipagem)
         const validDocuments = documents.filter(doc => doc.content_markdown)
@@ -99,7 +99,7 @@ export async function formatLibraryDocument(doc: { id: number, title: string, co
     let docContent = doc.content_markdown || ''
 
     // Busca anexos do documento
-    const attachments = await Dao.getLibraryAttachmentsText(doc.id)
+    const attachments = await LibraryDao.getLibraryAttachmentsText(doc.id)
     if (attachments.length > 0) {
         for (const att of attachments) {
             if (att.content_text) {

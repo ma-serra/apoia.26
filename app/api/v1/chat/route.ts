@@ -1,7 +1,7 @@
 import { generateAndStreamContent } from '@/lib/ai/generate'
 import { getModel } from '@/lib/ai/model-server'
 import { getTools } from '@/lib/ai/tools'
-import { Dao } from '@/lib/db/mysql'
+import { UserDao } from '@/lib/db/dao'
 import { assertApiUser } from '@/lib/user'
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, StreamTextResult, ToolSet, UIMessage } from 'ai'
 import { withErrorHandler } from '@/lib/utils/api-error'
@@ -31,7 +31,7 @@ export const maxDuration = 60
 async function POST_HANDLER(req: Request) {
     const pUser = assertApiUser()
     const user = await pUser
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
     const { messages } = await req.json()
     const { model, modelRef, apiKeyFromEnv } = await getModel()
 

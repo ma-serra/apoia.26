@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { Dao } from './db/mysql'
+import { PromptDao } from './db/dao'
 import { IAPromptList } from './db/mysql-types'
 import { TipoDeSinteseMap } from './proc/combinacoes'
 import { Instance, Matter, Scope, Share, StatusDeLancamento } from './proc/process-types'
@@ -28,7 +28,7 @@ export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao 
         if (!showChatPadrao && key === 'CHAT_STANDALONE') continue
         const base = baseByKind.get(`^${key}`)
             ? baseByKind.get(`^${key}`)
-            : await Dao.addInternalPrompt(`^${key}`) as IAPromptList
+            : await PromptDao.addInternalPrompt(`^${key}`) as IAPromptList
         if (def.status === StatusDeLancamento.EM_DESENVOLVIMENTO && !isBetaTester) {
             baseByKind.delete(`^${key}`)
             continue
@@ -59,7 +59,7 @@ export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao 
 
     // Remove seeded entries that no longer exist in the map
     for (const k of baseByKind.keys()) {
-        await Dao.removeInternalPrompt(k)
+        await PromptDao.removeInternalPrompt(k)
         baseByKind.delete(k)
     }
 

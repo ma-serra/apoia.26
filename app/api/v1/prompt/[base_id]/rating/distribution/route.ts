@@ -1,4 +1,4 @@
-import { Dao } from "@/lib/db/mysql"
+import { RatingDao } from "@/lib/db/dao"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -21,7 +21,7 @@ export async function GET(
         }
 
         // Busca a distribuição de votos
-        const distribution = await Dao.getPromptRatingDistribution(promptBaseId)
+        const distribution = await RatingDao.getPromptRatingDistribution(promptBaseId)
 
         return NextResponse.json({ 
             distribution 

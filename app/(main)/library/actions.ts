@@ -1,7 +1,7 @@
 'use server'
 
 import { assertCurrentUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { revalidatePath } from 'next/cache'
 
 export async function deleteLibraryAction(formData: FormData) {
@@ -10,6 +10,6 @@ export async function deleteLibraryAction(formData: FormData) {
   const idRaw = formData.get('id')
   const id = typeof idRaw === 'string' ? Number(idRaw) : Number(idRaw as any)
   if (!Number.isFinite(id)) return
-  await Dao.deleteLibrary(id)
+  await LibraryDao.deleteLibrary(id)
   revalidatePath('/library')
 }

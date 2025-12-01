@@ -1,5 +1,5 @@
 import { getSelectedModelParams } from "@/lib/ai/model-server"
-import { Dao } from "@/lib/db/mysql"
+import { UserDao } from "@/lib/db/dao"
 import { CargaDeConteudoEnum, obterDadosDoProcesso2 } from "@/lib/proc/process"
 import { getCurrentUser } from "@/lib/user"
 
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const dadosDoProcesso = await obterDadosDoProcesso2({ numeroDoProcesso: '01015894820201000000', pUser, conteudoDasPecasSelecionadas: CargaDeConteudoEnum.NAO })
 
-    const userId = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const userId = await UserDao.assertIAUserId(user.preferredUsername || user.name)
 
     const params = await getSelectedModelParams()
 

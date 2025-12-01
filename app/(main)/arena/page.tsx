@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao } from '@/lib/db/dao'
 import { formatDate, maiusculasEMinusculas } from '@/lib/utils/utils'
 import TablePlaceholder from '@/components/table-placeholder'
 import TableRecords from '@/components/table-records'
@@ -16,7 +16,7 @@ export default async function Home() {
     await assertCurrentUser()
     await assertModel()
 
-    const records = (await Dao.retrieveCountersByPromptKinds()).filter(r => r.kind)
+    const records = (await PromptDao.retrieveCountersByPromptKinds()).filter(r => r.kind)
     const promptKinds = Object.entries(internalPrompts).map(([kind, prompt]) => ({ kind, prompts: 0, testsets: 0 }))
     promptKinds.forEach(promptKind => {
         if (!records.find(r => r.kind === promptKind.kind)) {

@@ -1,17 +1,17 @@
 import { Container } from 'react-bootstrap'
 import PromptTests from '../../../prompt-tests'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao, ModelDao, TestsetDao } from '@/lib/db/dao'
 import { PublicError } from '@/lib/utils/public-error';
 
 export default async function New(props: { params: Promise<{ kind: string, slug: string, id: number }> }) {
     const params = await props.params;
     const { kind, slug, id } = params
 
-    const record = await Dao.retrievePromptById(id)
+    const record = await PromptDao.retrievePromptById(id)
     if (!record) throw new PublicError('Prompt não encontrado')
-    const models = await Dao.retrieveModels()
-    const prompts = await Dao.retrieveOfficialPromptsIdsAndNamesByKind(kind)
-    const testsets = await Dao.retrieveOfficialTestsetsIdsAndNamesByKind(kind)
+    const models = await ModelDao.retrieveModels()
+    const prompts = await PromptDao.retrieveOfficialPromptsIdsAndNamesByKind(kind)
+    const testsets = await TestsetDao.retrieveOfficialTestsetsIdsAndNamesByKind(kind)
 
     record.base_id = record.id
     return (<Container fluid={false}>

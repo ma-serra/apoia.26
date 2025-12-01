@@ -4,7 +4,7 @@ import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import { fetchDollar } from './[id]/page'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao } from '@/lib/db/dao'
 import { getSelectedModelParams } from '@/lib/ai/model-server'
 import ApiKeyMissing from '@/components/api-key-missing'
 import { faBook, faKey } from '@fortawesome/free-solid-svg-icons'
@@ -14,7 +14,7 @@ export const maxDuration = 60
 
 export default async function BatchesPage() {
   const usdBrl = await fetchDollar()
-  const rows = await Dao.listBatchesForUser()
+  const rows = await BatchDao.listBatchesForUser()
   const { apiKeyFromEnv } = await getSelectedModelParams()
 
   if (apiKeyFromEnv)

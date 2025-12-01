@@ -3,7 +3,7 @@ import Link from 'next/link';
 import CourtUsageChart from './CourtUsageChart';
 import PeriodNavigation from './PeriodNavigation';
 import { Container } from 'react-bootstrap';
-import { Dao } from '@/lib/db/mysql';
+import { UserDao } from '@/lib/db/dao';
 import { CourtUsageData, UserUsageData, DailyUsageData } from '@/lib/db/mysql-types';
 import { dailyLimits } from '@/lib/utils/limits';
 import { displayUserName } from '@/lib/utils/utils';
@@ -32,8 +32,8 @@ export default async function DashboardPage(props) {
 
     // If userId is provided, show user detail view
     if (userId) {
-        const dailyUsageData: DailyUsageData[] = await Dao.retrieveUserDailyUsage(userId, court_id, startDate, endDate);
-        const userInfo = await Dao.retrieveUserMonthlyUsageByCourt(court_id, startDate, endDate);
+        const dailyUsageData: DailyUsageData[] = await UserDao.retrieveUserDailyUsage(userId, court_id, startDate, endDate);
+        const userInfo = await UserDao.retrieveUserMonthlyUsageByCourt(court_id, startDate, endDate);
         const currentUser = userInfo.find(u => Number(u.id) === userId);
         const userName = currentUser ? displayUserName(currentUser.name, currentUser.username) : `Usuário ${userId}`;
 
@@ -127,8 +127,8 @@ export default async function DashboardPage(props) {
     }
 
     // Otherwise, show court overview
-    const courtUsageData: CourtUsageData[] = await Dao.retrieveCourtMonthlyUsage(court_id, startDate, endDate);
-    const userUsageData: UserUsageData[] = await Dao.retrieveUserMonthlyUsageByCourt(court_id, startDate, endDate);
+    const courtUsageData: CourtUsageData[] = await UserDao.retrieveCourtMonthlyUsage(court_id, startDate, endDate);
+    const userUsageData: UserUsageData[] = await UserDao.retrieveUserMonthlyUsageByCourt(court_id, startDate, endDate);
 
     return (
         <Container className='mt-5'>

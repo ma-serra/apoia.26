@@ -4,7 +4,7 @@ import { CargaDeConteudoEnum, obterDadosDoProcesso } from '@/lib/proc/process'
 import { assertCurrentUser } from '@/lib/user'
 import { T, P, ProdutosValidos, Plugin, ProdutoCompleto, InfoDeProduto, PieceStrategy, selecionarPecasPorPadraoComFase } from '@/lib/proc/combinacoes'
 import { IAGenerated, IAPrompt } from '@/lib/db/mysql-types'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao, SystemDao, BatchDao, DossierDao, DocumentDao, EnumDao } from '@/lib/db/dao'
 import { getTriagem, getNormas, getPalavrasChave } from '@/lib/fix'
 import { generateContent } from '@/lib/ai/generate'
 import { infoDeProduto } from '../proc/info-de-produto'
@@ -107,9 +107,9 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
             const promptId = Number(kind)
 
             // Obter prompt (e versão mais recente, se aplicável)
-            promptFromDB = await Dao.retrievePromptById(promptId)
+            promptFromDB = await PromptDao.retrievePromptById(promptId)
             if (promptFromDB?.base_id && !promptFromDB?.is_latest) {
-                promptFromDB = await Dao.retrieveLatestPromptByBaseId(promptFromDB.base_id)
+                promptFromDB = await PromptDao.retrieveLatestPromptByBaseId(promptFromDB.base_id)
             }
 
             // Se o prompt atuar sobre PROCESSO e tiver estratégia de peças, aplica seleção e recarrega conteúdo
@@ -190,7 +190,7 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
         if (batchName) {
             const user = await pUser
             const systemCode = user?.system || 'PDPJ'
-            const systemId = await Dao.assertSystemId(systemCode)
+            const systemId = await SystemDao.assertSystemId(systemCode)
             const textosParaClipagem = JSON.parse(JSON.stringify(pecasComConteudo))
             const textosClipados = clipPieces(model, textosParaClipagem)
             const footer = buildFooter(model || '-', textosClipados)
@@ -207,14 +207,14 @@ export async function analyze(batchName: string | undefined, dossierNumber: stri
 
 // Insert into database as part of a batch
 async function storeBatchItem(systemId: number, batchName: string, dossierNumber: string, requests: GeneratedContent[], dadosDoProcesso: any, footer: string) {
-    const batch_id = await Dao.assertIABatchId(batchName)
-    const dossier_id = await Dao.assertIADossierId(dossierNumber, systemId, dadosDoProcesso.codigoDaClasse, dadosDoProcesso.ajuizamento)
-    await Dao.deleteIABatchDossierId(batch_id, dossier_id)
-    const batch_dossier_id = await Dao.assertIABatchDossierId(batch_id, dossier_id, footer)
+    const batch_id = await BatchDao.assertIABatchId(batchName)
+    const dossier_id = await DossierDao.assertIADossierId(dossierNumber, systemId, dadosDoProcesso.codigoDaClasse, dadosDoProcesso.ajuizamento)
+    await BatchDao.deleteIABatchDossierId(batch_id, dossier_id)
+    const batch_dossier_id = await BatchDao.assertIABatchDossierId(batch_id, dossier_id, footer)
     let seq = 0
     for (const req of requests) {
-        const document_id = req.documentCode ? await Dao.assertIADocumentId(dossier_id, req.documentCode, req.documentDescr) : null
-        await Dao.insertIABatchDossierItem({ batch_dossier_id, document_id, generation_id: req.id as number, descr: req.title, seq })
+        const document_id = req.documentCode ? await DocumentDao.assertIADocumentId(dossier_id, req.documentCode, req.documentDescr) : null
+        await BatchDao.insertIABatchDossierItem({ batch_dossier_id, document_id, generation_id: req.id as number, descr: req.title, seq })
         seq++
 
         // process plugins
@@ -224,18 +224,18 @@ async function storeBatchItem(systemId: number, batchName: string, dossierNumber
                 case Plugin.TRIAGEM: {
                     const triage = getTriagem(req.generated)
                     if (!triage) throw new Error('Triagem não encontrada')
-                    const enum_id = await Dao.assertIAEnumId(Plugin.TRIAGEM)
-                    const enum_item_id = await Dao.assertIAEnumItemId(triage, enum_id)
-                    await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                    const enum_id = await EnumDao.assertIAEnumId(Plugin.TRIAGEM)
+                    const enum_item_id = await EnumDao.assertIAEnumItemId(triage, enum_id)
+                    await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                     break
                 }
                 case Plugin.TRIAGEM_JSON: {
                     if (req.generated) {
                         const triage = JSON.parse(req.generated).triagem
                         if (triage) {
-                            const enum_id = await Dao.assertIAEnumId(Plugin.TRIAGEM)
-                            const enum_item_id = await Dao.assertIAEnumItemId(triage, enum_id)
-                            await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                            const enum_id = await EnumDao.assertIAEnumId(Plugin.TRIAGEM)
+                            const enum_item_id = await EnumDao.assertIAEnumItemId(triage, enum_id)
+                            await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                             break
                         } else {
                             throw new Error('Triagem não encontrada')
@@ -244,10 +244,10 @@ async function storeBatchItem(systemId: number, batchName: string, dossierNumber
                 }
                 case Plugin.NORMAS: {
                     const normas = getNormas(req.generated)
-                    const enum_id = await Dao.assertIAEnumId(Plugin.NORMAS)
+                    const enum_id = await EnumDao.assertIAEnumId(Plugin.NORMAS)
                     for (const norma of normas) {
-                        const enum_item_id = await Dao.assertIAEnumItemId(norma, enum_id)
-                        await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                        const enum_item_id = await EnumDao.assertIAEnumItemId(norma, enum_id)
+                        await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                     }
                     break
                 }
@@ -255,10 +255,10 @@ async function storeBatchItem(systemId: number, batchName: string, dossierNumber
                     if (req.generated) {
                         const normas = JSON.parse(req.generated).normas
                         if (normas) {
-                            const enum_id = await Dao.assertIAEnumId(Plugin.NORMAS)
+                            const enum_id = await EnumDao.assertIAEnumId(Plugin.NORMAS)
                             for (const norma of normas) {
-                                const enum_item_id = await Dao.assertIAEnumItemId(norma, enum_id)
-                                await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                                const enum_item_id = await EnumDao.assertIAEnumItemId(norma, enum_id)
+                                await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                             }
                             break
                         }
@@ -266,10 +266,10 @@ async function storeBatchItem(systemId: number, batchName: string, dossierNumber
                 }
                 case Plugin.PALAVRAS_CHAVE: {
                     const palavrasChave = getPalavrasChave(req.generated)
-                    const enum_id = await Dao.assertIAEnumId(Plugin.PALAVRAS_CHAVE)
+                    const enum_id = await EnumDao.assertIAEnumId(Plugin.PALAVRAS_CHAVE)
                     for (const palavraChave of palavrasChave) {
-                        const enum_item_id = await Dao.assertIAEnumItemId(palavraChave, enum_id)
-                        await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                        const enum_item_id = await EnumDao.assertIAEnumItemId(palavraChave, enum_id)
+                        await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                     }
                     break
                 }
@@ -277,10 +277,10 @@ async function storeBatchItem(systemId: number, batchName: string, dossierNumber
                     if (req.generated) {
                         const palavrasChave = JSON.parse(req.generated).palavrasChave
                         if (palavrasChave) {
-                            const enum_id = await Dao.assertIAEnumId(Plugin.PALAVRAS_CHAVE)
+                            const enum_id = await EnumDao.assertIAEnumId(Plugin.PALAVRAS_CHAVE)
                             for (const palavraChave of palavrasChave) {
-                                const enum_item_id = await Dao.assertIAEnumItemId(palavraChave, enum_id)
-                                await Dao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
+                                const enum_item_id = await EnumDao.assertIAEnumItemId(palavraChave, enum_id)
+                                await BatchDao.assertIABatchDossierEnumItemId(batch_dossier_id, enum_item_id)
                             }
                             break
                         }

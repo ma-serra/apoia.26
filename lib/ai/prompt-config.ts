@@ -1,12 +1,12 @@
 'use server'
 
-import { Dao } from "../db/mysql";
+import { PromptDao, ModelDao } from "../db/dao";
 import { SelectableItem, SelectableItemWithLatestAndOfficial } from "../db/mysql-types";
 
 export async function loadPrompts(kind: string): Promise<SelectableItemWithLatestAndOfficial[]> {
-    return Dao.retrievePromptsIdsAndNamesByKind(kind)
+    return PromptDao.retrievePromptsIdsAndNamesByKind(kind)
 }
 
 export async function loadModels(kind: string): Promise<SelectableItem[]> {
-    return await Dao.retrieveModels()
+    return await ModelDao.retrieveModels()
 }

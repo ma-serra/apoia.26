@@ -1,5 +1,5 @@
 import { assertApiUser, getCurrentUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao } from '@/lib/db/dao'
 import { BadRequestError, UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
 import { assert } from 'console'
 
@@ -15,7 +15,7 @@ async function POST_HANDLER(req: Request) {
   const { name, tipo_de_sintese, prompt_base_id, complete, numbers } = body || {}
   if (!name || !Array.isArray(numbers)) throw new BadRequestError('Invalid body')
   if ((tipo_de_sintese && prompt_base_id) || (!tipo_de_sintese && !prompt_base_id)) throw new BadRequestError('Informe exatamente um entre tipo_de_sintese ou prompt_base_id')
-  const batch = await Dao.createBatchWithJobs({ name, tipo_de_sintese, prompt_base_id, complete: !!complete, numbers })
+  const batch = await BatchDao.createBatchWithJobs({ name, tipo_de_sintese, prompt_base_id, complete: !!complete, numbers })
   return Response.json({ status: 'OK', batch })
 }
 
@@ -25,7 +25,7 @@ async function POST_HANDLER(req: Request) {
  */
 async function GET_HANDLER() {
   const user = await assertApiUser()
-  const rows = await Dao.listBatchesForUser()
+  const rows = await BatchDao.listBatchesForUser()
   return Response.json({ status: 'OK', rows })
 }
 

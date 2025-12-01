@@ -1,12 +1,12 @@
 'use server'
 
 import { NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 
 export async function GET() {
   await assertCurrentUser()
-  const items = await Dao.listLibraryHeaders()
+  const items = await LibraryDao.listLibraryHeaders()
   return NextResponse.json({ items })
 }
 
@@ -29,13 +29,13 @@ export async function POST(req: Request) {
       content_binary = Buffer.from(bytes)
       fileContentType = file.type || 'application/octet-stream'
     }
-    const id = await Dao.insertLibrary({ kind, title, content_type: fileContentType, content_binary })
+    const id = await LibraryDao.insertLibrary({ kind, title, content_type: fileContentType, content_binary })
     return NextResponse.json({ id })
   } else {
     const body = await req.json()
     const { kind, title, content_type, content_markdown, model_subtype, inclusion, context } = body
     if (!kind || !title) return NextResponse.json({ errormsg: 'kind e title são obrigatórios' }, { status: 400 })
-    const id = await Dao.insertLibrary({ 
+    const id = await LibraryDao.insertLibrary({ 
       kind, 
       title, 
       content_type: content_type ?? null, 

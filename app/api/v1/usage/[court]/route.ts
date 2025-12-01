@@ -1,6 +1,6 @@
 import fetcher from "@/lib/utils/fetcher"
 import { NextResponse } from "next/server"
-import { Dao } from "@/lib/db/mysql"
+import { UserDao } from "@/lib/db/dao"
 import { withErrorHandler } from '@/lib/utils/api-error'
 
 export const maxDuration = 60
@@ -65,7 +65,7 @@ async function GET_HANDLER(
   const startDate = searchParams.get('start_date')
   const endDate = searchParams.get('end_date')
 
-  const records = await Dao.retrieveCourtMonthlyUsage(court_id, startDate, endDate)
+  const records = await UserDao.retrieveCourtMonthlyUsage(court_id, startDate, endDate)
 
   const acceptHeader = req.headers.get('accept')
   if (acceptHeader && acceptHeader === 'application/text') {

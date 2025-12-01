@@ -1,7 +1,7 @@
 'use server'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { RatingDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 
 /**
@@ -32,8 +32,8 @@ export async function GET(
 
     // Busca o rating do usuário e as estatísticas
     const [userRating, stats] = await Promise.all([
-      Dao.getUserPromptRating(baseId),
-      Dao.getPromptRatingStats(baseId)
+      RatingDao.getUserPromptRating(baseId),
+      RatingDao.getPromptRatingStats(baseId)
     ])
 
     return NextResponse.json({
@@ -95,10 +95,10 @@ export async function POST(
       )
     }
 
-    await Dao.upsertPromptRating(baseId, stars)
+    await RatingDao.upsertPromptRating(baseId, stars)
 
     // Retorna as estatísticas atualizadas
-    const stats = await Dao.getPromptRatingStats(baseId)
+    const stats = await RatingDao.getPromptRatingStats(baseId)
 
     return NextResponse.json({
       success: true,
@@ -137,7 +137,7 @@ export async function DELETE(
       )
     }
 
-    const deleted = await Dao.deletePromptRating(baseId)
+    const deleted = await RatingDao.deletePromptRating(baseId)
 
     if (!deleted) {
       return NextResponse.json(

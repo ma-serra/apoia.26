@@ -1,7 +1,7 @@
 'use server'
 
 import { NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { RatingDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 
 /**
@@ -11,7 +11,7 @@ import { assertCurrentUser } from '@/lib/user'
 export async function GET() {
   try {
     await assertCurrentUser()
-    const stats = await Dao.getAllPromptRatingStats()
+    const stats = await RatingDao.getAllPromptRatingStats()
     return NextResponse.json({ stats })
   } catch (error: any) {
     console.error('Error getting all prompt ratings:', error)

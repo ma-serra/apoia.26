@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao } from '@/lib/db/dao'
 import { assertApiUser, isUserModerator } from '@/lib/user'
 import { BadRequestError, ForbiddenError, withErrorHandler } from '@/lib/utils/api-error'
 
@@ -16,7 +16,7 @@ async function GET_HANDLER(req: NextRequest) {
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
 
-  const rows = await Dao.retrievePromptUsageReport({
+  const rows = await PromptDao.retrievePromptUsageReport({
     court_id: court_id ? parseInt(court_id, 10) : undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
@@ -39,7 +39,7 @@ async function POST_HANDLER(req: NextRequest) {
     throw new BadRequestError('Parâmetros obrigatórios: prompt_key, month, year')
   }
 
-  const rows = await Dao.retrievePromptUsageDetail({
+  const rows = await PromptDao.retrievePromptUsageDetail({
     prompt_key,
     month: parseInt(month, 10),
     year: parseInt(year, 10),

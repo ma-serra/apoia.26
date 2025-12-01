@@ -1,7 +1,7 @@
 'use server'
 
 import { unstable_noStore as noStore } from 'next/cache'
-import { Dao } from '@/lib/db/mysql'
+import { UserDao, PromptDao } from '@/lib/db/dao'
 import { redirect } from 'next/navigation';
 import { assertCurrentUser } from '@/lib/user'
 
@@ -9,9 +9,9 @@ export default async function Home(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     noStore()
     const user = await assertCurrentUser()
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
 
-    await Dao.removeLatestPrompt(parseInt(params.id))
+    await PromptDao.removeLatestPrompt(parseInt(params.id))
 
     redirect('/prompts')
     return null

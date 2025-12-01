@@ -1,5 +1,5 @@
 import { decrypt } from '../utils/crypt'
-import { Dao } from '../db/mysql'
+import { SystemDao, DossierDao, DocumentDao } from '../db/dao'
 import { inferirCategoriaDaPeca } from '../category'
 import { obterConteudoDaPeca, obterDocumentoGravado } from './piece'
 import { assertNivelDeSigilo, nivelDeSigiloPermitido } from './sigilo'
@@ -53,7 +53,6 @@ export const selecionarUltimasPecas = (pecas: PecaType[], descricoes: string[]) 
 
 const iniciarObtencaoDeConteudo = async (dossier_ids: { [key: string]: number }, numeroDoProcesso: string, pecas: PecaType[], interop: Interop, synchronous?: boolean) => {
     for (const peca of pecas) {
-        // const current_dossier_id = numeroDoProcesso === peca.numeroDoProcesso ? dossier_id : await Dao.assertIADossierId(peca.numeroDoProcesso || numeroDoProcesso)
         if (peca.conteudo) continue
         const np = peca.numeroDoProcesso || numeroDoProcesso
         if (!dossier_ids[np]) throw new Error(`Dossier_id não encontrado para o processo ${np}`)
@@ -100,8 +99,8 @@ export const getInteropFromUser = async (user: UserType): Promise<Interop> => {
 }
 
 export const getSystemIdAndDossierId = async (user: UserType, numeroDoProcesso: string): Promise<{ system_id: number, dossier_id: number }> => {
-    const system_id = await Dao.assertSystemId(user?.system || 'PDPJ')
-    const dossier_id = await Dao.assertIADossierId(numeroDoProcesso, system_id, undefined, undefined)
+    const system_id = await SystemDao.assertSystemId(user?.system || 'PDPJ')
+    const dossier_id = await DossierDao.assertIADossierId(numeroDoProcesso, system_id, undefined, undefined)
     return { system_id, dossier_id }
 }
 
@@ -144,7 +143,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         const dossier_ids: { [key: string]: number } = {}
         dossier_ids[numeroDoProcesso] = dossier_id
         for (const np of outrosNumerosDeProcesso) {
-            const d_id = await Dao.assertIADossierId(np, system_id, undefined, undefined)
+            const d_id = await DossierDao.assertIADossierId(np, system_id, undefined, undefined)
             dossier_ids[np] = d_id
         }
 
@@ -166,7 +165,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         if (identificarPecas === true) {
             const pecasOutros = pecas.filter(p => p.descr === 'OUTROS')
             if (pecasOutros.length > 0 && conteudoDasPecasSelecionadas !== CargaDeConteudoEnum.NAO) {
-                if (await Dao.verifyIfDossierHasDocumentsWithPredictedCategories(numeroDoProcesso)) {
+                if (await DocumentDao.verifyIfDossierHasDocumentsWithPredictedCategories(numeroDoProcesso)) {
                     devLog(`Carregando tipos documentais de ${pecasOutros.length} peças marcadas com "OUTROS"`)
                     const pecasComDocumento = iniciarObtencaoDeDocumentoGravado(dossier_id, numeroDoProcesso, pecasOutros)
                     for (const peca of pecasComDocumento) {
@@ -204,7 +203,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
                             devLog(`Peça ${peca.id} do processo ${numeroDoProcesso}, originalmente categorizada como ${peca.descr}, identificada como ${categoria}`)
                             if (peca.descr !== 'OUTROS')
                                 throw new Error(`Peça ${peca.id} do processo ${numeroDoProcesso} não é do tipo 'OUTROS'`)
-                            await Dao.updateDocumentCategory(peca.documento.id, peca.descr, categoria)
+                            await DocumentDao.updateDocumentCategory(peca.documento.id, peca.descr, categoria)
                             peca.descr = categoria
                         }
                     }

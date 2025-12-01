@@ -2,7 +2,7 @@
 
 import { streamText, StreamTextResult, LanguageModel, streamObject, StreamObjectResult, DeepPartial, ModelMessage, generateText, ToolSet, stepCountIs } from 'ai'
 import { IAGenerated, IAGeneration } from '../db/mysql-types'
-import { Dao } from '../db/mysql'
+import { GenerationDao, SystemDao, DossierDao, UserDao } from '../db/dao'
 import { assertCourtId, assertCurrentUser, assertSystemCode, UserType } from '../user'
 import { PromptAdditionalInformationType, PromptDataType, PromptDefinitionType, PromptExecutionResultsType, PromptOptionsType, TextoType, UsageType } from '@/lib/ai/prompt-types'
 import { promptExecuteBuilder, waitForTexts } from './prompt'
@@ -37,20 +37,20 @@ export async function checkModelSupportsPdf(modelName: string): Promise<boolean>
 }
 
 export async function retrieveFromCache(sha256: string, model: string, prompt: string, attempt: number | null): Promise<IAGenerated | undefined> {
-    const cached = await Dao.retrieveIAGeneration({ sha256, model, prompt, attempt })
+    const cached = await GenerationDao.retrieveIAGeneration({ sha256, model, prompt, attempt })
     if (cached?.generation) return cached
     return undefined
 }
 
 async function saveToCache(data: IAGeneration): Promise<number | undefined> {
-    const inserted = await Dao.insertIAGeneration(data)
+    const inserted = await GenerationDao.insertIAGeneration(data)
     if (!inserted) return undefined
     return inserted.id
 }
 
 async function saveLog(user: UserType, additionalInformation: PromptAdditionalInformationType, model: string, usage, sha256: string, kind: string, text: string, attempt: number, messages: ModelMessage[]) {
-    const system_id = await Dao.assertSystemId(await assertSystemCode(user))
-    const dossier_id = additionalInformation?.dossierCode ? (await Dao.assertIADossierId(additionalInformation.dossierCode, system_id, undefined, undefined)) : null
+    const system_id = await SystemDao.assertSystemId(await assertSystemCode(user))
+    const dossier_id = additionalInformation?.dossierCode ? (await DossierDao.assertIADossierId(additionalInformation.dossierCode, system_id, undefined, undefined)) : null
     const calculedUsage = modelCalcUsage(model, usage)
     const generationId = await saveToCache({
         sha256, model, prompt: kind, generation: text, attempt: attempt || null,
@@ -109,7 +109,7 @@ export async function generateContent(definition: PromptDefinitionType, data: Pr
 export async function writeUsage(usage, model: string, user_id: number | undefined, court_id: number | undefined) {
     const calculedUsage = modelCalcUsage(model, usage)
     if (user_id && court_id)
-        await Dao.addToIAUserDailyUsage(user_id, court_id, calculedUsage.input_tokens, calculedUsage.output_tokens, calculedUsage.approximate_cost)
+        await UserDao.addToIAUserDailyUsage(user_id, court_id, calculedUsage.input_tokens, calculedUsage.output_tokens, calculedUsage.approximate_cost)
 }
 
 export type PromptReturnType = {
@@ -183,7 +183,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     Promise<PromptReturnType> {
     const pUser = assertCurrentUser()
     const user = await pUser
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
     const court_id = await assertCourtId(user)
     const returnData: PromptReturnType = { model }
 
@@ -270,7 +270,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     if (!structuredOutputs) { // text streaming branch
         devLog('streaming text', kind) //, messages, modelRef)
         if (apiKeyFromEnv) {
-            await Dao.assertIAUserDailyUsageId(user_id, court_id)
+            await UserDao.assertIAUserDailyUsageId(user_id, court_id)
         }
         // writeResponseToFile(kind, processedMessagesLog, 'antes de executar')
         // if (model.startsWith('aws-')) {
@@ -332,7 +332,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     } else {
         devLog('streaming object', kind) //, messages, modelRef, structuredOutputs.schema)
         if (apiKeyFromEnv) {
-            await Dao.assertIAUserDailyUsageId(user_id, court_id)
+            await UserDao.assertIAUserDailyUsageId(user_id, court_id)
         }
         const pResult = streamObject({
             model: modelRef as LanguageModel,
@@ -365,7 +365,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
 export async function evaluate(definition: PromptDefinitionType, data: PromptDataType, evaluation_id: number, evaluation_descr: string | null):
     Promise<boolean> {
     const user = await assertCurrentUser()
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
 
     if (!user_id) throw new Error('Usuário não autenticado')
 
@@ -380,7 +380,7 @@ export async function evaluate(definition: PromptDefinitionType, data: PromptDat
     const cached = await retrieveFromCache(sha256, model, definition.kind, null)
     if (!cached) throw new Error('Generation not found')
 
-    await Dao.evaluateIAGeneration(user_id, cached.id, evaluation_id, evaluation_descr)
+    await GenerationDao.evaluateIAGeneration(user_id, cached.id, evaluation_id, evaluation_descr)
 
     return true
 }

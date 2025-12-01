@@ -4,7 +4,7 @@ import { DeepPartial, StreamObjectResult, StreamTextResult, ToolSet } from 'ai'
 import { removeEmptyKeys } from '@/lib/utils/utils'
 import { PromptDefinitionType, PromptOptionsType } from '@/lib/ai/prompt-types'
 import { ProgressType } from '@/lib/progress'
-import { Dao } from '@/lib/db/mysql'
+import { TestDao, TestsetDao, PromptDao, ModelDao } from '@/lib/db/dao'
 import { slugify } from '@/lib/utils/utils'
 import { ATTEMPTS, buildTest, preprocessQuestion } from '../../../../../../lib/ai/test/test-config'
 import { getInternalPrompt, promptDefinitionFromDefinitionAndOptions } from '@/lib/ai/prompt'
@@ -39,19 +39,19 @@ async function GET_HANDLER(
 export const GET = withErrorHandler(GET_HANDLER as any)
 
 const execute = async (testsetId: number, promptId: number, modelId: number, controller) => {
-  let test = await Dao.retrieveTestByTestsetIdPromptIdAndModelId(testsetId, promptId, modelId)
+  let test = await TestDao.retrieveTestByTestsetIdPromptIdAndModelId(testsetId, promptId, modelId)
   if (test) throw new Error('Test already exists')
 
   controller.enqueue(`"testsetId": "${testsetId}",`)
   controller.enqueue(`"promptId": "${promptId}",`)
   controller.enqueue(`"modelId": "${modelId}"`)
 
-  const testset = await Dao.retrieveTestsetById(testsetId)
+  const testset = await TestsetDao.retrieveTestsetById(testsetId)
   if (!testset) throw new Error('Testset not found')
-  const testsetModel = await Dao.retrieveModelById(testset.model_id)
+  const testsetModel = await ModelDao.retrieveModelById(testset.model_id)
   if (!testsetModel) throw new Error('Testset model not found')
-  const prompt = await Dao.retrievePromptById(promptId)
-  const model = await Dao.retrieveModelById(modelId)
+  const prompt = await PromptDao.retrievePromptById(promptId)
+  const model = await ModelDao.retrieveModelById(modelId)
 
   if (!testset || !prompt || !model)
     throw new Error('Testset, Prompt or Model not found')
@@ -122,7 +122,7 @@ const execute = async (testsetId: number, promptId: number, modelId: number, con
 
   yieldProgress(`Gravando resultados`, 0)
   const testToInsert = buildTest(testset, prompt, model, promptResults, questionsResults)
-  Dao.insertIATest(testToInsert)
+  TestDao.insertIATest(testToInsert)
   yieldProgress('', 0)
 }
 

@@ -1,5 +1,5 @@
 import { getCurrentUser, assertApiUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { EnumDao, BatchDao } from '@/lib/db/dao'
 import { Plugin } from '@/lib/proc/combinacoes'
 import { PromptDataType } from '@/lib/ai/prompt-types'
 import { getInternalPrompt } from '@/lib/ai/prompt'
@@ -13,8 +13,8 @@ async function POST_HANDLER(_req: Request, props: { params: Promise<{ id: string
   const user = await assertApiUser()
   const params = await props.params
   const id: number = Number(params.id)
-    const enum_id = await Dao.assertIAEnumId(Plugin.TRIAGEM)
-    const items = await Dao.retrieveByBatchIdAndEnumId(id, enum_id)
+    const enum_id = await EnumDao.assertIAEnumId(Plugin.TRIAGEM)
+    const items = await BatchDao.retrieveByBatchIdAndEnumId(id, enum_id)
 
     // use main item if available
     for (const item of items)
@@ -90,7 +90,7 @@ async function POST_HANDLER(_req: Request, props: { params: Promise<{ id: string
     })
 
     // Persist: rewrite mappings for this batch id
-    const saved = await Dao.rewriteBatchFixIndexMap(id, deduped)
+    const saved = await BatchDao.rewriteBatchFixIndexMap(id, deduped)
 
     return Response.json({ status: 'OK', message, saved, summary: { groups: groups.length, pairs: deduped.length } })
 }

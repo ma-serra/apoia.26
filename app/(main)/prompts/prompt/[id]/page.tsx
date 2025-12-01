@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { unstable_noStore as noStore } from 'next/cache'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao } from '@/lib/db/dao'
 import { Container, Spinner } from 'react-bootstrap'
 import PromptInfoContents from './prompt-info-contents'
 import { assertCurrentUser, isUserModerator } from '@/lib/user'
@@ -15,7 +15,7 @@ export default async function Home(props: { params: Promise<{ id: number }> }) {
     noStore()
     const user = await assertCurrentUser()
     const isModerator = await isUserModerator(user)
-    let prompt = await Dao.retrieveLatestPromptByBaseId(params.id)
+    let prompt = await PromptDao.retrieveLatestPromptByBaseId(params.id)
 
     if (prompt?.kind?.startsWith('^')) {
         const tipoDeSintese = TipoDeSinteseMap[prompt.kind.substring(1)]

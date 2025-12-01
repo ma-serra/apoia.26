@@ -1,7 +1,7 @@
 'use server'
 
 import { getSelectedModelParams } from '@/lib/ai/model-server'
-import { Dao } from '@/lib/db/mysql'
+import { UserDao, PromptDao, RatingDao } from '@/lib/db/dao'
 import { assertCurrentUser, isUserCorporativo, isUserModerator, UserType } from '@/lib/user'
 import { Contents } from './contents'
 import { Container } from 'react-bootstrap'
@@ -22,14 +22,14 @@ export default async function ServerContents( params: { sidekick?: boolean } ) {
 
     const { model, apiKey } = await getSelectedModelParams()
 
-    const user_id = await Dao.assertIAUserId(user.preferredUsername || user.name)
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
     // Ensure internal synthesis prompts are available in the bank (one-time upsert)
-    const basePrompts = await Dao.retrieveLatestPrompts(user_id, await isUserModerator(user))
+    const basePrompts = await PromptDao.retrieveLatestPrompts(user_id, await isUserModerator(user))
 
     const prompts = await fixPromptList(basePrompts, params.sidekick ?? false )
 
     // Carrega todos os ratings e agrega aos prompts
-    const ratingsStats = await Dao.getAllPromptRatingStats()
+    const ratingsStats = await RatingDao.getAllPromptRatingStats()
     const ratingsMap = new Map(ratingsStats.map(stat => [stat.prompt_base_id, stat]))
 
     // Adiciona informação de rating a cada prompt
@@ -44,7 +44,7 @@ export default async function ServerContents( params: { sidekick?: boolean } ) {
         if (prompt.share === 'PUBLICO' && prompt.rating) {
             if (prompt.rating.voter_count >= MINIMUM_NUMBER_OF_VOTES_TO_TURN_UNLISTED && prompt.rating.avg_laplace < MAX_RATING_AVG_LAPLACE_TO_TURN_UNLISTED) {
                 prompt.share = 'NAO_LISTADO'
-                await Dao.setUnlisted(prompt.id)
+                await PromptDao.setUnlisted(prompt.id)
             }
         }
     }

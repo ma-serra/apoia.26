@@ -1,5 +1,5 @@
 import { Container } from 'react-bootstrap'
-import { Dao } from '@/lib/db/mysql'
+import { TestsetDao, PromptDao, ModelDao, TestDao } from '@/lib/db/dao'
 import TestBuilder from './test-builder'
 import { TestTable } from './test-table'
 import Link from 'next/link'
@@ -9,10 +9,10 @@ export default async function TestResult(
     props: { params: Promise<{ kind: string, testset: number, prompt: number, model: number }> }
 ) {
     const params = await props.params;
-    const testset = await Dao.retrieveTestsetById(params.testset)
-    const prompt = await Dao.retrievePromptById(params.prompt)
-    const model = await Dao.retrieveModelById(params.model)
-    const test = await Dao.retrieveTestByTestsetIdPromptIdAndModelId(params.testset, params.prompt, params.model)
+    const testset = await TestsetDao.retrieveTestsetById(params.testset)
+    const prompt = await PromptDao.retrievePromptById(params.prompt)
+    const model = await ModelDao.retrieveModelById(params.model)
+    const test = await TestDao.retrieveTestByTestsetIdPromptIdAndModelId(params.testset, params.prompt, params.model)
 
     if (!testset || !prompt || !model) {
         return <Container fluid={false}>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { GenerationDao } from '@/lib/db/dao'
 import { assertApiUser, isUserModerator } from '@/lib/user'
 import { ForbiddenError, withErrorHandler } from '@/lib/utils/api-error'
 
@@ -17,7 +17,7 @@ async function GET_HANDLER(req: NextRequest) {
   const endDate = searchParams.get('endDate')
   const limit = searchParams.get('limit')
 
-  const rows = await Dao.retrieveAIGenerationsReport({
+  const rows = await GenerationDao.retrieveAIGenerationsReport({
     court_id: court_id ? parseInt(court_id, 10) : undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,

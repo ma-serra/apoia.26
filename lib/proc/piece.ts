@@ -4,7 +4,7 @@ import { pdfToText } from '../pdf/pdf'
 import { html2md } from '../utils/html2md'
 import { T } from './combinacoes'
 import { addBlockQuote } from '../utils/utils'
-import { Dao } from '../db/mysql'
+import { DocumentDao } from '../db/dao'
 import { IADocument, IADocumentContentSource } from '../db/mysql-types'
 
 import pLimit from 'p-limit'
@@ -20,7 +20,7 @@ const limit = pLimit(envString('OCR_LIMIT') ? parseInt(envString('OCR_LIMIT')) :
 const obterTextoSimples = async (buffer: ArrayBuffer, documentId: number) => {
     const decoder = new TextDecoder('utf-8')
     const texto = decoder.decode(buffer)
-    Dao.updateDocumentContent(documentId, 1, texto)
+    DocumentDao.updateDocumentContent(documentId, 1, texto)
     return texto
 }
 
@@ -29,7 +29,7 @@ const obterTextoDeHtml = async (buffer: ArrayBuffer, documentId: number) => {
     const html = decoder.decode(buffer)
     const htmlWithBlockQuote = addBlockQuote(html)
     const texto = await html2md(htmlWithBlockQuote)
-    Dao.updateDocumentContent(documentId, 1, texto)
+    DocumentDao.updateDocumentContent(documentId, 1, texto)
     return texto
 }
 
@@ -91,7 +91,7 @@ const ocrPdfSemLimite = async (buffer: ArrayBuffer, documentId: number) => {
 }
 
 const atualizarConteudoDeDocumento = async (documentId: number, contentSource: number, content: string) => {
-    Dao.updateDocumentContent(documentId, contentSource, content)
+    DocumentDao.updateDocumentContent(documentId, contentSource, content)
     return content
 }
 
@@ -138,10 +138,10 @@ const obterTipoDePecaPelaDescricao = (descr: string) => {
 }
 
 export const obterDocumentoGravado = async (dossier_id: number, numeroDoProcesso: string, idDaPeca: string, descrDaPeca: string): Promise<IADocument> => {
-    const document_id = await Dao.assertIADocumentId(dossier_id, idDaPeca, descrDaPeca)
+    const document_id = await DocumentDao.assertIADocumentId(dossier_id, idDaPeca, descrDaPeca)
 
     // verificar se a peça já foi gravada no banco
-    const document = await Dao.retrieveDocument(document_id)
+    const document = await DocumentDao.retrieveDocument(document_id)
     // if (!document) throw new Error(`Documento ${idDaPeca} não encontrado`)
     return document
 }

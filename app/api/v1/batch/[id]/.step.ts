@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao } from '@/lib/db/dao'
 import { analyze } from '@/lib/ai/analysis'
 
 export const maxDuration = 60
@@ -11,11 +11,11 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
   const batch_id = Number(id)
 
   // Check paused
-  const summary = await Dao.getBatchSummary(batch_id)
+  const summary = await BatchDao.getBatchSummary(batch_id)
   if (!summary) return Response.json({ errormsg: 'Not found' }, { status: 404 })
   if (summary.paused) return Response.json({ errormsg: 'Paused' }, { status: 400 })
 
-  const processed = await Dao.stepBatch(batch_id, async (job: any) => {
+  const processed = await BatchDao.stepBatch(batch_id, async (job: any) => {
       // Execute the job using existing analyze pipeline
       const tipo_de_sintese = summary.tipo_de_sintese || 'RELATORIO_DE_ACERVO'
       const complete = !!summary.complete

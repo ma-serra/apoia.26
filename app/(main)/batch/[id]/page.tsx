@@ -1,15 +1,15 @@
 import Fetcher from '@/lib/utils/fetcher'
 import BatchPanelClient from '@/app/(main)/batch/[id]/BatchPanelClient'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao, PromptDao } from '@/lib/db/dao'
 import { getSelectedModelParams } from '@/lib/ai/model-server'
 import { redirect } from 'next/navigation'
 
 export const maxDuration = 60
 
 async function getSummary(id: number) {
-  const owns = await Dao.assertBatchOwnership(id)
+  const owns = await BatchDao.assertBatchOwnership(id)
   if (!owns) throw new Error('Forbidden')
-  const summary = await Dao.getBatchSummary(id)
+  const summary = await BatchDao.getBatchSummary(id)
   if (!summary) throw new Error('Not found')
   return summary
 }
@@ -31,6 +31,6 @@ export default async function BatchPanel(props: { params: Promise<{ id: string }
   if (apiKeyFromEnv) redirect('/batch')
   const summary = await getSummary(parseInt(id))
   const usdBrl = await fetchDollar()
-  const promptName = summary?.prompt_base_id && (await Dao.retrieveLatestPromptByBaseId(summary.prompt_base_id))?.name
+  const promptName = summary?.prompt_base_id && (await PromptDao.retrieveLatestPromptByBaseId(summary.prompt_base_id))?.name
   return <BatchPanelClient id={id} initialSummary={summary} usdBrl={usdBrl} promptName={promptName} />
 }

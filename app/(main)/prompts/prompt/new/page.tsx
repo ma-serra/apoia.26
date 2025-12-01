@@ -1,6 +1,6 @@
 import { Container } from 'react-bootstrap'
 import PromptForm from '../prompt-form'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 import { maiusculasEMinusculas } from '@/lib/utils/utils'
 import { Instance, Matter, Scope } from '@/lib/proc/process-types'
@@ -32,7 +32,7 @@ export default async function New(
     let record: any = emptyRecord
     const copyFromId = searchParams.copyFrom
     if (copyFromId) {
-        record = await Dao.retrievePromptById(parseInt(copyFromId))
+        record = await PromptDao.retrievePromptById(parseInt(copyFromId))
         record.share = "PRIVADO"
         if (!record) throw new PublicError('Prompt não encontrado')
         const newName = record.name.replace(/\((\d+)\)$/, (_, n) => `(${Number(n) + 1})`)

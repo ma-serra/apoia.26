@@ -1,13 +1,13 @@
 'use server'
 
 import Link from 'next/link'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 import Table from '@/components/table-records'
 
 export default async function ServerContents() {
   await assertCurrentUser()
-  const items = await Dao.listLibraryHeaders()
+  const items = await LibraryDao.listLibraryHeaders()
 
   return (
     <div className="container">

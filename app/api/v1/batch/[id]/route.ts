@@ -1,5 +1,5 @@
 import { getCurrentUser, assertApiUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao } from '@/lib/db/dao'
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError, withErrorHandler } from '@/lib/utils/api-error'
 
 export const maxDuration = 60
@@ -8,9 +8,9 @@ async function GET_HANDLER(_req: Request, props: { params: Promise<{ id: string 
   const user = await assertApiUser()
   const { id } = await props.params
   const batch_id = Number(id)
-  const owns = await Dao.assertBatchOwnership(batch_id)
+  const owns = await BatchDao.assertBatchOwnership(batch_id)
   if (!owns) throw new ForbiddenError()
-  const summary = await Dao.getBatchSummary(batch_id)
+  const summary = await BatchDao.getBatchSummary(batch_id)
   if (!summary) throw new NotFoundError('Batch não encontrado')
   return Response.json({ status: 'OK', summary })
 }
@@ -24,7 +24,7 @@ async function DELETE_HANDLER(_req: Request, props: { params: Promise<{ id: stri
   const { id } = await props.params
   const batch_id = Number(id)
   if (!batch_id) throw new BadRequestError('Parâmetro id/batch_id inválido')
-  const ok = await Dao.deleteBatch(batch_id)
+  const ok = await BatchDao.deleteBatch(batch_id)
   if (!ok) throw new NotFoundError('Batch não encontrado ou não autorizado')
   return Response.json({ status: 'OK' })
 }

@@ -1,7 +1,7 @@
 'use server'
 
 import { NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { assertCurrentUser, getCurrentUser } from '@/lib/user'
 import { getInteropFromUser, getSystemIdAndDossierId } from '@/lib/proc/process'
 import { obterConteudoDaPeca } from '@/lib/proc/piece'
@@ -9,7 +9,7 @@ import { obterConteudoDaPeca } from '@/lib/proc/piece'
 export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
   await assertCurrentUser()
   const { id } = await props.params
-  const items = await Dao.listLibraryExamples(Number(id))
+  const items = await LibraryDao.listLibraryExamples(Number(id))
   return NextResponse.json({ items })
 }
 
@@ -26,11 +26,11 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
   if (replace === true) {
     // delete all then insert
-    const current = await Dao.listLibraryExamples(Number(id))
-    for (const ex of current) await Dao.deleteLibraryExample(Number(id), ex.process_number)
+    const current = await LibraryDao.listLibraryExamples(Number(id))
+    for (const ex of current) await LibraryDao.deleteLibraryExample(Number(id), ex.process_number)
   }
 
-  const existing = await Dao.listLibraryExamples(Number(id))
+  const existing = await LibraryDao.listLibraryExamples(Number(id))
   const existingSet = new Set(existing.map(e => e.process_number))
 
   const user = await getCurrentUser()
@@ -53,7 +53,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         content_markdown = content?.conteudo || null
         event_number = selPiece.numeroDoEvento || null
       }
-      await Dao.upsertLibraryExample(Number(id), {
+      await LibraryDao.upsertLibraryExample(Number(id), {
         process_number: pn,
         event_number,
         piece_type: (pieceType as any) || null,
@@ -63,7 +63,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         content_markdown,
       })
     } catch (e) {
-      await Dao.upsertLibraryExample(Number(id), {
+      await LibraryDao.upsertLibraryExample(Number(id), {
         process_number: pn,
         event_number: null,
         piece_type: (pieceType as any) || null,
@@ -74,7 +74,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       })
     }
   }
-  const items = await Dao.listLibraryExamples(Number(id))
+  const items = await LibraryDao.listLibraryExamples(Number(id))
   return NextResponse.json({ items })
 }
 
@@ -84,7 +84,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
   const url = new URL(req.url)
   const pn = url.searchParams.get('process_number') || ''
   if (!pn) return NextResponse.json({ errormsg: 'process_number obrigatório' }, { status: 400 })
-  const ok = await Dao.deleteLibraryExample(Number(id), pn)
+  const ok = await LibraryDao.deleteLibraryExample(Number(id), pn)
   if (!ok) return NextResponse.json({ errormsg: 'Not found' }, { status: 404 })
   return NextResponse.json({ status: 'OK' })
 }
@@ -116,7 +116,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       }
     } catch {}
   }
-  await Dao.upsertLibraryExample(Number(id), {
+  await LibraryDao.upsertLibraryExample(Number(id), {
     process_number: String(processNumber),
     event_number,
     piece_type: (pieceType as any) ?? null,
@@ -125,7 +125,7 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     piece_date: date,
     content_markdown,
   })
-  const items = await Dao.listLibraryExamples(Number(id))
+  const items = await LibraryDao.listLibraryExamples(Number(id))
   return NextResponse.json({ items })
 }
 

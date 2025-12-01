@@ -1,12 +1,12 @@
 import { Container } from 'react-bootstrap'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 import LibraryForm from '@/app/(main)/library/library-form'
 
 export default async function Edit(props: { params: Promise<{ id: string }> }) {
   await assertCurrentUser()
   const { id } = await props.params
-  const record = await Dao.getLibraryById(Number(id))
+  const record = await LibraryDao.getLibraryById(Number(id))
   if (!record) throw new Error('Item não encontrado')
   // Remove non-serializable/binary field before passing to Client Component
   const { content_binary, ...safe } = record as any

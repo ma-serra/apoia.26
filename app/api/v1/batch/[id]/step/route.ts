@@ -1,5 +1,5 @@
 import { assertApiUser } from '@/lib/user'
-import { Dao } from '@/lib/db/mysql'
+import { BatchDao } from '@/lib/db/dao'
 import { analyze } from '@/lib/ai/analysis'
 import { ForbiddenError, NotFoundError, withErrorHandler } from '@/lib/utils/api-error'
 
@@ -9,9 +9,9 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
   const user = await assertApiUser()
   const { id } = await props.params
   const batch_id = Number(id)
-  const owns = await Dao.assertBatchOwnership(batch_id)
+  const owns = await BatchDao.assertBatchOwnership(batch_id)
   if (!owns) throw new ForbiddenError()
-  const summary = await Dao.getBatchSummary(batch_id)
+  const summary = await BatchDao.getBatchSummary(batch_id)
   if (!summary) throw new NotFoundError('Not found')
   let dossier_code: string | undefined
   let job_id: number | undefined
@@ -31,7 +31,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
   // If paused and no specific target, do nothing
   if (summary.paused && !job_id && !dossier_code) return Response.json({ status: 'OK', processedJobId: null })
 
-  const processed = await Dao.stepBatch(batch_id, async (job) => {
+  const processed = await BatchDao.stepBatch(batch_id, async (job) => {
     try {
   const kind = (summary as any).prompt_base_id ? (summary as any).prompt_base_id : (summary.tipo_de_sintese || 'RELATORIO_DE_ACERVO')
   const complete = !!summary.complete
@@ -42,9 +42,9 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
     }
   }, { job_id, dossier_code })
   // If after processing there are no more pending jobs, auto-pause
-  const after = await Dao.getBatchSummary(batch_id)
+  const after = await BatchDao.getBatchSummary(batch_id)
   if (after && after.totals.pending === 0) {
-    await Dao.setBatchPaused(batch_id, true)
+    await BatchDao.setBatchPaused(batch_id, true)
   }
   return Response.json({ status: 'OK', processedJobId: processed?.id || null })
 }

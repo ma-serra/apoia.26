@@ -1,7 +1,7 @@
 'use server'
 
 import { fromErrorToFormState, numericString } from '@/lib/ui/form-support'
-import { Dao } from '@/lib/db/mysql'
+import { TestsetDao } from '@/lib/db/dao'
 import z from 'zod'
 
 // import { redirect } from 'next/navigation'
@@ -34,7 +34,7 @@ const testsetSchema = z.object({
 export const save = async (object: any) => {
     try {
         const data = testsetSchema.parse(object)
-        await Dao.insertIATestset(data as any)
+        await TestsetDao.insertIATestset(data as any)
         return { status: 'SUCCESS', message: 'success' }
     } catch (error) {
         return fromErrorToFormState(error)
@@ -43,7 +43,7 @@ export const save = async (object: any) => {
 
 export const setOfficial = async (id: number) => {
     try {
-        await Dao.setOfficialTestset(id)
+        await TestsetDao.setOfficialTestset(id)
         return { status: 'SUCCESS', message: 'success' }
     } catch (error) {
         return fromErrorToFormState(error)
@@ -52,7 +52,7 @@ export const setOfficial = async (id: number) => {
 
 export const removeOfficial = async (id: number) => {
     try {
-        await Dao.removeOfficialTestset(id)
+        await TestsetDao.removeOfficialTestset(id)
         return { status: 'SUCCESS', message: 'success' }
     } catch (error) {
         return fromErrorToFormState(error)
@@ -60,5 +60,5 @@ export const removeOfficial = async (id: number) => {
 }
 
 export const getTestsetById = async (id: number) => {
-    return await Dao.retrieveTestsetById(id)
+    return await TestsetDao.retrieveTestsetById(id)
 }

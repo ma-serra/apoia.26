@@ -1,7 +1,7 @@
 import { tool } from "ai"
 import { UserType } from "../user"
 import { z } from "zod"
-import { Dao } from "../db/mysql"
+import { LibraryDao } from "../db/dao"
 import { IALibrary } from "../db/mysql-types"
 import { formatLibraryDocument } from "./library"
 
@@ -13,7 +13,7 @@ export const getLibraryDocumentTool = (pUser: Promise<UserType>) => tool({
     execute: async ({ documentIdArray }) => {
         try {
             // Get the documents from the database
-            const documents: IALibrary[] = await Dao.getLibrariesByIds(documentIdArray)
+            const documents: IALibrary[] = await LibraryDao.getLibrariesByIds(documentIdArray)
 
             if (!documents || documents.length === 0) {
                 return `Nenhum documento encontrado ou você não tem permissão para acessá-los.`

@@ -1,4 +1,4 @@
-import { Dao } from "@/lib/db/mysql"
+import { BatchDao, EnumDao } from "@/lib/db/dao"
 import { Plugin, P, InfoDeProduto } from "@/lib/proc/combinacoes"
 import { formatBrazilianDate, maiusculasEMinusculas, slugify } from "@/lib/utils/utils"
 import { preprocess } from "@/lib/ui/preprocess"
@@ -66,16 +66,16 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
     const filterIndexRaw = filterParam ? parseInt(filterParam, 10) : undefined
 
     const batch_id = Number(params.id)
-    const owns = await Dao.assertBatchOwnership(batch_id)
+    const owns = await BatchDao.assertBatchOwnership(batch_id)
     if (!owns) throw new ForbiddenError()
 
-    const batch = await Dao.getBatchSummary(batch_id)
+    const batch = await BatchDao.getBatchSummary(batch_id)
 
-    const enum_id = await Dao.assertIAEnumId(Plugin.TRIAGEM)
+    const enum_id = await EnumDao.assertIAEnumId(Plugin.TRIAGEM)
 
     let html = ''
 
-    const items = await Dao.retrieveByBatchIdAndEnumId(batch_id, enum_id)
+    const items = await BatchDao.retrieveByBatchIdAndEnumId(batch_id, enum_id)
 
     // use main item if available
     for (const item of items)
@@ -83,7 +83,7 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
 
     // Apply batch index mappings (descr_from -> descr_to) before grouping
     try {
-        const mappings = await Dao.listBatchFixIndexMap(batch_id)
+        const mappings = await BatchDao.listBatchFixIndexMap(batch_id)
         if (mappings && mappings.length) {
             const mapFromTo = mappings.reduce((acc, m) => {
                 // If multiple entries exist for the same descr_from, keep the first
@@ -121,10 +121,10 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
 
     html += `<h1>${batch.name}</h1>`
 
-    const palavrasChave = await Dao.retrieveCountByBatchIdAndEnumId(batch_id, await Dao.assertIAEnumId(Plugin.PALAVRAS_CHAVE))
+    const palavrasChave = await BatchDao.retrieveCountByBatchIdAndEnumId(batch_id, await EnumDao.assertIAEnumId(Plugin.PALAVRAS_CHAVE))
     const palavrasChaveJson = computeScaledKeywords(palavrasChave, 100)
 
-    const normas = await Dao.retrieveCountByBatchIdAndEnumId(batch_id, await Dao.assertIAEnumId(Plugin.NORMAS))
+    const normas = await BatchDao.retrieveCountByBatchIdAndEnumId(batch_id, await EnumDao.assertIAEnumId(Plugin.NORMAS))
     const normasJson = computeScaledKeywords(normas, 100)
 
     // [['foo', 120], ['bar', 6]]
@@ -230,7 +230,7 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
         html += `</div>`
     }
 
-    const enumItens = await Dao.retrieveEnumItems()
+    const enumItens = await EnumDao.retrieveEnumItems()
     const enumMap = enumItens.reduce((acc, ei) => {
         acc[ei.enum_descr] = acc[ei.enum_descr] || []
         acc[ei.enum_descr].push({ descr: ei.enum_item_descr, descr_main: ei.enum_item_descr_main, hidden: ei.enum_item_hidden })
@@ -277,7 +277,7 @@ async function GET_HANDLER(req: NextRequest, props: { params: Promise<{ id: stri
                 html += `<br/>Atenção: ${listFmt}`
             }
             html += `</div>`
-            const generations = await Dao.retrieveGenerationByBatchDossierId(item.batch_dossier_id)
+            const generations = await BatchDao.retrieveGenerationByBatchDossierId(item.batch_dossier_id)
             for (const g of generations) {
                 let text = g.generation
                 if (g.descr === P.RESUMO) {

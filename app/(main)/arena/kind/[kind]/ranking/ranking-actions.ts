@@ -1,7 +1,7 @@
 'use server'
 
 import { FormState, fromErrorToFormState, numericString } from '@/lib/ui/form-support'
-import { Dao } from '@/lib/db/mysql'
+import { PromptDao, TestDao } from '@/lib/db/dao'
 import test from 'node:test'
 import z, { ZodError } from 'zod'
 
@@ -24,7 +24,7 @@ const promptSchema = z.object({
 export const save = async (object: any) => {
     try {
         const data = promptSchema.parse(object)
-        await Dao.insertIAPrompt(null, data as any)
+        await PromptDao.insertIAPrompt(null, data as any)
         return { status: 'SUCCESS', message: 'success' }
     } catch (error) {
         return fromErrorToFormState(error)
@@ -32,13 +32,13 @@ export const save = async (object: any) => {
 }
 
 export const loadRanking = async (kind: string, testset_id: number, prompt_id?: number, model_id?: number) => {
-    const ranking = await Dao.retrieveRanking(kind, testset_id, prompt_id, model_id)
+    const ranking = await TestDao.retrieveRanking(kind, testset_id, prompt_id, model_id)
     return ranking
 }
 
 export const removeOfficial = async (id: number) => {
     try {
-        await Dao.removeOfficialPrompt(id)
+        await PromptDao.removeOfficialPrompt(id)
         return { status: 'SUCCESS', message: 'success' }
     } catch (error) {
         return fromErrorToFormState(error)

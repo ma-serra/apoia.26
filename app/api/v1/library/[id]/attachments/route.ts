@@ -1,7 +1,7 @@
 'use server'
 
 import { NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { LibraryDao } from '@/lib/db/dao'
 import { assertCurrentUser } from '@/lib/user'
 import { pdfToText } from '@/lib/pdf/pdf'
 import { withErrorHandler } from '@/lib/utils/api-error'
@@ -16,7 +16,7 @@ const countWords = (text: string): number => {
 async function GET_HANDLER(_req: Request, props: { params: Promise<{ id: string }> }) {
   await assertCurrentUser()
   const { id } = await props.params
-  const attachments = await Dao.listLibraryAttachments(Number(id))
+  const attachments = await LibraryDao.listLibraryAttachments(Number(id))
   return NextResponse.json({ attachments })
 }
 
@@ -26,7 +26,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
   const library_id = Number(id)
 
   // Check attachment limit
-  const currentCount = await Dao.countLibraryAttachments(library_id)
+  const currentCount = await LibraryDao.countLibraryAttachments(library_id)
   if (currentCount >= MAX_ATTACHMENTS) {
     return NextResponse.json(
       { errormsg: `Limite de ${MAX_ATTACHMENTS} anexos atingido` },
@@ -71,7 +71,7 @@ async function POST_HANDLER(req: Request, props: { params: Promise<{ id: string 
     }
 
     // Insert attachment
-    const attachmentId = await Dao.insertLibraryAttachment({
+    const attachmentId = await LibraryDao.insertLibraryAttachment({
       library_id,
       filename: file.name,
       content_type: file.type,

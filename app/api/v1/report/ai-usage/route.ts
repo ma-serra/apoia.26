@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Dao } from '@/lib/db/mysql'
+import { UserDao } from '@/lib/db/dao'
 import { assertApiUser, isUserModerator } from '@/lib/user'
 import { ApiError, BadRequestError, withErrorHandler } from '@/lib/utils/api-error'
 
@@ -26,7 +26,7 @@ async function POST_HANDLER(req: NextRequest) {
     sanitizedCpfs = [String(userCpf).replace(/\D/g, '')]
   }
 
-  const rows = await Dao.retrieveIAUsageReport({ processes: sanitizedProcesses, cpfs: sanitizedCpfs, startDate, endDate, groupBy: (isModerator && groupBy === 'user') ? 'user' : 'process' })
+  const rows = await UserDao.retrieveIAUsageReport({ processes: sanitizedProcesses, cpfs: sanitizedCpfs, startDate, endDate, groupBy: (isModerator && groupBy === 'user') ? 'user' : 'process' })
   return NextResponse.json({ rows })
 }
 
