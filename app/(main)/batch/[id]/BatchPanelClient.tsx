@@ -356,7 +356,7 @@ export default function BatchPanelClient({ id, initialSummary, usdBrl, promptNam
       </div>
 
       <TableRecords records={mappedJobs} onClick={onClick} spec="Batch" options={{ batchId: id }} pageSize={10} >
-        <div className="col col-auto mb-0">
+        <div className="col col-auto mb-0 mt-3">
           <Button variant="outline-primary" onClick={() => { router.replace('/batch') }} className="me-2"><FontAwesomeIcon icon={faArrowLeft} className="me-2" />Voltar</Button>
           <Button variant="outline-danger" onClick={handleDeleteReport} className="me-2"><FontAwesomeIcon icon={faTrash} className="me-2" />Excluir</Button>
           <Button variant="outline-primary" onClick={() => fixIndex()} className="me-2"><FontAwesomeIcon icon={faList} className="me-2" />Otimizar Índice</Button>

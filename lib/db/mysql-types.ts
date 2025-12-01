@@ -116,6 +116,7 @@ export type IAPrompt = {
     model_id: number,
     testset_id: number | null
     share?: string
+    is_official?: boolean
     content: {
         author?: string
 
