@@ -9,6 +9,9 @@
 - **Alternativa**: Pedir ao usuário para testar manualmente no navegador
 - **Status**: Limitação permanente da ferramenta
 
+### Build
+- **Problema**: O Build demora e atrapalha a execução do "npm run dev" que está rodando localmente. Quando for possível, é melhor só testar usando o "npm run check". Use o build completo só quando for realmente necessário.
+
 ## Boas Práticas
 
 ### Debugging

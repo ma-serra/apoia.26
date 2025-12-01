@@ -47,6 +47,9 @@ export default async function UserMenu({ }: {}) {
                 <NavItem>
                     <NavigationLink href="/headnote" text="Ementa" />
                 </NavItem>
+                <NavItem>
+                    <NavigationLink href="/stats/global" text="Comunidade" />
+                </NavItem>
             </div>}
 
             <ul className="navbar-nav me-1 mb-2x mb-lg-0x">

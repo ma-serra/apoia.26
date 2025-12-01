@@ -594,3 +594,106 @@ export type AIGenerationReportRow = {
     total_tokens: number
     approximate_cost: number | null
 }
+
+// Court Types (Cache de Tribunais)
+export type IACourt = {
+    id: number                      // court_id (seq_orgao)
+    sigla: string                   // Ex: "TRF2", "JFRJ"
+    nome: string                    // Nome completo
+    tipo: string | null             // Tipo do órgão
+    seq_tribunal_pai: number | null // ID do tribunal pai
+    uf: string | null               // UF do tribunal
+    created_at: Date
+    updated_at: Date
+}
+
+export type IACourtToInsert = {
+    id: number
+    sigla: string
+    nome: string
+    tipo?: string | null
+    seq_tribunal_pai?: number | null
+    uf?: string | null
+}
+
+// Stats Types (Estatísticas de Gamificação)
+export type GlobalStats = {
+    totalExecutions: number
+    totalHoursSaved: number
+    totalActiveUsers: number
+    totalCourts: number
+    courtRanking: CourtRankingItem[]
+    topContributors: TopContributorItem[]
+    topUsers: TopUserItem[]
+    trendingPrompts: TrendingPromptItem[]
+}
+
+export type CourtRankingItem = {
+    courtId: number
+    sigla: string
+    nome: string
+    totalExecutions: number
+}
+
+export type TopContributorItem = {
+    userId: number
+    name: string
+    username: string
+    courtSigla: string | null
+    totalExecutions: number
+    avgStars: number
+    totalRatings: number
+    score: number
+}
+
+export type TopUserItem = {
+    userId: number
+    name: string
+    username: string
+    courtSigla: string | null
+    totalExecutions: number
+}
+
+export type TrendingPromptItem = {
+    promptBaseId: number
+    promptName: string
+    authorName: string | null
+    executionsLast30Days: number
+    avgStars: number | null
+    totalRatings: number
+}
+
+export type UserStats = {
+    userId: number
+    totalExecutions: number
+    hoursSaved: number
+    promptsCreatedCount: number
+    communityUsageCount: number      // Execuções dos prompts do usuário por terceiros
+    executionsByMonth: MonthlyExecutionItem[]
+    badges: UserBadges
+    myPromptsStats: MyPromptStatsItem[]
+}
+
+export type MonthlyExecutionItem = {
+    year: number
+    month: number
+    count: number
+}
+
+export type UserBadges = {
+    inicipiante: boolean             // Executou o primeiro prompt
+    powerUser: boolean               // 100+ execuções
+    criador: boolean                 // Criou o primeiro prompt público
+    influenciador: boolean           // Prompt executado 50+ vezes por terceiros
+    cincoEstrelas: boolean           // Recebeu primeira avaliação 5 estrelas
+    curador: boolean                 // Avaliou 20+ prompts da comunidade
+    popular: boolean                 // Prompt favoritado por 10+ pessoas
+}
+
+export type MyPromptStatsItem = {
+    promptBaseId: number
+    promptName: string
+    executionsByOthers: number
+    avgStars: number | null
+    totalRatings: number
+}

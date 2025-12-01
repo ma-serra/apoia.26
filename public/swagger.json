@@ -791,6 +791,57 @@
         }
       }
     },
+    "/api/v1/stats/global": {
+      "get": {
+        "summary": "Retorna estatísticas globais da comunidade",
+        "description": "Retorna KPIs globais, ranking de tribunais, top contribuidores e prompts em alta",
+        "tags": [
+          "Stats"
+        ],
+        "responses": {
+          "200": {
+            "description": "Estatísticas globais"
+          },
+          "401": {
+            "description": "Usuário não autenticado"
+          },
+          "403": {
+            "description": "Usuário não é corporativo"
+          }
+        }
+      }
+    },
+    "/api/v1/stats/user/{userId}": {
+      "get": {
+        "summary": "Retorna estatísticas do usuário",
+        "description": "Retorna estatísticas pessoais, badges e feedback da comunidade",
+        "tags": [
+          "Stats"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "ID do usuário ou \"me\" para o usuário atual",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estatísticas do usuário"
+          },
+          "401": {
+            "description": "Usuário não autenticado"
+          },
+          "403": {
+            "description": "Usuário não é corporativo"
+          }
+        }
+      }
+    },
     "/api/v1/usage/{court}": {
       "get": {
         "description": "Obtem o consumo diário de um tribunal específico, filtrando entre datas.",

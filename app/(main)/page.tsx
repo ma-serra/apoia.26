@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, CardBody, CardTitle, CardText } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faList, faFileText, faDatabase, faAlignJustify, faComments, faDollar, faGavel, faUserSecret, faBoxArchive, faBookOpen, faPen, faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faList, faFileText, faDatabase, faAlignJustify, faComments, faDollar, faGavel, faUserSecret, faBoxArchive, faBookOpen, faPen, faPencil, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { faFileLines } from '@fortawesome/free-regular-svg-icons'
 import Link from 'next/link'
 import ApiKeyMissing from '@/components/api-key-missing'
@@ -93,6 +93,13 @@ export default async function HomePage() {
             description: "Gere relatórios detalhados do acervo processual",
             href: "/batch",
             color: "text-success"
+        },
+        {
+            icon: faUsers,
+            title: "Comunidade",
+            description: "Veja estatísticas de uso coletivo e seu impacto individual",
+            href: "/stats/global",
+            color: "text-primary"
         },
         {
             icon: faDollar,
