@@ -184,13 +184,16 @@ export function usePromptState(
     }, [prompt, numeroDoProcesso, idxProcesso, scope, instance, matter, activeTab, arrayDeDadosDoProcesso, promptInitialized, pathname, router, currentSearchParams])
 
     useEffect(() => {
+        if (!parent || !prompt) return
+        if (prompt.content?.target !== 'TEXTO' && prompt.content?.target !== 'REFINAMENTO') return
+
         devLog('*** Source from URL:', sourceFromURL)
-        if (sourceFromURL !== SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT) return
+        // if (sourceFromURL !== SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT) return
 
         // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
-        if (hasRunSource.current) return
-        hasRunSource.current = true
-        parent.postMessage({ type: 'get-source' } satisfies SourceMessageToParentType, '*')
+        // if (hasRunSource.current) return
+        // hasRunSource.current = true
+        parent.postMessage({ type: 'get-source', payload: { promptSlug: prompt?.slug } } satisfies SourceMessageToParentType, '*')
 
         // Listener para mensagem do popup
         const handleMessage = (event: MessageEvent) => {
@@ -217,9 +220,11 @@ export function usePromptState(
         return () => {
             window.removeEventListener('message', handleMessage)
         }
-    }, [sourceFromURL])
+    }, [sourceFromURL, prompt])
 
     useEffect(() => {
+        if (!parent) return
+        
         devLog('*** Sink from URL:', sinkFromURL)
         if (sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT || sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY) return
 

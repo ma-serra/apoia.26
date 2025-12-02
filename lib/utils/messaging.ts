@@ -122,6 +122,9 @@ export type AuthCompletedMessageType = {
  */
 export type SourceMessageToParentType = {
     type: 'get-source'
+    payload: {
+        promptSlug?: string
+    }
 }
 
 export type SourcePayloadType = {

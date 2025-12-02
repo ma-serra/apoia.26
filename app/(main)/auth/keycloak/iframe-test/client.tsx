@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Container } from "react-bootstrap"
-import { SourceMessageFromParentType, MessageWithType, AuthPopupMessageType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SinkMessageFromParentType, SinkMessageToParentType } from "@/lib/utils/messaging"
+import { SourceMessageFromParentType, MessageWithType, AuthPopupMessageType, SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT, SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT, SinkMessageFromParentType, SinkMessageToParentType, SourceMessageToParentType } from "@/lib/utils/messaging"
 import devLog from "@/lib/utils/log"
 
 export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }) => {
@@ -27,6 +27,7 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
 
             switch ((data as MessageWithType).type) {
                 case 'auth-popup': {
+                    devLog('Received auth-popup message from iframe.')
                     const url = (data as AuthPopupMessageType).payload.url
                     window.open(url, '_blank')
                     break
@@ -39,6 +40,7 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
                     break
                 }
                 case 'get-source': {
+                    devLog('Received get-source message from iframe', (data as SourceMessageToParentType)?.payload?.promptSlug)
                     const htmlContent = `<h1>Quem encontra os <strong>erros</strong> deste texto?</h1><p>O Tomás não é uma criança mal comportada, mas sofre de um desiquilíbrio hormonal que o deixa por vezes obsecado com comida, como se estivesse sempre cheinho de fome..</p>`
                     postMsgToIframe({ type: 'set-source', payload: { htmlContent: htmlContent, selectionInfo: { startOffset: 0, endOffset: 100 } } } satisfies SourceMessageFromParentType)
                     break
