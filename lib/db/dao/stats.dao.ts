@@ -1,6 +1,7 @@
 import knex from '../knex'
 import * as mysqlTypes from '../mysql-types'
 import { CourtDao } from './court.dao'
+import { PromptDao } from './prompt.dao'
 
 // Constantes de configuração
 export const STATS_CONFIG = {
@@ -25,12 +26,13 @@ export class StatsDao {
 
     /**
      * Retorna o total de execuções de prompts do banco
-     * Usa ia_user_daily_usage para consistência com estatísticas individuais
+     * Baseado em ia_generation
      */
     static async getTotalExecutions(): Promise<number> {
         if (!knex) return 0
-        const result = await knex('ia_user_daily_usage')
-            .sum('usage_count as total')
+        const result = await knex('ia_generation')
+            .where('prompt', 'like', 'prompt-%')
+            .count('id as total')
             .first()
         return Number(result?.total) || 0
     }
@@ -43,10 +45,11 @@ export class StatsDao {
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - days)
 
-        const result = await knex('ia_user_daily_usage')
-            .whereNotNull('user_id')
-            .andWhere('usage_date', '>=', dateLimit.toISOString().split('T')[0])
-            .countDistinct('user_id as count')
+        const result = await knex('ia_generation')
+            .whereNotNull('created_by')
+            .andWhere('prompt', 'like', 'prompt-%')
+            .andWhere('created_at', '>=', dateLimit.toISOString().split('T')[0] + ' 00:00:00')
+            .countDistinct('created_by as count')
             .first()
         return Number(result?.count) || 0
     }
@@ -97,64 +100,77 @@ export class StatsDao {
 
     /**
      * Retorna os top contribuidores (autores de prompts)
+     * Usa PromptDao.retrievePromptUsageReport que já funciona corretamente
      */
     static async getTopContributors(limit: number = 5): Promise<mysqlTypes.TopContributorItem[]> {
         if (!knex) return []
 
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - STATS_CONFIG.PERIODO_TRENDING_DIAS)
+        const startDate = dateLimit.toISOString().split('T')[0]
 
-        // Busca autores de prompts públicos/padrão com suas estatísticas
-        const contributors = await knex('ia_prompt as p')
-            .join('ia_user as u', 'u.id', 'p.created_by')
-            .leftJoin('ia_court as c', 'c.id', 'u.court_id')
-            .where('p.is_latest', 1)
-            .whereIn('p.share', ['PUBLICO', 'PADRAO'])
-            .whereNotNull('p.created_by')
-            .groupBy('u.id', 'u.name', 'u.username', 'c.sigla')
-            .select(
-                'u.id as userId',
-                'u.name',
-                'u.username',
-                'c.sigla as courtSigla'
-            )
+        // Usar PromptDao.retrievePromptUsageReport que já funciona
+        const usageReport = await PromptDao.retrievePromptUsageReport({ startDate })
 
-        // Para cada contribuidor, buscar execuções e ratings dos últimos 30 dias
-        const result: mysqlTypes.TopContributorItem[] = []
+        // Carregar prompts públicos/padrão para obter created_by
+        const prompts = await knex('ia_prompt')
+            .whereIn('share', ['PUBLICO', 'PADRAO'])
+            .select('id', 'base_id', 'created_by')
+        
+        const promptMap = new Map<number, { base_id: number, created_by: number | null }>()
+        prompts.forEach(p => promptMap.set(p.id, { base_id: p.base_id, created_by: p.created_by }))
 
-        for (const contrib of contributors) {
-            // Buscar prompts do autor (todas as versões, não apenas is_latest)
-            const authorPrompts = await knex('ia_prompt')
-                .where('created_by', contrib.userId)
-                .whereIn('share', ['PUBLICO', 'PADRAO'])
-                .select('id', 'base_id')
-
-            if (authorPrompts.length === 0) continue
-
-            const promptIds = authorPrompts.map(p => p.id)
-            const baseIds = [...new Set(authorPrompts.map(p => p.base_id).filter(Boolean))]
-
-            // Contar execuções dos prompts deste autor nos últimos 30 dias
-            // Usar whereIn com array de valores para melhor performance
-            const promptPatterns = promptIds.map(id => `prompt-${id}`)
+        // Agrupar execuções por autor
+        const authorExecutions = new Map<number, number>()
+        const authorBaseIds = new Map<number, Set<number>>()
+        
+        for (const row of usageReport) {
+            if (!row.prompt_key.startsWith('prompt-')) continue
             
-            let totalExecutions = 0
-            if (promptPatterns.length > 0) {
-                const execCount = await knex('ia_generation')
-                    .whereIn('prompt', promptPatterns)
-                    .where('created_at', '>=', dateLimit)
-                    .count('id as count')
-                    .first()
-                totalExecutions = Number(execCount?.count) || 0
+            const match = /^prompt-(\d+)$/.exec(row.prompt_key)
+            if (!match) continue
+            
+            const promptId = parseInt(match[1], 10)
+            const promptInfo = promptMap.get(promptId)
+            if (!promptInfo || !promptInfo.created_by) continue
+            
+            const authorId = promptInfo.created_by
+            const currentCount = authorExecutions.get(authorId) || 0
+            authorExecutions.set(authorId, currentCount + row.usage_count)
+            
+            if (!authorBaseIds.has(authorId)) {
+                authorBaseIds.set(authorId, new Set())
             }
+            authorBaseIds.get(authorId)!.add(promptInfo.base_id)
+        }
 
-            // Buscar ratings dos prompts deste autor nos últimos 30 dias
+        // Buscar informações dos autores
+        const authorIds = [...authorExecutions.keys()]
+        if (authorIds.length === 0) return []
+
+        const authors = await knex('ia_user as u')
+            .leftJoin('ia_court as c', 'c.id', 'u.court_id')
+            .whereIn('u.id', authorIds)
+            .select('u.id as userId', 'u.name', 'u.username', 'c.sigla as courtSigla')
+
+        const authorMap = new Map<number, { name: string, username: string, courtSigla: string | null }>()
+        authors.forEach((a: any) => authorMap.set(a.userId, { name: a.name, username: a.username, courtSigla: a.courtSigla }))
+
+        // Montar resultado com ratings
+        const result: mysqlTypes.TopContributorItem[] = []
+        
+        for (const [authorId, totalExecutions] of authorExecutions) {
+            const authorInfo = authorMap.get(authorId)
+            if (!authorInfo) continue
+
+            const baseIds = [...(authorBaseIds.get(authorId) || [])]
+            
             let totalStars = 0
             let totalRatings = 0
             if (baseIds.length > 0) {
                 const ratings = await knex('ia_prompt_rating')
                     .whereIn('prompt_base_id', baseIds)
-                    .where('created_at', '>=', dateLimit)
+                    .where('created_at', '>=', startDate + ' 00:00:00')
                     .select(
                         knex.raw('SUM(stars) as totalStars'),
                         knex.raw('COUNT(*) as totalRatings')
@@ -168,10 +184,10 @@ export class StatsDao {
             const score = totalExecutions + (avgStars * 10)
 
             result.push({
-                userId: contrib.userId,
-                name: contrib.name || contrib.username,
-                username: contrib.username,
-                courtSigla: contrib.courtSigla,
+                userId: authorId,
+                name: authorInfo.name || authorInfo.username,
+                username: authorInfo.username,
+                courtSigla: authorInfo.courtSigla,
                 totalExecutions,
                 avgStars: Number(avgStars.toFixed(1)),
                 totalRatings,
@@ -187,42 +203,57 @@ export class StatsDao {
 
     /**
      * Retorna os prompts em alta (trending)
+     * Usa PromptDao.retrievePromptUsageReport que já funciona corretamente
      */
     static async getTrendingPrompts(limit: number = 5): Promise<mysqlTypes.TrendingPromptItem[]> {
         if (!knex) return []
 
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - STATS_CONFIG.PERIODO_TRENDING_DIAS)
+        const startDate = dateLimit.toISOString().split('T')[0]
 
-        // Buscar prompts com mais execuções nos últimos 30 dias
-        // Join com TODAS as versões do prompt (não apenas is_latest)
-        const trending = await knex('ia_generation as g')
-            .join('ia_prompt as p', knex.raw("g.prompt = 'prompt-' || CAST(p.id AS TEXT)"))
-            .whereIn('p.share', ['PUBLICO', 'PADRAO'])
-            .where('g.created_at', '>=', dateLimit)
-            .groupBy('p.base_id')
-            .select(
-                'p.base_id as promptBaseId',
-                knex.raw('COUNT(g.id) as "executionsLast30Days"')
-            )
-            .orderByRaw('COUNT(g.id) DESC')
-            .limit(limit)
+        // Usar PromptDao.retrievePromptUsageReport que já funciona
+        const usageReport = await PromptDao.retrievePromptUsageReport({ startDate })
 
-        // Buscar informações adicionais para cada prompt (nome, autor, ratings)
+        // Filtrar apenas prompts (não outros tipos como 'analise', 'headnote', etc)
+        // e agrupar por prompt_key somando usage_count
+        const promptUsage = new Map<string, { name: string, total: number }>()
+        
+        for (const row of usageReport) {
+            if (!row.prompt_key.startsWith('prompt-')) continue
+            
+            const current = promptUsage.get(row.prompt_key) || { name: row.prompt_name, total: 0 }
+            current.total += row.usage_count
+            promptUsage.set(row.prompt_key, current)
+        }
+
+        // Ordenar por total e pegar top N
+        const sorted = [...promptUsage.entries()]
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, limit)
+
+        // Buscar informações adicionais (autor, ratings) para cada prompt
         const result: mysqlTypes.TrendingPromptItem[] = []
-        for (const item of trending) {
-            // Buscar a versão mais recente do prompt para obter nome e autor
-            const latestPrompt = await knex('ia_prompt as p')
+        
+        for (const [promptKey, usage] of sorted) {
+            const match = /^prompt-(\d+)$/.exec(promptKey)
+            if (!match) continue
+            
+            const promptId = parseInt(match[1], 10)
+            
+            // Buscar base_id e autor do prompt
+            const promptInfo = await knex('ia_prompt as p')
                 .leftJoin('ia_user as u', 'u.id', 'p.created_by')
-                .where('p.base_id', item.promptBaseId)
-                .where('p.is_latest', 1)
-                .select('p.name as promptName', 'u.name as authorName')
+                .where('p.id', promptId)
+                .select('p.base_id', 'p.name as promptName', 'u.name as authorName', 'p.share')
                 .first()
 
-            if (!latestPrompt) continue
+            if (!promptInfo) continue
+            // Filtrar apenas públicos/padrão
+            if (!['PUBLICO', 'PADRAO'].includes(promptInfo.share)) continue
 
             const ratingStats = await knex('ia_prompt_rating')
-                .where('prompt_base_id', item.promptBaseId)
+                .where('prompt_base_id', promptInfo.base_id)
                 .select(
                     knex.raw('AVG(stars) as avgStars'),
                     knex.raw('COUNT(*) as totalRatings')
@@ -230,10 +261,10 @@ export class StatsDao {
                 .first() as any
 
             result.push({
-                promptBaseId: item.promptBaseId,
-                promptName: latestPrompt.promptName,
-                authorName: latestPrompt.authorName,
-                executionsLast30Days: Number(item.executionsLast30Days),
+                promptBaseId: promptInfo.base_id,
+                promptName: usage.name,
+                authorName: promptInfo.authorName,
+                executionsLast30Days: usage.total,
                 avgStars: ratingStats?.avgStars ? Number(Number(ratingStats.avgStars).toFixed(1)) : null,
                 totalRatings: Number(ratingStats?.totalRatings) || 0
             })
@@ -251,19 +282,20 @@ export class StatsDao {
         const dateLimit = new Date()
         dateLimit.setDate(dateLimit.getDate() - STATS_CONFIG.PERIODO_TRENDING_DIAS)
 
-        const users = await knex('ia_user_daily_usage as d')
-            .join('ia_user as u', 'u.id', 'd.user_id')
+        const users = await knex('ia_generation as g')
+            .join('ia_user as u', 'u.id', 'g.created_by')
             .leftJoin('ia_court as c', 'c.id', 'u.court_id')
-            .where('d.usage_date', '>=', dateLimit.toISOString().split('T')[0])
+            .where('g.prompt', 'like', 'prompt-%')
+            .andWhere('g.created_at', '>=', dateLimit.toISOString().split('T')[0] + ' 00:00:00')
             .groupBy('u.id', 'u.name', 'u.username', 'c.sigla')
             .select(
                 'u.id as userId',
                 'u.name',
                 'u.username',
                 'c.sigla as courtSigla',
-                knex.raw('SUM(d.usage_count) as "totalExecutions"')
+                knex.raw('COUNT(g.id) as "totalExecutions"')
             )
-            .orderByRaw('SUM(d.usage_count) DESC')
+            .orderByRaw('COUNT(g.id) DESC')
             .limit(limit)
 
         return users.map((u: any) => ({
@@ -310,9 +342,10 @@ export class StatsDao {
      */
     static async getUserTotalExecutions(userId: number): Promise<number> {
         if (!knex) return 0
-        const result = await knex('ia_user_daily_usage')
-            .where('user_id', userId)
-            .sum('usage_count as total')
+        const result = await knex('ia_generation')
+            .where('created_by', userId)
+            .where('prompt', 'like', 'prompt-%')
+            .count('id as total')
             .first()
         return Number(result?.total) || 0
     }
@@ -368,16 +401,17 @@ export class StatsDao {
         const dateLimit = new Date()
         dateLimit.setMonth(dateLimit.getMonth() - months)
 
-        const results = await knex('ia_user_daily_usage')
-            .where('user_id', userId)
-            .andWhere('usage_date', '>=', dateLimit.toISOString().split('T')[0])
+        const results = await knex('ia_generation')
+            .where('created_by', userId)
+            .where('prompt', 'like', 'prompt-%')
+            .andWhere('created_at', '>=', dateLimit.toISOString().split('T')[0] + ' 00:00:00')
             .select(
-                knex.raw('EXTRACT(YEAR FROM usage_date) as "year"'),
-                knex.raw('EXTRACT(MONTH FROM usage_date) as "month"'),
-                knex.raw('SUM(usage_count) as "count"')
+                knex.raw('EXTRACT(YEAR FROM created_at) as "year"'),
+                knex.raw('EXTRACT(MONTH FROM created_at) as "month"'),
+                knex.raw('COUNT(id) as "count"')
             )
-            .groupByRaw('EXTRACT(YEAR FROM usage_date), EXTRACT(MONTH FROM usage_date)')
-            .orderByRaw('EXTRACT(YEAR FROM usage_date) ASC, EXTRACT(MONTH FROM usage_date) ASC') as any[]
+            .groupByRaw('EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)')
+            .orderByRaw('EXTRACT(YEAR FROM created_at) ASC, EXTRACT(MONTH FROM created_at) ASC') as any[]
 
         return results.map(r => ({
             year: Number(r.year),
@@ -403,8 +437,9 @@ export class StatsDao {
         }
 
         // Badge: Iniciante - Executou pelo menos 1 prompt
-        const hasExecution = await knex('ia_user_daily_usage')
-            .where('user_id', userId)
+        const hasExecution = await knex('ia_generation')
+            .where('created_by', userId)
+            .where('prompt', 'like', 'prompt-%')
             .first()
         const inicipiante = !!hasExecution
 
