@@ -94,13 +94,13 @@ export default async function HomePage() {
             href: "/batch",
             color: "text-success"
         },
-        {
-            icon: faUsers,
-            title: "Comunidade",
-            description: "Veja estatísticas de uso coletivo e seu impacto individual",
-            href: "/stats/global",
-            color: "text-primary"
-        },
+        // {
+        //     icon: faUsers,
+        //     title: "Comunidade",
+        //     description: "Veja estatísticas de uso coletivo e seu impacto individual",
+        //     href: "/stats/global",
+        //     color: "text-primary"
+        // },
         {
             icon: faDollar,
             title: "Relatório de Uso de IA",

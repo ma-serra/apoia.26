@@ -341,7 +341,7 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
             </Row>
 
             {/* My Prompts Performance */}
-            {stats.myPromptsStats.length > 0 && (
+            {false && stats.myPromptsStats.length > 0 && (
                 <Card className="shadow-sm">
                     <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center">
                         <div>
