@@ -149,19 +149,9 @@ export class CourtDao {
 
             const orgao = data.result[0]
             
-            // Gerar sigla a partir do nome do tribunal se disponível
-            let sigla = `TRF${courtId}`
-            if (orgao.tribunal?.nomeTribunal) {
-                // Extrair sigla do nome (ex: "Tribunal Regional Federal da 2ª Região" -> "TRF2")
-                const match = orgao.tribunal.nomeTribunal.match(/(\d+)[ªº°]?\s*(Região|região)/i)
-                if (match) {
-                    sigla = `TRF${match[1]}`
-                }
-            }
-            
             return {
                 id: parseInt(orgao.codigoOrgao),
-                sigla: sigla,
+                sigla: `T-${courtId}`,
                 nome: orgao.tribunal?.nomeTribunal || orgao.nomeOrgao,
                 tipo: orgao.codigoTipoOrgao || null,
                 seq_tribunal_pai: orgao.codigoOrgaoPai ? parseInt(orgao.codigoOrgaoPai) : null,
