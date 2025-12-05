@@ -27,31 +27,30 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
 
             switch ((data as MessageWithType).type) {
                 case 'auth-popup': {
-                    devLog('Received auth-popup message from iframe.')
+                    devLog('Received auth-popup message from iframe:', data)
                     const url = (data as AuthPopupMessageType).payload.url
                     window.open(url, '_blank')
                     break
                 }
                 case 'auth-completed': {
-                    devLog('Received auth-completed message from iframe.')
+                    devLog('Received auth-completed message from iframe:', data)
                     postMsgToIframe(data)
                     // Recarrega a página principal para verificar autenticação
                     router.push(props.callbackUrl)
                     break
                 }
                 case 'get-source': {
-                    devLog('Received get-source message from iframe', (data as SourceMessageToParentType)?.payload?.promptSlug)
+                    devLog('Received get-source message from iframe', data)
                     const htmlContent = `<h1>Quem encontra os <strong>erros</strong> deste texto?</h1><p>O Tomás não é uma criança mal comportada, mas sofre de um desiquilíbrio hormonal que o deixa por vezes obsecado com comida, como se estivesse sempre cheinho de fome..</p>`
                     postMsgToIframe({ type: 'set-source', payload: { htmlContent: htmlContent, selectionInfo: { startOffset: 0, endOffset: 100 } } } satisfies SourceMessageFromParentType)
                     break
                 }
                 case 'approved': {
-                    const approvedMessage = data as any
-                    devLog('Received approved message from iframe:', approvedMessage)
+                    devLog('Received approved message from iframe:', data)
                     break
                 }
                 case 'get-sink': {
-                    devLog('Received get-sink message from iframe', (data as SinkMessageToParentType)?.payload?.promptSlug)
+                    devLog('Received get-sink message from iframe', data)
                     postMsgToIframe({ type: 'set-sink', payload: { kind: 'to-parent', buttonText: 'Enviar para a Minuta' } } satisfies SinkMessageFromParentType)
                     break
                 }
@@ -64,10 +63,10 @@ export const ClientIFrameTest = (props: { baseUrl: string; callbackUrl: string }
         }
     }, [])
 
-    // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
+    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?prompt=refinamento-de-texto%26source=${SOURCE_PARAM_THAT_INDICATES_TO_RETRIEVE_USING_MESSAGE_TO_PARENT}%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
     // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025113%26prompt=minuta-de-sentenca%26sink=${SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT}%26sink-button-text=Enviar+para+o+Eproc`
     // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025113%26prompt=minuta-de-sentenca%26instance=primeiro-grau`
-    const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025114%26prompt=chat%26instance=primeiro-grau`
+    // const src = `${props.baseUrl}/auth/keycloak-iframe?redirect=/sidekick?process=50016349520244025114%26prompt=chat%26instance=primeiro-grau`
 
     return <Container className="mt-3 text-center">
         <h1>Keycloak Authentication Test Page</h1>

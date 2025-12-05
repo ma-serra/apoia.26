@@ -99,7 +99,7 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
             return <>
                 <PedidosFundamentacoesEDispositivos pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} onBusy={() => onBusy(Frm, requests, idx + 1)} onReady={(content) => onReady(Frm, requests, idx + 1, content)} />
                 {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx + 1}]`) && <Row className="h-print mb-3">
-                    <Col><Button variant="success" onClick={() => sendApproveMessageToParent(Frm.get(`generated[${idx + 1}]`), sourcePayload)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+                    <Col><Button variant="success" onClick={() => sendApproveMessageToParent(Frm.get(`generated[${idx + 1}]`), sourcePayload, slugify(requests[idx + 1]?.internalPrompt?.kind || ''), 'PROCESSO')} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
                 </Row>}
             </>
         }
@@ -120,14 +120,14 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
                 visualization={request.internalPrompt.template ? VisualizationEnum.DIFF_HIGHLIGHT_INCLUSIONS : undefined} diffSource={request.internalPrompt.template ? preprocessTemplate(request.internalPrompt.template) : undefined} dossierCode={dossierCode} />
         </Suspense>
         {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx}]`) && <Row className="h-print mb-3">
-            <Col><Button variant="success" onClick={() => sendApproveMessageToParent(Frm.get(`generated[${idx}]`), sourcePayload)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+            <Col><Button variant="success" onClick={() => sendApproveMessageToParent(Frm.get(`generated[${idx}]`), sourcePayload, slugify(requests[idx]?.internalPrompt?.kind || ''), 'PROCESSO')} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
         </Row>}
 
     </div>
 }
 
-export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons, sinkFromURL, sinkButtonText }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType, sinkButtonText?: string  }) => {
-    const {sourcePayload} = usePromptContext()
+export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, promptButtons, sinkFromURL, sinkButtonText }: { dadosDoProcesso: DadosDoProcessoType, requests: GeneratedContent[], model: string, sidekick?: boolean, promptButtons?: ReactNode, sinkFromURL?: SinkFromURLType, sinkButtonText?: string }) => {
+    const { sourcePayload } = usePromptContext()
     const [data, setData] = useState({ pending: 0 } as any)
 
     if (!dadosDoProcesso || dadosDoProcesso.errorMsg) return ''

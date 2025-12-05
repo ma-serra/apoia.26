@@ -41,6 +41,8 @@ interface PromptContextValue {
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
     sourcePayload: SourcePayloadType | null
+    setSourcePayload: (payload: SourcePayloadType | null) => void
+    replacePiecesParam: (numbersOrNull: number[] | null) => void
 }
 
 const PromptContext = createContext<PromptContextValue | undefined>(undefined)

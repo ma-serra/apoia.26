@@ -31,6 +31,8 @@ export interface UsePromptStateResult {
     allLibraryDocuments: IALibrary[]
     promptInitialized: boolean
     sourcePayload: SourcePayloadType | null
+    setSourcePayload: (payload: SourcePayloadType | null) => void
+    replacePiecesParam: (numbersOrNull: number[] | null) => void
 }
 
 export function usePromptState(
@@ -66,6 +68,26 @@ export function usePromptState(
     const [sourcePayload, setSourcePayload] = useState<SourcePayloadType | null>(null)
     const hasRunSource = useRef(false)
     const hasRunSink = useRef(false)
+
+    const PIECES_PARAM = 'pieces' // stores hyphen-separated 1-based indices (1..N) in original allPieces order
+
+    const canonicalNumbers = (numbers: number[]) => Array.from(new Set(numbers.filter(n => Number.isInteger(n) && n >= 1))).sort((a, b) => a - b).join('-')
+
+    const replacePiecesParam = (numbersOrNull: number[] | null) => {
+        // Build new query string preserving other params
+        const params = new URLSearchParams(currentSearchParams.toString())
+        if (numbersOrNull && numbersOrNull.length > 0) {
+            const value = canonicalNumbers(numbersOrNull)
+            if (params.get(PIECES_PARAM) !== value) {
+                params.set(PIECES_PARAM, value)
+            }
+        } else {
+            if (params.has(PIECES_PARAM)) params.delete(PIECES_PARAM)
+        }
+        const qs = params.toString()
+        const url = qs ? `${pathname}?${qs}` : pathname
+        router.replace(url, { scroll: false })
+    }
 
     useEffect(() => {
         const loadLibraryDocuments = async () => {
@@ -193,7 +215,7 @@ export function usePromptState(
         // Previne execução dupla em desenvolvimento (React 18 Strict Mode)
         // if (hasRunSource.current) return
         // hasRunSource.current = true
-        parent.postMessage({ type: 'get-source', payload: { promptSlug: prompt?.slug } } satisfies SourceMessageToParentType, '*')
+        parent.postMessage({ type: 'get-source', payload: { promptSlug: prompt?.slug, promptType: prompt?.content?.target ? slugify(prompt.content.target) : undefined } } satisfies SourceMessageToParentType, '*')
 
         // Listener para mensagem do popup
         const handleMessage = (event: MessageEvent) => {
@@ -224,7 +246,7 @@ export function usePromptState(
 
     useEffect(() => {
         if (!parent) return
-        
+
         devLog('*** Sink from URL:', sinkFromURL)
         if (sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT || sinkFromURL === SINK_PARAM_THAT_INDICATES_TO_SEND_AS_A_MESSAGE_TO_PARENT_AUTOMATICALLY) return
 
@@ -272,5 +294,7 @@ export function usePromptState(
         allLibraryDocuments,
         promptInitialized,
         sourcePayload,
+        setSourcePayload,
+        replacePiecesParam,
     }
 }

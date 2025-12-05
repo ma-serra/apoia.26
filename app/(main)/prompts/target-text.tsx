@@ -54,7 +54,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
     const handleReady = (content: ContentType) => {
         setContent(content)
         if (sinkFromURL === 'to-parent-automatic') {
-            sendApproveMessageToParent(content, sourcePayload)
+            sendApproveMessageToParent(content, sourcePayload, prompt?.slug, prompt?.content?.target)
         }
     }
 
@@ -102,7 +102,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
                             data={{ textos: [{ numeroDoProcesso: '', descr: textoDescr, slug: slugify(textoDescr), texto: markdown, sigilo: '0' }] }}
                             options={{ cacheControl: true }} config={promptConfig} visualization={visualization} dossierCode={undefined} onReady={(content) => handleReady(content)} />
                         <Row>
-                            {content && sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content, sourcePayload)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
+                            {content && sinkFromURL === 'to-parent' && <Col><Button variant="success" onClick={() => sendApproveMessageToParent(content, sourcePayload, prompt?.slug, prompt?.content?.target)} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>}
                             {/* <Col><Print numeroDoProcesso={slugify(prompt.name)} /></Col> */}
                         </Row>
                     </>

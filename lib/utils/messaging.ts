@@ -62,7 +62,7 @@
  * - Sanitizar HTML com DOMPurify quando aplicável
  */
 
-import { InstanceType } from "../proc/process-types"
+import { TargetKeys } from "../proc/process-types"
 
 // ============================================================================
 // CONSTANTES
@@ -124,6 +124,7 @@ export type SourceMessageToParentType = {
     type: 'get-source'
     payload: {
         promptSlug?: string
+        promptType?: TargetKeys
     }
 }
 
@@ -152,6 +153,8 @@ export type SourceMessageFromParentType = {
 export type ApproveMessageToParentType = {
     type: 'approved'
     payload: {
+        promptSlug?: string
+        promptType?: TargetKeys
         markdownContent: string
         htmlContent: string
         sourcePayload: SourcePayloadType
@@ -166,6 +169,7 @@ export type SinkMessageToParentType = {
     type: 'get-sink'
     payload: {
         promptSlug?: string
+        promptType?: TargetKeys
     }
 }
 

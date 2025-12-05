@@ -109,7 +109,7 @@ const TargetArray = [
 export type TargetValueType = EnumOfObjectsValueType & { descr: string }
 
 const targetKeys = TargetArray.map(i => i.name)
-type TargetKeys = typeof targetKeys[number]
+export type TargetKeys = typeof targetKeys[number]
 export type TargetType = { [key: TargetKeys]: TargetValueType }
 export const Target: TargetType = TargetArray.reduce((acc, cur, idx) => {
     acc[slugify(cur.name).replaceAll('-', '_').toUpperCase()] = { ...cur, sort: idx + 1 }

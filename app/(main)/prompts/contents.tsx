@@ -35,7 +35,9 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         matter,
         setSource,
         setSinkFromURL,
-        setSinkButtonText
+        setSinkButtonText,
+        setSourcePayload,
+        replacePiecesParam,
     } = usePromptContext()
 
     useEffect(() => {
@@ -72,6 +74,8 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     const resetProcess = () => {
         setNumeroDoProcesso(null)
         setNumber('')
+        setSourcePayload(null)
+        replacePiecesParam(null)
         setViewKey(vk => vk + 1)
     }
 
@@ -79,6 +83,8 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         // setPrompt(null)
         setPrompt(prompts.find(p => p.kind === '^CHAT') || null)
         setSource(null)
+        setSourcePayload(null)
+        replacePiecesParam(null)
         setSinkFromURL(null)
         setSinkButtonText(null)
         setViewKey(vk => vk + 1)
@@ -89,6 +95,8 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         setNumber('')
         setPrompt(prompts.find(p => p.kind === '^CHAT_STANDALONE') || null)
         setSource(null)
+        setSourcePayload(null)
+        replacePiecesParam(null)
         setSinkFromURL(null)
         setSinkButtonText(null)
         setViewKey(vk => vk + 1)
