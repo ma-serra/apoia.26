@@ -335,12 +335,12 @@ export class PromptDao {
 
     static async setFavorite(promptId: number, userId: number): Promise<void> {
         if (!knex) return
-        await knex('ia_prompt_favorite').insert({ prompt_id: promptId, user_id: userId }).onConflict().ignore()
+        await knex('ia_favorite').insert({ prompt_id: promptId, user_id: userId }).onConflict().ignore()
     }
 
     static async resetFavorite(promptId: number, userId: number): Promise<void> {
         if (!knex) return
-        await knex('ia_prompt_favorite').where({ prompt_id: promptId, user_id: userId }).delete()
+        await knex('ia_favorite').where({ prompt_id: promptId, user_id: userId }).delete()
     }
 
     static async setPrivate(promptId: number): Promise<void> {
