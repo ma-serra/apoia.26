@@ -241,7 +241,7 @@ export default function GlobalStatsPage() {
                         </Card.Header>
                         <Card.Body>
                             {chartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={300}>
+                                <ResponsiveContainer width="100%" height={550}>
                                     <BarChart
                                         data={chartData}
                                         layout="vertical"

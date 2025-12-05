@@ -71,7 +71,7 @@ export class StatsDao {
     /**
      * Retorna o ranking de tribunais por execuções
      */
-    static async getCourtRanking(limit: number = 5): Promise<mysqlTypes.CourtRankingItem[]> {
+    static async getCourtRanking(limit: number = 10): Promise<mysqlTypes.CourtRankingItem[]> {
         if (!knex) return []
 
         const stats = await knex('ia_generation as g')
@@ -272,9 +272,7 @@ export class StatsDao {
             })
         }
 
-        result.slice(0, limit)
-
-        return result
+        return result.slice(0, limit)
     }
 
     /**
