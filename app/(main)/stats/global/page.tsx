@@ -295,7 +295,7 @@ export default function GlobalStatsPage() {
                             {stats.trendingPrompts.length > 0 ? (
                                 <ul className="list-group list-group-flush">
                                     {stats.trendingPrompts.map((prompt, index) => (
-                                        <li key={prompt.promptBaseId} className="list-group-item d-flex align-items-center py-3">
+                                        <li key={prompt.promptBaseId} className="list-group-item d-flex align-items-center py-1">
                                             <div className="me-3 text-center" style={{ width: '40px' }}>
                                                 {index === 0 && <span className="fs-3">🥇</span>}
                                                 {index === 1 && <span className="fs-3">🥈</span>}
@@ -360,7 +360,7 @@ export default function GlobalStatsPage() {
                             {stats.topContributors.length > 0 ? (
                                 <ul className="list-group list-group-flush">
                                     {stats.topContributors.map((contributor, index) => (
-                                        <li key={contributor.userId} className="list-group-item d-flex align-items-center py-3">
+                                        <li key={contributor.userId} className="list-group-item d-flex align-items-center py-1">
                                             <div className="me-3 text-center" style={{ width: '40px' }}>
                                                 {index === 0 && <span className="fs-3">🥇</span>}
                                                 {index === 1 && <span className="fs-3">🥈</span>}
@@ -418,7 +418,7 @@ export default function GlobalStatsPage() {
                             {stats.topUsers.length > 0 ? (
                                 <ul className="list-group list-group-flush">
                                     {stats.topUsers.map((user, index) => (
-                                        <li key={user.userId} className="list-group-item d-flex align-items-center py-3">
+                                        <li key={user.userId} className="list-group-item d-flex align-items-center py-1">
                                             <div className="me-3 text-center" style={{ width: '40px' }}>
                                                 {index === 0 && <span className="fs-3">🥇</span>}
                                                 {index === 1 && <span className="fs-3">🥈</span>}

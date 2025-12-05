@@ -104,7 +104,7 @@ export class StatsDao {
      * Retorna os top contribuidores (autores de prompts)
      * Usa PromptDao.retrievePromptUsageReport que já funciona corretamente
      */
-    static async getTopContributors(limit: number = 5): Promise<mysqlTypes.TopContributorItem[]> {
+    static async getTopContributors(limit: number = 10): Promise<mysqlTypes.TopContributorItem[]> {
         if (!knex) return []
 
         const dateLimit = new Date()
@@ -208,7 +208,7 @@ export class StatsDao {
      * Retorna os prompts em alta (trending)
      * Usa PromptDao.retrievePromptUsageReport que já funciona corretamente
      */
-    static async getTrendingPrompts(limit: number = 5): Promise<mysqlTypes.TrendingPromptItem[]> {
+    static async getTrendingPrompts(limit: number = 10): Promise<mysqlTypes.TrendingPromptItem[]> {
         if (!knex) return []
 
         const dateLimit = new Date()
@@ -232,8 +232,6 @@ export class StatsDao {
         // Ordenar por total e pegar top N
         const sorted = [...promptUsage.entries()]
             .sort((a, b) => b[1].total - a[1].total)
-            .slice(0, limit)
-
 
         // Obter a lista de prompts e seus ratings
         const basePrompts = await PromptDao.retrieveLatestPrompts(0, false)
@@ -262,6 +260,7 @@ export class StatsDao {
         for (const [name, usage] of sorted) {
             const promptInfo = promptByName.get(name)
             if (!promptInfo) continue
+            if (!promptInfo.content?.author || promptInfo.content?.author === '-') continue // Ignorar prompts sem autor definido
 
             result.push({
                 promptBaseId: promptInfo.base_id,
@@ -272,6 +271,8 @@ export class StatsDao {
                 totalRatings: Number(promptInfo.rating?.voter_count) || 0
             })
         }
+
+        result.slice(0, limit)
 
         return result
     }

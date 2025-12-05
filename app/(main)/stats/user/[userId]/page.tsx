@@ -4,9 +4,10 @@ import React, { useState, useEffect, use } from 'react'
 import { Container, Row, Col, Card, Spinner, Alert, Table, OverlayTrigger, Tooltip as BsTooltip } from 'react-bootstrap'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { 
-    faClock, faRocket, faLightbulb, faUsers, faStar, 
-    faTrophy, faHeart, faFire, faThumbsUp, faInfoCircle, faLock
+import {
+    faClock, faRocket, faLightbulb, faUsers, faStar,
+    faTrophy, faHeart, faFire, faThumbsUp, faInfoCircle, faLock,
+    faChartLine
 } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
@@ -243,7 +244,9 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
                 <Col lg={7}>
                     <Card className="h-100 shadow-sm">
                         <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center">
-                            <h5 className="mb-0">Minhas Execucoes nos Ultimos 6 Meses</h5>
+                            <h5 className="mb-0">
+                                <FontAwesomeIcon icon={faChartLine} className="me-2 text-primary" />
+                                Minhas Execucoes nos Ultimos 6 Meses</h5>
                             <OverlayTrigger
                                 placement="top"
                                 overlay={<BsTooltip>Historico mensal de quantos prompts voce executou</BsTooltip>}
@@ -259,10 +262,10 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
                                         <XAxis dataKey="name" />
                                         <YAxis />
                                         <Tooltip formatter={(value: number) => [value.toLocaleString('pt-BR'), 'Execucoes']} />
-                                        <Line 
-                                            type="monotone" 
-                                            dataKey="execucoes" 
-                                            stroke="#0d6efd" 
+                                        <Line
+                                            type="monotone"
+                                            dataKey="execucoes"
+                                            stroke="#0d6efd"
                                             strokeWidth={2}
                                             dot={{ fill: '#0d6efd', strokeWidth: 2 }}
                                             activeDot={{ r: 8 }}
@@ -311,17 +314,17 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
                                                 placement="top"
                                                 overlay={<BsTooltip>{badge.description}{!earned && ' (bloqueado)'}</BsTooltip>}
                                             >
-                                                <Card 
+                                                <Card
                                                     className={`h-100 text-center ${earned ? '' : 'bg-light'}`}
-                                                    style={{ 
+                                                    style={{
                                                         borderColor: earned ? iconColor : '#dee2e6',
                                                         backgroundColor: earned ? badge.bgColor : undefined,
                                                         cursor: 'help'
                                                     }}
                                                 >
                                                     <Card.Body className="py-2 px-1">
-                                                        <FontAwesomeIcon 
-                                                            icon={earned ? badge.icon : faLock} 
+                                                        <FontAwesomeIcon
+                                                            icon={earned ? badge.icon : faLock}
                                                             size="lg"
                                                             style={{ color: earned ? iconColor : '#adb5bd' }}
                                                         />
@@ -372,7 +375,7 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
                                 {stats.myPromptsStats.map((prompt) => (
                                     <tr key={prompt.promptBaseId}>
                                         <td>
-                                            <Link 
+                                            <Link
                                                 href={`/prompts?prompt_id=${prompt.promptBaseId}`}
                                                 className="text-decoration-none"
                                             >

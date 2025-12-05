@@ -158,11 +158,9 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                // next: { revalidate: 3600 } // Revalida a cada hora
+                next: { revalidate: 3600 } // Revalida a cada hora
             }
         )
-
-
 
         const b = await response.arrayBuffer()
         const decoder = new TextDecoder('utf-8')
