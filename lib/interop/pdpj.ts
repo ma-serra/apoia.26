@@ -10,6 +10,68 @@ import { mapPdpjToSimplified, PdpjInput } from './pdpj-mapping'
 import { P, T } from '../proc/combinacoes'
 import { serviceMonitor } from './pdpjServiceMonitor'
 
+// Type para os campos utilizados no método consultarProcesso
+type PdpjProcessoResponse = {
+    tramitacoes: PdpjTramitacaoConsulta[]
+}[]
+
+interface PdpjTramitacaoConsulta {
+    classe: { codigo: number }[]
+    nivelSigilo: string
+    dataHoraAjuizamento: string
+    tribunal: {
+        nome: string
+        segmento: string
+    }
+    instancia: string
+    natureza: string
+    partes: PdpjParteConsulta[]
+    documentos: PdpjDocumentoConsulta[]
+    movimentos: PdpjMovimentoConsulta[]
+    processosRelacionados?: PdpjProcessoRelacionado[]
+}
+
+interface PdpjParteConsulta {
+    polo: 'ATIVO' | 'PASSIVO'
+    nome: string
+    representantes: PdpjRepresentanteConsulta[]
+}
+
+interface PdpjRepresentanteConsulta {
+    oab?: {
+        numero: string
+        uf: string
+    }[]
+}
+
+interface PdpjDocumentoConsulta {
+    id: string
+    idOrigem?: string
+    tipo: {
+        nome: string
+    }
+    arquivo?: {
+        tipo: string
+    }
+    nivelSigilo: string
+    nome: string
+    dataHoraJuntada: string
+}
+
+interface PdpjMovimentoConsulta {
+    idDocumento?: string
+    sequencia: number
+    descricao: string
+}
+
+interface PdpjProcessoRelacionado {
+    tipoRelacao: string
+    numeroProcesso: string
+    classe?: {
+        id: number
+    }
+}
+
 const mimeTypyFromTipo = (tipo: string): string => {
     switch (tipo) {
         case 'APPLICATION_PDF': return 'application/pdf'
@@ -96,7 +158,7 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                next: { revalidate: 3600 } // Revalida a cada hora
+                // next: { revalidate: 3600 } // Revalida a cada hora
             }
         )
 
@@ -130,7 +192,7 @@ export class InteropPDPJ implements Interop {
     }
 
     public consultarProcesso = async (numeroDoProcesso: string, recursivo?: boolean): Promise<DadosDoProcessoType[]> => {
-        let data: any = await this.consultarProcessoPdpj(numeroDoProcesso)
+        const data: PdpjProcessoResponse = await this.consultarProcessoPdpj(numeroDoProcesso)
 
         const resp: DadosDoProcessoType[] = []
         for (const processo of data[0].tramitacoes) {
@@ -179,7 +241,7 @@ export class InteropPDPJ implements Interop {
                     id: doc.id,
                     idOrigem: doc.idOrigem,
                     numeroDoProcesso,
-                    numeroDoEvento: mov.sequencia,
+                    numeroDoEvento: String(mov.sequencia),
                     descricaoDoEvento: mov.descricao,
                     descr: doc.tipo.nome.toUpperCase(),
                     tipoDoConteudo: mimeTypyFromTipo(doc.arquivo?.tipo),
