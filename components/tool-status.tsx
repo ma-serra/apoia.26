@@ -94,6 +94,17 @@ function toolMessage(part: any): ReactElement {
                 case 'output-error':
                     return <div>Error: {part.errorText}</div>;
             }
+        case 'tool-getPangea':
+            switch (part.state) {
+                case 'input-streaming':
+                    return <span className="text-secondary">Acessando dados do Pangea...</span>
+                case 'input-available':
+                    return <span className="text-secondary">Obtendo dados do Pangea: {part.input?.query}...</span>
+                case 'output-available':
+                    return <span className="text-secondary">Consultei dados do Pangea: {part.input?.query}</span>
+                case 'output-error':
+                    return <div>Error: {part.errorText}</div>;
+            }
         default:
             return <span className="text-secondary">Ferramenta desconhecida: {part.type}</span>
     }
