@@ -286,6 +286,9 @@ import linguagem_simples from '@/prompts/linguagem-simples.md'
 import relatorio_de_apelacao_e_triagem from '@/prompts/relatorio-de-apelacao-e-triagem.md'
 import degravacao from '@/prompts/degravacao.md'
 import template_a_partir_de_modelo from '@/prompts/template-a-partir-de-modelo.md'
+import pedidos_viabilidade_recurso from '@/prompts/pedidos-viabilidade-recurso.md'
+import decisao_viabilidade_recurso_extraordinario from '@/prompts/decisao-viabilidade-recurso-extraordinario.md'
+import decisao_viabilidade_recurso_especial from '@/prompts/decisao-viabilidade-recurso-especial.md'
 
 // Enum for the different types of prompts
 export const internalPrompts = {
@@ -328,4 +331,7 @@ export const internalPrompts = {
     relatorio_de_apelacao_e_triagem: promptDefinitionFromMarkdown('relatorio_de_apelacao_e_triagem', relatorio_de_apelacao_e_triagem),
     degravacao: promptDefinitionFromMarkdown('degravacao', degravacao),
     template_a_partir_de_modelo: promptDefinitionFromMarkdown('template_a_partir_de_modelo', template_a_partir_de_modelo),
+    pedidos_viabilidade_recurso: promptDefinitionFromMarkdown('pedidos_viabilidade_recurso', pedidos_viabilidade_recurso),
+    decisao_viabilidade_recurso_extraordinario: promptDefinitionFromMarkdown('decisao_viabilidade_recurso_extraordinario', decisao_viabilidade_recurso_extraordinario),
+    decisao_viabilidade_recurso_especial: promptDefinitionFromMarkdown('decisao_viabilidade_recurso_especial', decisao_viabilidade_recurso_especial),
 }
