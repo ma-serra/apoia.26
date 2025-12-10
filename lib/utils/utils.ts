@@ -58,12 +58,12 @@ export const maiusculasEMinusculas = (s) => {
 
   s = sb;
 
-  s = s.replace(" E ", " e ");
-  s = s.replace(" Da ", " da ");
-  s = s.replace(" Das ", " das ");
-  s = s.replace(" De ", " de ");
-  s = s.replace(" Do ", " do ");
-  s = s.replace(" Dos ", " dos ");
+  s = s.replaceAll(" E ", " e ");
+  s = s.replaceAll(" Da ", " da ");
+  s = s.replaceAll(" Das ", " das ");
+  s = s.replaceAll(" De ", " de ");
+  s = s.replaceAll(" Do ", " do ");
+  s = s.replaceAll(" Dos ", " dos ");
 
   return s;
 }

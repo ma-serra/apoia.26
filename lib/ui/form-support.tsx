@@ -1,21 +1,12 @@
-import { Button, Dropdown, Form } from 'react-bootstrap'
+'use client'
+
+import { Button, Dropdown, Form, Spinner } from 'react-bootstrap'
 import ReactTextareaAutosize from 'react-textarea-autosize'
 import { z, ZodTypeAny, ZodError } from 'zod';
 import _ from 'lodash'
-import { Dispatch } from 'react';
+import { Dispatch, useState, useCallback, useRef, useEffect } from 'react';
 // import dynamic from 'next/dynamic'
 import Editor from '../../components/EditorComponent';
-
-export const numericString = (schema: ZodTypeAny) => z.preprocess((a) => {
-    if (typeof a === 'string') {
-        return parseInt(a, 10)
-    } else if (typeof a === 'number') {
-        return a;
-    } else {
-        return undefined;
-    }
-}, schema);
-
 
 type FieldErrorProps = {
     formState: FormState
@@ -167,6 +158,160 @@ export const fromErrorToFormState = (error: unknown) => {
 //     )
 // }
 
+// Componente AsyncSelect standalone para uso com hooks
+interface AsyncSelectComponentProps<T> {
+    label: string
+    name: string
+    searchFn: (query: string) => Promise<T[]>
+    formatOption: (item: T) => string
+    formatSelected?: (item: T) => string
+    minSearchLength?: number
+    width?: number | string
+    visible?: boolean
+    explanation?: string
+    getValue: () => T | null
+    setValue: (value: T | null) => void
+    colClass: (width?: string | number) => string
+    compact: boolean
+    formState: FormState
+}
+
+function AsyncSelectComponent<T>({ 
+    label, 
+    name, 
+    searchFn, 
+    formatOption, 
+    formatSelected, 
+    minSearchLength = 3, 
+    width, 
+    visible, 
+    explanation,
+    getValue,
+    setValue,
+    colClass,
+    compact,
+    formState
+}: AsyncSelectComponentProps<T>) {
+    const [searchQuery, setSearchQuery] = useState('')
+    const [options, setOptions] = useState<T[]>([])
+    const [isLoading, setIsLoading] = useState(false)
+    const [showDropdown, setShowDropdown] = useState(false)
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    const selectedValue = getValue()
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setShowDropdown(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    const handleSearch = useCallback(async (query: string) => {
+        if (query.length < minSearchLength) {
+            setOptions([])
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            const results = await searchFn(query)
+            setOptions(results)
+            setShowDropdown(true)
+        } catch (error) {
+            console.error('Erro na busca:', error)
+            setOptions([])
+        } finally {
+            setIsLoading(false)
+        }
+    }, [searchFn, minSearchLength])
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value
+        setSearchQuery(query)
+
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+        }
+
+        debounceTimerRef.current = setTimeout(() => {
+            handleSearch(query)
+        }, 400)
+    }
+
+    const handleSelect = (item: T) => {
+        setValue(item)
+        setSearchQuery('')
+        setOptions([])
+        setShowDropdown(false)
+    }
+
+    const handleClear = () => {
+        setValue(null)
+        setSearchQuery('')
+    }
+
+    const displayFormatter = formatSelected || formatOption
+
+    return (
+        <Form.Group className={`${colClass(width)} ${visible === false ? 'd-none' : ''}`} controlId={name} ref={containerRef}>
+            <Form.Label className={compact ? 'mb-0' : ''}>{label}</Form.Label>
+            {selectedValue ? (
+                <div className="d-flex align-items-center gap-2">
+                    <div className="form-control bg-light flex-grow-1" style={{ cursor: 'default' }}>
+                        {displayFormatter(selectedValue)}
+                    </div>
+                    <Button variant="outline-secondary" size="sm" onClick={handleClear} title="Limpar seleção">
+                        &times;
+                    </Button>
+                </div>
+            ) : (
+                <div className="position-relative">
+                    <div className="d-flex align-items-center">
+                        <Form.Control
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleInputChange}
+                            onFocus={() => options.length > 0 && setShowDropdown(true)}
+                            placeholder={`Digite ao menos ${minSearchLength} caracteres para buscar...`}
+                        />
+                        {isLoading && (
+                            <Spinner animation="border" size="sm" className="position-absolute" style={{ right: '10px' }} />
+                        )}
+                    </div>
+                    {showDropdown && options.length > 0 && (
+                        <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}>
+                            {options.map((item, index) => (
+                                <div
+                                    key={index}
+                                    className="p-2 border-bottom"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => handleSelect(item)}
+                                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                                >
+                                    {formatOption(item)}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {showDropdown && searchQuery.length >= minSearchLength && options.length === 0 && !isLoading && (
+                        <div className="position-absolute w-100 bg-white border rounded shadow-sm p-2 text-muted" style={{ zIndex: 1000 }}>
+                            Nenhum resultado encontrado
+                        </div>
+                    )}
+                </div>
+            )}
+            <FieldError formState={formState} name={name} />
+            {explanation && <Form.Text className="text-body-tertiary">{explanation}</Form.Text>}
+        </Form.Group>
+    )
+}
+
 export class FormHelper {
     data: any;
     setData: (data: any) => void;
@@ -313,6 +458,29 @@ export class FormHelper {
                 {/* {JSON.stringify(this.get(name))} */}
                 <FieldError formState={this.formState} name={name} />
             </Form.Group >
+        )
+    }
+
+    public AsyncSelect = <T,>(props: {
+        label: string,
+        name: string,
+        searchFn: (query: string) => Promise<T[]>,
+        formatOption: (item: T) => string,
+        formatSelected?: (item: T) => string,
+        minSearchLength?: number,
+        width?: number | string,
+        visible?: boolean,
+        explanation?: string
+    }) => {
+        return (
+            <AsyncSelectComponent<T>
+                {...props}
+                getValue={() => this.get(props.name)}
+                setValue={(value) => this.set(props.name, value)}
+                colClass={(width) => this.colClass(width)}
+                compact={this.compact}
+                formState={this.formState}
+            />
         )
     }
 

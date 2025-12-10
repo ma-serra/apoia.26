@@ -21,7 +21,7 @@ interface PangeaParadigmas {
   processos?: PangeaParadigmaProcesso[]
 }
 
-interface PangeaResultadoItem {
+export interface PangeaResultadoItem {
   id: string
   especie?: string
   orgao?: string
