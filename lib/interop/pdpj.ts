@@ -129,7 +129,7 @@ export class InteropPDPJ implements Interop {
                         scope: 'openid',
                         grant_type: 'client_credentials'
                     }),
-                    next: { revalidate: 3600 } // Revalida a cada hora
+                    next: { revalidate: 600 } // Revalida a cada 10 minutos
                 }
             )
 
@@ -158,7 +158,7 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                next: { revalidate: 3600 } // Revalida a cada hora
+                next: { revalidate: 600 } // Revalida a cada 10 minutos
             }
         )
 
@@ -309,7 +309,7 @@ export class InteropPDPJ implements Interop {
                         'Authorization': `Bearer ${this.accessToken}`,
                         'User-Agent': 'curl'
                     },
-                    next: { revalidate: 3600 } // Revalida a cada hora
+                    next: { revalidate: 600 } // Revalida a cada 10 minutos
                 }
             );
             const b = await response.arrayBuffer()
