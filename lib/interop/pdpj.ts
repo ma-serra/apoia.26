@@ -10,6 +10,8 @@ import { mapPdpjToSimplified, PdpjInput } from './pdpj-mapping'
 import { P, T } from '../proc/combinacoes'
 import { serviceMonitor } from './pdpjServiceMonitor'
 
+const REVALIDATE = undefined //600 // 10 minutes
+
 // Type para os campos utilizados no método consultarProcesso
 type PdpjProcessoResponse = {
     tramitacoes: PdpjTramitacaoConsulta[]
@@ -129,7 +131,7 @@ export class InteropPDPJ implements Interop {
                         scope: 'openid',
                         grant_type: 'client_credentials'
                     }),
-                    next: { revalidate: 600 } // Revalida a cada 10 minutos
+                    next: { revalidate: REVALIDATE }
                 }
             )
 
@@ -158,7 +160,7 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                next: { revalidate: 600 } // Revalida a cada 10 minutos
+                next: { revalidate: REVALIDATE } 
             }
         )
 
@@ -309,7 +311,7 @@ export class InteropPDPJ implements Interop {
                         'Authorization': `Bearer ${this.accessToken}`,
                         'User-Agent': 'curl'
                     },
-                    next: { revalidate: 600 } // Revalida a cada 10 minutos
+                    next: { revalidate: REVALIDATE }
                 }
             );
             const b = await response.arrayBuffer()
