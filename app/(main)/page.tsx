@@ -66,13 +66,13 @@ export default async function HomePage() {
             href: "/headnote",
             color: "text-secondary"
         },
-        // {
-        //     icon: faPencil,
-        //     title: "Degravação",
-        //     description: "Transcreva áudios de audiências e sessões com IA",
-        //     href: "/transcription",
-        //     color: "text-info"
-        // },
+        {
+            icon: faPencil,
+            title: "Degravação",
+            description: "Transcreva áudios de audiências e sessões com IA",
+            href: "/transcription",
+            color: "text-info"
+        },
         {
             icon: faUserSecret,
             title: "Anonimização",
