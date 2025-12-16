@@ -74,13 +74,6 @@ export default async function HomePage() {
             color: "text-info"
         },
         {
-            icon: faUserSecret,
-            title: "Anonimização",
-            description: "Anonimize textos removendo dados sensíveis",
-            href: "/anonym",
-            color: "text-dark"
-        },
-        {
             icon: faBookOpen,
             title: "Biblioteca",
             description: "Acesse sua coleção de documentos e recursos jurídicos",
@@ -94,13 +87,20 @@ export default async function HomePage() {
             href: "/batch",
             color: "text-success"
         },
-        // {
-        //     icon: faUsers,
-        //     title: "Comunidade",
-        //     description: "Veja estatísticas de uso coletivo e seu impacto individual",
-        //     href: "/stats/global",
-        //     color: "text-primary"
-        // },
+        {
+            icon: faUsers,
+            title: "Comunidade",
+            description: "Veja estatísticas de uso coletivo e seu impacto individual",
+            href: "/stats/global",
+            color: "text-primary"
+        },
+        {
+            icon: faUserSecret,
+            title: "Anonimização",
+            description: "Anonimize textos removendo dados sensíveis",
+            href: "/anonym",
+            color: "text-dark"
+        },
         {
             icon: faDollar,
             title: "Relatório de Uso de IA",
