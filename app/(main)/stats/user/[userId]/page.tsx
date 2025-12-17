@@ -158,7 +158,7 @@ export default function UserStatsPage({ params }: { params: Promise<{ userId: st
                         Isso equivale a aproximadamente <strong className="text-primary">{daysEquivalent} dias</strong> de trabalho!
                         <OverlayTrigger
                             placement="top"
-                            overlay={<BsTooltip>Calculado multiplicando suas execucoes por 15 minutos (economia media estimada por execucao)</BsTooltip>}
+                            overlay={<BsTooltip>Calculado considerando que cada utilização da IA economiza 15 minutos ao usuário (tempo medio estimado)</BsTooltip>}
                         >
                             <FontAwesomeIcon icon={faInfoCircle} className="ms-2 text-secondary" style={{ cursor: 'help' }} />
                         </OverlayTrigger>
