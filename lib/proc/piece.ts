@@ -14,6 +14,7 @@ import { envString } from '../utils/env'
 import { PecaConteudoType } from './process-types'
 import { TEXTO_PECA_IMAGEM_JPEG, TEXTO_PECA_IMAGEM_PNG, TEXTO_PECA_PDF_OCR_ERRO, TEXTO_PECA_PDF_OCR_VAZIO, TEXTO_PECA_VIDEO_MP4, TEXTO_PECA_VIDEO_XMS_WMV, TEXTO_PECA_AUDIO_XMS_WMA } from './process-types'
 import devLog from '../utils/log'
+import { InvalidPieceContentTypeError } from '../utils/api-error'
 
 const limit = pLimit(envString('OCR_LIMIT') ? parseInt(envString('OCR_LIMIT')) : 1)
 
@@ -181,11 +182,11 @@ export const obterConteudoDaPeca = async (dossier_id: number, numeroDoProcesso: 
             case 'video/mp4':
                 return { conteudo: await atualizarConteudoDeDocumento(document_id, IADocumentContentSource.VIDEO, TEXTO_PECA_VIDEO_MP4) }
             default:
-                throw new Error(`Peça ${idDaPeca} (${descrDaPeca}) - Tipo de conteúdo não suportado: ${contentType}`)
+                throw new InvalidPieceContentTypeError(`Peça ${idDaPeca} (${descrDaPeca}) - Tipo de conteúdo não suportado: ${contentType}`)
         }
     } catch (error) {
         devLog(`Erro ao obter conteúdo da peça ${idDaPeca} (${descrDaPeca}):`, error)
-        return { conteudo: undefined, errorMsg: error }
+        return { conteudo: undefined, errorMsg: error.message || error }
     }
 }
 

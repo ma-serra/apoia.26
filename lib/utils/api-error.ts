@@ -77,6 +77,12 @@ export class InvalidProcessNumberError extends SilentError {
     }
 }
 
+export class InvalidPieceContentTypeError extends SilentError {
+    constructor(message: string = 'Invalid piece content type') {
+        super(message, 400);
+    }
+}
+
 export class OutOfQuotaError extends SilentError {
     constructor(message: string = 'Out of quota') {
         super(message, 429);
