@@ -59,7 +59,7 @@ export enum P {
     PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS = 'Pedidos, Fundamentações e Dispositivos',
     SENTENCA = 'Sentença',
     VOTO = 'Voto',
-    PEDIDOS_VIABILIDADE_RECURSO = 'Pedidos de Viabilidade de Recurso',
+    JUIZO_VIABILIDADE_RECURSO = 'Juízo de Viabilidade de Recurso',
     DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO = 'Decisão de Viabilidade de Recurso Extraordinário',
     DECISAO_VIABILIDADE_RECURSO_ESPECIAL = 'Decisão de Viabilidade de Recurso Especial',
     INDICE = 'Índice',
@@ -103,7 +103,7 @@ export const ProdutosValidos = {
     [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS]: { titulo: P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, prompt: 'pedidos-fundamentacoes-e-dispositivos', plugins: [] },
     [P.SENTENCA]: { titulo: P.SENTENCA, prompt: 'sentenca', plugins: [] },
     [P.VOTO]: { titulo: P.VOTO, prompt: 'voto', plugins: [] },
-    [P.PEDIDOS_VIABILIDADE_RECURSO]: { titulo: P.PEDIDOS_VIABILIDADE_RECURSO, prompt: 'pedidos-viabilidade-recurso', plugins: [] },
+    [P.JUIZO_VIABILIDADE_RECURSO]: { titulo: P.JUIZO_VIABILIDADE_RECURSO, prompt: 'pedidos-viabilidade-recurso', plugins: [] },
     [P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO]: { titulo: P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO, prompt: 'decisao-viabilidade-recurso-extraordinario', plugins: [] },
     [P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL]: { titulo: P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL, prompt: 'decisao-viabilidade-recurso-especial', plugins: [] },
     [P.INDICE]: { titulo: P.INDICE, prompt: 'indice', plugins: [] },
@@ -478,14 +478,14 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         sort: 3,
         nome: 'Minuta de Decisão de Viabilidade de Recurso Extraordinário',
         padroes: [padraoViabilidadeDeRecursoExtraordinario],
-        produtos: [P.PEDIDOS_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO, P.CHAT]
+        produtos: [P.JUIZO_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO, P.CHAT]
     },
     DECISAO_DE_VIABILIDADE_DE_RESP: {
         status: StatusDeLancamento.EM_DESENVOLVIMENTO,
         sort: 3,
         nome: 'Minuta de Decisão de Viabilidade de Recurso Especial',
         padroes: [padraoViabilidadeDeRecursoEspecial],
-        produtos: [P.PEDIDOS_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL, P.CHAT]
+        produtos: [P.JUIZO_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL, P.CHAT]
     },
     RESUMOS: {
         status: StatusDeLancamento.PUBLICO,

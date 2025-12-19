@@ -27,13 +27,13 @@ Opções para "proximoPrompt":
 - DECISAO_ADMISSIBILIDADE_RECURSO_EXTRAORDINARIO
 - DECISAO_ADMISSIBILIDADE_RECURSO_ESPECIAL
 
-Opções para "efeitoSuspensivo":
+Opções para "pedidoDeEfeitoSuspensivo":
 - NAO
 - SIM (Utilize esta opção apenas se houver pedido expresso de atribuição de efeito suspensivo ou tutela provisória recursal para obstar a execução imediata do acórdão recorrido).
 
 Para cada pedido identificado, preencha os seguintes campos:
 - "texto": Descreva de forma concisa o pedido formulado no recurso (ex.: "Conhecer e dar provimento ao recurso para reformar a decisão recorrida").
-- "efeitoSuspensivo": Indique se há pedido de atribuição de efeito suspensivo ao recurso (SIM ou NAO).
+- "pedidoDeEfeitoSuspensivo": Indique se há pedido de atribuição de efeito suspensivo ao recurso (SIM ou NAO).
 - "argumentos": Liste os fundamentos jurídicos apresentados para embasar o pedido, preenchendo o campo "texto" com uma descrição concisa de cada argumento.
 
 Sua resposta deve sempre ser formatada em JSON, conforme o padrão abaixo:
@@ -43,7 +43,7 @@ Sua resposta deve sempre ser formatada em JSON, conforme o padrão abaixo:
   "proximoPrompt": "DECISAO_ADMISSIBILIDADE_RECURSO_EXTRAORDINARIO ou DECISAO_ADMISSIBILIDADE_RECURSO_ESPECIAL",
   "pedidos": [{
     "texto": "Informe o texto conciso que descreve o pedido de mérito recursal",
-    "efeitoSuspensivo": "SIM ou NAO"
+    "pedidoDeEfeitoSuspensivo": "SIM ou NAO"
     "argumentos": [{
         "texto": "Descreva os principais fundamentos jurídicos apresentados para embasar o pedido",
     }]
@@ -79,7 +79,7 @@ Identifique os pedidos realizados na peça recursal abaixo:
                         "type": "string",
                         "description": "Descrição concisa do pedido formulado no recurso."
                     },
-                    "efeitoSuspensivo": {
+                    "pedidoDeEfeitoSuspensivo": {
                         "type": "string",
                         "enum": [
                             "SIM",
@@ -106,7 +106,7 @@ Identifique os pedidos realizados na peça recursal abaixo:
                 },
                 "required": [
                     "texto",
-                    "efeitoSuspensivo",
+                    "pedidoDeEfeitoSuspensivo",
                     "argumentos"
                 ],
                 "additionalProperties": false
@@ -121,5 +121,5 @@ Identifique os pedidos realizados na peça recursal abaixo:
 }
 
 # FORMAT
-{% for d in pedidos %}{{loop.index}}. {% if d.efeitoSuspensivo === 'SIM' %}[C/ EFEITO SUSPENSIVO] {% endif %}{{ d.texto }}{% for a in d.argumentos %}
+{% for d in pedidos %}{{loop.index}}. {% if d.pedidoDeEfeitoSuspensivo === 'SIM' %}[C/ EFEITO SUSPENSIVO] {% endif %}{{ d.texto }}{% for a in d.argumentos %}
   * {{ a.texto }}% endfor %}{% endfor %}

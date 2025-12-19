@@ -35,7 +35,7 @@ const onReady = (Frm: FormHelper, requests: GeneratedContent[], idx: number, con
     Frm.set(`generated[${idx}]`, content)
 
     // Frm.set(`flow.ready[${idx}]`, content)
-    if ((requests[idx].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS || requests[idx].produto === P.PEDIDOS_VIABILIDADE_RECURSO) && content.json) {
+    if ((requests[idx].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS || requests[idx].produto === P.JUIZO_VIABILIDADE_RECURSO) && content.json) {
         Frm.set('pedidos', content.json)
     }
     if (content.json && isInformationExtractionPrompt(requests[idx].internalPrompt?.prompt)) {
@@ -104,7 +104,7 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
                 </Row>}
             </>
         }
-    } else if (request.produto === P.PEDIDOS_VIABILIDADE_RECURSO) {
+    } else if (request.produto === P.JUIZO_VIABILIDADE_RECURSO) {
         console.log('requestSlot.PEDIDOS_VIABILIDADE_RECURSO', { request, pedidos })
         if (previousArePending(Frm, requests, idx)) return null
         requestComTextosAnteriores = { ...requestComTextosAnteriores, data: dataComTextosAnteriores(Frm, requests, idx) }
@@ -154,7 +154,7 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, pr
     const ctrls = []
     for (let idx = 0; idx < requests.length; idx++) {
         if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) continue
-        if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_VIABILIDADE_RECURSO) continue
+        if (idx > 0 && requests[idx - 1].produto === P.JUIZO_VIABILIDADE_RECURSO) continue
         const ctrl = requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons, sinkFromURL, sinkButtonText, sourcePayload)
         if (ctrl === null) break
         ctrls.push(ctrl)

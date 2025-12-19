@@ -24,6 +24,10 @@ const searchTemasNoPangea = async (query: string): Promise<PangeaResultadoItem[]
         throw new Error('Erro ao buscar temas')
     }
     const data: PangeaSearchRawResponse = await response.json()
+
+    // Remover alguns campos desnecessários do resultado: missing, processosParadigma
+    data.resultados = data.resultados.map(({ missing, processosParadigma, ...rest }) => rest)
+
     return data.resultados || []
 }
 
@@ -31,9 +35,9 @@ const searchTemasNoPangea = async (query: string): Promise<PangeaResultadoItem[]
 const formatarOpcaoTema = (item: PangeaResultadoItem): string => {
     const partes = []
     if (item.orgao) partes.push(item.orgao)
-    if (item.especie) partes.push(item.especie)
-    if (item.numero) partes.push(`Tema ${item.numero}`)
-    if (item.titulo) partes.push(item.titulo)
+    if (item.tipo) partes.push(item.tipo)
+    if (item.nr) partes.push(`${item.nr}`)
+    if (item.questao) partes.push(item.questao)
     return partes.join(' - ') || item.id
 }
 
@@ -41,8 +45,8 @@ const formatarOpcaoTema = (item: PangeaResultadoItem): string => {
 const formatarTemaSelecionado = (item: PangeaResultadoItem): string => {
     const partes = []
     if (item.orgao) partes.push(item.orgao)
-    if (item.especie) partes.push(item.especie)
-    if (item.numero) partes.push(`Tema ${item.numero}`)
+    if (item.tipo) partes.push(item.tipo)
+    if (item.nr) partes.push(`${item.nr}`)
     return partes.join(' - ') || item.id
 }
 
@@ -186,7 +190,7 @@ export const PedidosViabilidadeRecurso = ({ pedidos, request, nextRequest, Frm, 
                         }
                     </div>
                     {pedido.argumentos.map((argumento, j) =>
-                        <div className="row mt-1">
+                        <div key={j} className="row mt-1">
                             <div className="col col-12 col-sm-8 offset-1"><span><strong>{i + 1}.{j + 1}{')'}</strong></span>{` ${Frm.get(`pedidos.pedidos[${i}].argumentos[${j}].texto`)}`}</div>
                             <Frm.Select label="Decisão" name={`pedidos.pedidos[${i}].argumentos[${j}].dispositivo`} options={tiposDeDispositivo} width={'col-12 col-sm-3'} />
                             <div className="col col-11 offset-1">

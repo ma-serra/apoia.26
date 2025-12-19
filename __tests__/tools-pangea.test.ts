@@ -23,45 +23,43 @@ describe('getPangeaTool', () => {
       resultados: [
         {
           id: '1',
-          especie: 'RG',
-            orgao: 'STF',
-          numero: '123',
-          titulo: 'Tema 123',
+          tipo: 'RG',
+          orgao: 'STF',
+          nr: 123,
           tese: 'Texto <mark>com</mark> destaque',
           highlight: { tese: 'Texto <mark>com</mark> destaque' },
-          etiquetas: [{ texto: 'precatório' }],
-          fundamentos: [{ texto: 'art. 5º' }],
-          paradigmas: { referencia: 'Leading case', processos: [{ numero: 'RE 123', link: 'http://example' }] },
-          linkAndamento: 'http://andamento',
+          processosParadigma: [{ numero: 'RE 123', link: 'http://example' }],
           situacao: 'Julgado'
         },
         {
-          id: '2', especie: 'SUM', orgao: 'STJ', numero: '456', titulo: 'Súmula 456', tese: 'Outra tese' }
+          id: '2', tipo: 'SUM', orgao: 'STJ', nr: 456, tese: 'Outra tese' }
       ]
     }
 
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => mockResponse }) as any
 
     const tool = getPangeaTool(dummyUser)
-  const result: any = await tool.execute({ query: 'precatório', page: 1 }, { toolCallId: 't1', messages: [] } as any)
+    const result: any = await tool.execute({ query: 'precatório', page: 1 }, { toolCallId: 't1', messages: [] } as any)
 
     expect(result.status).toBe('OK')
     expect(result.results.length).toBe(2)
+    expect(result.results[0].especie).toBe('RG')
+    expect(result.results[0].numero).toBe('123')
     expect(result.results[0].tese).not.toContain('<mark>') // stripHtml default true
-    expect(result.results[0].etiquetas).toEqual(['precatório'])
+    expect(result.results[0].paradigmas.processos[0].numero).toBe('RE 123')
   })
 
   test('mantém HTML quando stripHtml=false', async () => {
     const mockResponse = {
       total: 1,
       resultados: [
-        { id: '3', especie: 'RG', orgao: 'STF', numero: '789', titulo: 'Tema 789', tese: 'Teste <mark>HTML</mark>', highlight: { tese: 'Teste <mark>HTML</mark>' } }
+        { id: '3', tipo: 'RG', orgao: 'STF', nr: 789, tese: 'Teste <mark>HTML</mark>', highlight: { tese: 'Teste <mark>HTML</mark>' } }
       ]
     }
     global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => mockResponse }) as any
 
     const tool = getPangeaTool(dummyUser)
-  const result: any = await tool.execute({ query: 'html', page: 1, stripHtml: false }, { toolCallId: 't2', messages: [] } as any)
+    const result: any = await tool.execute({ query: 'html', page: 1, stripHtml: false }, { toolCallId: 't2', messages: [] } as any)
     expect(result.results[0].tese).toContain('<mark>HTML</mark>')
   })
 

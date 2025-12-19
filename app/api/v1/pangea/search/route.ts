@@ -1,4 +1,4 @@
-import { searchPangea, PANGEA_DEFAULT_ORGAOS, PANGEA_DEFAULT_ESPECIES } from '@/lib/ai/tools-pangea'
+import { searchPangea, PANGEA_DEFAULT_ORGAOS, PANGEA_DEFAULT_TIPOS } from '@/lib/ai/tools-pangea'
 import { withErrorHandler, BadRequestError } from '@/lib/utils/api-error'
 
 export const maxDuration = 30
@@ -55,13 +55,13 @@ async function POST_HANDLER(request: Request) {
     }
 
     const finalOrgaos = orgaos && orgaos.length > 0 ? orgaos : PANGEA_DEFAULT_ORGAOS
-    const finalEspecies = especies && especies.length > 0 ? especies : PANGEA_DEFAULT_ESPECIES
+    const finalTipos = especies && especies.length > 0 ? especies : PANGEA_DEFAULT_TIPOS
 
     const result = await searchPangea({
         query: query.trim(),
         page,
         orgaos: finalOrgaos,
-        especies: finalEspecies
+        tipos: finalTipos
     })
 
     return Response.json(result)

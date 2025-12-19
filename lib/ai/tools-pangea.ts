@@ -5,52 +5,38 @@ import { UserType } from "../user"
 // =====================
 // Tipos Pangea (parcial – somente campos usados)
 // =====================
-interface PangeaEtiquetaOuFundamento {
-  tesauro?: boolean
-  texto?: string
-  textoFormatado?: string
-}
-
 interface PangeaParadigmaProcesso {
   link?: string
   numero?: string
 }
 
-interface PangeaParadigmas {
-  referencia?: string
-  processos?: PangeaParadigmaProcesso[]
-}
-
 export interface PangeaResultadoItem {
   id: string
-  especie?: string
+  tipo?: string
   orgao?: string
-  numero?: string
-  titulo?: string
+  nr?: number
   tese?: string
   questao?: string
   situacao?: string
-  observacao?: string
   ultimaAtualizacao?: string
-  etiquetas?: PangeaEtiquetaOuFundamento[]
-  fundamentos?: PangeaEtiquetaOuFundamento[]
-  paradigmas?: PangeaParadigmas
-  linkAndamento?: string
-  linkDecisao?: string
+  processosParadigma?: PangeaParadigmaProcesso[]
   highlight?: {
     tese?: string
     tese_snippet?: string
   }
   missing?: string[]
+  suspensoes?: { ativa: boolean; dataSuspensao: string; descricao: string }[]
 }
 
-interface PangeaAggTipoTotal { tipo?: string; total: number }
+interface PangeaAggTipoTotal { tipo?: string; orgao?: string; total: number }
 interface PangeaAggLocal { id: number; total: number }
 
 export interface PangeaSearchRawResponse {
   resultados?: PangeaResultadoItem[]
   total?: number
   posicao?: number
+  posicao_final?: number
+  posicao_inicial?: number
   aggsEspecies?: PangeaAggTipoTotal[]
   aggsOrgaos?: PangeaAggTipoTotal[]
   aggsLocais?: PangeaAggLocal[]
@@ -64,20 +50,14 @@ export interface NormalizedPangeaItem {
   especie?: string
   orgao?: string
   numero?: string
-  titulo?: string
   tese?: string
   teseSnippet?: string
   questao?: string
   situacao?: string
-  observacao?: string
   ultimaAtualizacao?: string
-  etiquetas: string[]
-  fundamentos: string[]
   paradigmas?: {
-    referencia?: string
     processos?: { numero?: string; link?: string }[]
   }
-  links?: { andamento?: string; decisao?: string }
   highlightFlags: { hadMissingTerms: boolean }
 }
 
@@ -102,7 +82,7 @@ export interface PangeaNormalizedResponse {
 
 export const PANGEA_DEFAULT_ORGAOS = ["STF", "STJ"]
 export const PANGEA_EXTENDED_ORGAOS = ["STF", "STJ", "TST", "TRT4", "TRT1", "TRT2", "TRT3", "TRT5"]
-export const PANGEA_DEFAULT_ESPECIES = ["RG", "RESPR", "ADI ADC ADO ADPF", "SV", "SUM", "OJ", "IRR"]
+export const PANGEA_DEFAULT_TIPOS = ["SUM", "SV", "RG", "IAC", "SIRDR", "RR", "CT"]
 
 const stripHtmlBasic = (html?: string): string | undefined => {
   if (!html) return html
@@ -133,48 +113,37 @@ const normalizeItem = (item: PangeaResultadoItem, options: { stripHtml: boolean 
 
   return {
     id: item.id,
-    especie: item.especie,
+    especie: item.tipo,
     orgao: item.orgao,
-    numero: item.numero,
-    titulo: item.titulo,
+    numero: item.nr ? String(item.nr) : undefined,
     tese,
     teseSnippet,
     questao,
     situacao: item.situacao,
-    observacao: item.observacao,
     ultimaAtualizacao: item.ultimaAtualizacao,
-    etiquetas: (item.etiquetas || []).map(e => e.texto || '').filter(Boolean),
-    fundamentos: (item.fundamentos || []).map(f => f.texto || '').filter(Boolean),
-    paradigmas: item.paradigmas ? {
-      referencia: item.paradigmas.referencia,
-      processos: (item.paradigmas.processos || []).map(p => ({ numero: p.numero, link: p.link }))
+    paradigmas: item.processosParadigma ? {
+      processos: item.processosParadigma.map(p => ({ numero: p.numero, link: p.link }))
     } : undefined,
-    links: item.linkAndamento || item.linkDecisao ? { andamento: item.linkAndamento, decisao: item.linkDecisao } : undefined,
     highlightFlags: { hadMissingTerms: !!(item.missing && item.missing.length) }
   }
 }
 
-const buildPayload = (query: string, page: number, orgaos: string[], especies: string[]): any => ({
+const buildPayload = (query: string, page: number, orgaos: string[], tipos: string[]): any => ({
   filtro: {
     buscaGeral: query,
     todasPalavras: "",
     quaisquerPalavras: "",
     semPalavras: "",
     trechoExato: "",
-    fundamentos: "",
-    etiquetas: "",
     atualizacaoDesde: "",
     atualizacaoAte: "",
     cancelados: false,
-    suspensao: false,
-    resultadoCompleto: false,
-    ordenacaoTipo: "Axio",
-    ordenacaoModo: "Desc",
-    numero: "",
+    ordenacao: "Text",
+    nr: "",
     pagina: page,
+    tamanhoPagina: 10,
     orgaos,
-    especies,
-    locais: []
+    tipos
   }
 })
 
@@ -193,20 +162,22 @@ export const searchPangea = async (params: {
   query: string
   page: number
   orgaos: string[]
-  especies: string[]
+  tipos: string[]
 }): Promise<PangeaSearchRawResponse> => {
-  const response = await fetchWithTimeout('https://pangea.trt4.jus.br/api/documentos/pesquisa', {
+  const response = await fetchWithTimeout('https://pangeabnp.pdpj.jus.br/api/v1/precedentes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'User-Agent': 'ApoiaBot/1.0 (+https://github.com/trf2-jus-br)'
     },
-    body: JSON.stringify(buildPayload(params.query, params.page, params.orgaos, params.especies))
+    body: JSON.stringify(buildPayload(params.query, params.page, params.orgaos, params.tipos))
   })
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`)
   }
-  return await response.json() as PangeaSearchRawResponse
+  const json = await response.json() as PangeaSearchRawResponse
+  console.log('Pangea response:', JSON.stringify(json))
+  return json
 }
 
 // =====================
@@ -219,21 +190,21 @@ export const getPangeaTool = (_pUser: Promise<UserType>) => tool({
     query: z.string().min(3, 'A consulta deve ter ao menos 3 caracteres.').describe('Termo de busca (mínimo 3 caracteres).'),
     page: z.number().int().min(1).default(1).describe('Página (1 a 10).'),
     orgaos: z.array(z.string()).optional().describe('Órgãos a filtrar (ex.: STF, STJ, TST, TRT4). Default: STF, STJ.'),
-    especies: z.array(z.string()).optional().describe('Espécies a filtrar (ex.: RG, RESP, SUM).'),
+    tipos: z.array(z.string()).optional().describe('Tipos a filtrar (ex.: SUM, SV, RG, IAC, SIRDR, RR, CT).'),
     includeOthers: z.boolean().optional().describe('Se true, inclui um conjunto estendido de órgãos além dos passados.'),
     stripHtml: z.boolean().optional().default(true).describe('Remove tags HTML da tese e campos relacionados.'),
     maxItems: z.number().int().min(1).max(100).optional().describe('Limite máximo de itens retornados após filtro.'),
     debug: z.boolean().optional().describe('Se true, inclui resposta bruta e aggs.')
   }),
-  execute: async ({ query, page, orgaos, especies, includeOthers, stripHtml = true, maxItems, debug }) => {
+  execute: async ({ query, page, orgaos, tipos, includeOthers, stripHtml = true, maxItems, debug }) => {
     if (page > 10) {
       return { status: 'ERROR', error: 'Página acima do limite máximo (10).', page }
     }
     const finalOrgaos = (orgaos && orgaos.length ? orgaos : PANGEA_DEFAULT_ORGAOS)
     const mergedOrgaos = includeOthers ? Array.from(new Set([...finalOrgaos, ...PANGEA_EXTENDED_ORGAOS])) : finalOrgaos
-    const finalEspecies = (especies && especies.length ? especies : PANGEA_DEFAULT_ESPECIES)
+    const finalTipos = (tipos && tipos.length ? tipos : PANGEA_DEFAULT_TIPOS)
     try {
-      const raw = await searchPangea({ query: query.trim(), page, orgaos: mergedOrgaos, especies: finalEspecies })
+      const raw = await searchPangea({ query: query.trim(), page, orgaos: mergedOrgaos, tipos: finalTipos })
       const resultados = raw.resultados || []
       const normalized = resultados.map(r => normalizeItem(r, { stripHtml }))
       const sliced = maxItems ? normalized.slice(0, maxItems) : normalized
