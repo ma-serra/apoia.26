@@ -429,7 +429,19 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                             ref={fileInputRef}
                             style={{ display: 'none' }}
                             onChange={(e) => {
-                                if (e.target.files) setFiles(e.target.files)
+                                if (e.target.files) {
+                                    // Acumular arquivos existentes com os novos
+                                    if (files && files.length > 0) {
+                                        const dt = new DataTransfer()
+                                        // Adicionar arquivos existentes
+                                        Array.from(files).forEach(f => dt.items.add(f))
+                                        // Adicionar novos arquivos
+                                        Array.from(e.target.files).forEach(f => dt.items.add(f))
+                                        setFiles(dt.files)
+                                    } else {
+                                        setFiles(e.target.files)
+                                    }
+                                }
                             }}
                         />
                         {files && files.length > 0 && <div className="mt-2 small d-flex flex-wrap align-items-center">
