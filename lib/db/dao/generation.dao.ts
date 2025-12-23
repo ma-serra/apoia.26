@@ -70,14 +70,10 @@ export class GenerationDao {
         if (!knex) return []
         const { court_id, startDate, endDate, limit = 5000 } = params
 
-        // Load all prompts to map prompt-[id] to name
-        const prompts = await knex('ia_prompt').select('id', 'name')
-        const promptMap = new Map<number, string>()
-        prompts.forEach(p => promptMap.set(p.id, p.name))
-
         const query = knex('ia_generation as g')
             .leftJoin('ia_user as u', 'u.id', 'g.created_by')
             .leftJoin('ia_dossier as d', 'd.id', 'g.dossier_id')
+            .leftJoin('ia_prompt as p', 'p.id', 'g.prompt_id')
             .select(
                 knex.raw('g.id as id'),
                 knex.raw('g.created_at as created_at'),
@@ -86,6 +82,7 @@ export class GenerationDao {
                 knex.raw('u.username as username'),
                 knex.raw('u.court_id as court_id'),
                 knex.raw('g.prompt as prompt_key'),
+                knex.raw('p.name as prompt_name'),
                 knex.raw('g.model as model'),
                 knex.raw('d.code as dossier_code'),
                 knex.raw('COALESCE(g.cached_input_tokens, 0) as cached_input_tokens'),
@@ -111,13 +108,8 @@ export class GenerationDao {
         const rows: any[] = await query
 
         return rows.map(r => {
-            let promptName = r.prompt_key
-            // Check if it's in format prompt-[number]
-            const match = /^prompt-(\d+)$/.exec(r.prompt_key)
-            if (match) {
-                const promptId = parseInt(match[1], 10)
-                promptName = promptMap.get(promptId) || r.prompt_key
-            }
+            // Use prompt_name from JOIN, fallback to prompt_key
+            const promptName = r.prompt_name || r.prompt_key
 
             const cachedTokens = Number(r.cached_input_tokens) || 0
             const inputTokens = Number(r.input_tokens) || 0

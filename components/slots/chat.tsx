@@ -45,14 +45,14 @@ const getCookie = (name: string) => {
 
 type ModelMessage = { role: string; content: any; }
 
-function convertToUIMessages(modelMsgs: ModelMessage[]): UIMessage[] {
+function convertToUIMessages(modelMsgs: ModelMessage[], promptKind: string): UIMessage[] {
     if (!Array.isArray(modelMsgs)) return []
     const ui: UIMessage[] = []
 
     modelMsgs.forEach((m, i) => {
         if (m.content) {
             ui.push({
-                id: `${m.role}-${i}`,
+                id: `${promptKind}-${m.role}-${i}`,
                 role: m.role as any,
                 parts: [{ type: 'text', text: m.content }]
             })
@@ -123,7 +123,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
             if (!res.ok)
                 throw new Error(`Failed to fetch chat messages: ${res.status} ${res.statusText}`)
             const modelMsgs = await res.json()
-            const uiMsgs = convertToUIMessages(modelMsgs)
+            const uiMsgs = convertToUIMessages(modelMsgs, params.definition.kind)
             setMessages(uiMsgs)
             setInitialMessages(uiMsgs)
 
@@ -336,9 +336,10 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const inputClass = params.sidekick ? 'btn-outline-secondary' : 'bg-secondary text-white'
 
     const messagesContent = useMemo(() => (
-        <>{messages.slice(initialMessages?.length || 0).map((m, idx) => (
+        <>{messages./*slice(initialMessages?.length || 0).*/map((m, idx) => (
             m.role === 'user' ?
-                <div className="row justify-content-end ms-5 g-2 chat-user-container" key={m.id}>
+            <div className="row justify-content-end ms-5 g-2 chat-user-container" key={m.id}>
+                    <p>{m.id}</p>
                     <div className={`col col-auto mb-0 icon-container`}>
                         <FontAwesomeIcon onClick={() => handleEditMessage(idx + (initialMessages?.length || 0))} icon={faEdit} className="text-white align-bottom" />
                     </div>
@@ -357,8 +358,9 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                         )}
                     </div>
                 </div>
-                : m.role === 'assistant' &&
+                : m.role === 'assistant' ?
                 <div className="row justify-content-start me-5" key={m.id}>
+                    <p>{m.id}</p>
                     <MessageStatus message={m} />
                     {
                         hasText(m) &&
@@ -368,6 +370,7 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                         </div>
                     }
                 </div>
+                : <p>{m.id}</p>
         ))}
 
             {error && <div className="row justify-content-start">

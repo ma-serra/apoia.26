@@ -184,7 +184,7 @@ export class CourtDao {
         const stats = await knex('ia_generation as g')
             .join('ia_user as u', 'u.id', 'g.created_by')
             .whereNotNull('u.court_id')
-            .where('g.prompt', 'like', 'prompt-%')
+            .whereNotNull('g.prompt_id')
             .groupBy('u.court_id')
             .select(
                 'u.court_id',
