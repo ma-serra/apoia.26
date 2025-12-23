@@ -33,10 +33,24 @@ export class GenerationDao {
             model, prompt, sha256, generation, attempt,
             dossier_id, document_id,
             cached_input_tokens, input_tokens, output_tokens, reasoning_tokens, approximate_cost } = data
+        
+        // Extract prompt_id from prompt field if it's in format 'prompt-X'
+        let prompt_id: number | null = null
+        const promptMatch = /^prompt-(\d+)$/.exec(prompt)
+        if (promptMatch) {
+            const extractedId = parseInt(promptMatch[1], 10)
+            // Verify that the prompt_id exists in ia_prompt table
+            const promptExists = await knex('ia_prompt').where('id', extractedId).first()
+            if (promptExists) {
+                prompt_id = extractedId
+            }
+        }
+        
         const [inserted] = await knex('ia_generation').insert({
             model, prompt, sha256, prompt_payload, generation, attempt,
             dossier_id, document_id,
-            cached_input_tokens, input_tokens, output_tokens, reasoning_tokens, approximate_cost, created_by
+            cached_input_tokens, input_tokens, output_tokens, reasoning_tokens, approximate_cost, created_by,
+            prompt_id
         }).returning('id')
         const result = await knex('ia_generation').select<mysqlTypes.IAGenerated>('*').where('id', getId(inserted)).first()
         return result
