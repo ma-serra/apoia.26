@@ -235,7 +235,7 @@ export class StatsDao {
 
         // Obter a lista de prompts e seus ratings
         const basePrompts = await PromptDao.retrieveLatestPrompts(0, false)
-        const prompts = await fixPromptList(basePrompts, false)
+        const prompts = await fixPromptList(basePrompts, false, false) // false = not beta tester for global stats
 
         // Carrega todos os ratings e agrega aos prompts
         const ratingsStats = await RatingDao.getAllPromptRatingStats()
