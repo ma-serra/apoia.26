@@ -182,19 +182,32 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
         Library: {
             columns: [
                 {
+                    header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => data.row.original.is_mine
+                        ? <span className="text-secondary opacity-50"><FontAwesomeIcon icon={faUserSolid} /></span>
+                        : <a href={`/library/${data.row.original.id}/reset-favorite`} className="text-primary" title="Remover da biblioteca"><FontAwesomeIcon icon={faHeartSolid} /></a>
+                },
+                {
                     header: 'Título',
                     accessorKey: 'title',
                     enableSorting: true,
                     cell: data => {
-                        const title = data.row.original.title;
-                        return title ? (
-                            <Link href={`${pathname}/${data.row.original.id}/edit`} className="text-primary">
-                                {title}
-                            </Link>
-                        ) : (
-                            <Link href={`${pathname}/${data.row.original.id}/edit`} className="text-primary" title="Editar">
-                                <FontAwesomeIcon icon={faPenToSquare} />
-                            </Link>
+                        const title = data.row.original.title || 'Sem título';
+                        return (
+                            <>
+                                <Link href={`${pathname}/${data.row.original.id}/edit`} className="text-primary">
+                                    {title}
+                                </Link>
+                                <Dropdown style={{ display: "inline", cursor: 'pointer' }}>
+                                    <Dropdown.Toggle as="a" className="m-1" id={`dropdown-${data.row.original.id}`} />
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item href={`${pathname}/${data.row.original.id}/edit`}>{data.row.original.is_mine ? 'Editar' : 'Visualizar'}</Dropdown.Item>
+                                        <Dropdown.Item onClick={() => onClick('copiar link para compartilhar', data.row.original)}>Copiar link para compartilhar</Dropdown.Item>
+                                        {!data.row.original.is_mine && (
+                                            <Dropdown.Item href={`/library/${data.row.original.id}/reset-favorite`}>Remover da biblioteca</Dropdown.Item>
+                                        )}
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </>
                         );
                     }
                 },

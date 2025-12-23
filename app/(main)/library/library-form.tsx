@@ -27,6 +27,7 @@ export default function LibraryForm({ record }: { record: any }) {
   const [selecting, setSelecting] = useState<{ pn: string, pieces: any[] } | null>(null)
   const [selectedPieceId, setSelectedPieceId] = useState<string>('')
   const isModel = data.kind === IALibraryKind.MODELO
+  const isReadOnly = data.id && !data.is_mine
   const router = useRouter()
 
   useEffect(() => { setData({ ...record }) }, [record])
@@ -220,10 +221,15 @@ export default function LibraryForm({ record }: { record: any }) {
 
   return (
     <div className="row">
+      {isReadOnly && (
+        <div className="col-12">
+          <div className="alert alert-info">Este documento é de outro usuário e está na sua biblioteca como favorito. Você não pode editá-lo.</div>
+        </div>
+      )}
       <div className="col-8">
         <Form.Group className="mb-3">
           <Form.Label>Título</Form.Label>
-          <Form.Control value={data.title || ''} onChange={e => setData({ ...data, title: e.target.value })} />
+          <Form.Control value={data.title || ''} onChange={e => setData({ ...data, title: e.target.value })} disabled={isReadOnly} />
         </Form.Group>
       </div>
 
@@ -241,7 +247,7 @@ export default function LibraryForm({ record }: { record: any }) {
       <div className="col-4">
         <Form.Group className="mb-3">
           <Form.Label>Inclusão Automática</Form.Label>
-          <Form.Select value={data.inclusion} onChange={e => setData({ ...data, inclusion: e.target.value as IALibraryInclusion })}>
+          <Form.Select value={data.inclusion} onChange={e => setData({ ...data, inclusion: e.target.value as IALibraryInclusion })} disabled={isReadOnly}>
             {Object.entries(IALibraryInclusionLabels).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -252,7 +258,7 @@ export default function LibraryForm({ record }: { record: any }) {
       <div className="col-12" style={{ display: data.inclusion !== IALibraryInclusion.CONTEXTUAL ? 'none' : 'block' }}>
         <Form.Group className="mb-3">
           <Form.Label>Contexto</Form.Label>
-          <Form.Control value={data.context || ''} onChange={e => setData({ ...data, context: e.target.value })} />
+          <Form.Control value={data.context || ''} onChange={e => setData({ ...data, context: e.target.value })} disabled={isReadOnly} />
           <div className="form-text text-muted">Explique para a IA em que contexto esse documento deve ser automaticamente considerado. Exemplo: &quot;Processo de propriedade industrial.&quot;</div>
         </Form.Group>
       </div>
@@ -263,7 +269,7 @@ export default function LibraryForm({ record }: { record: any }) {
             <Form.Label>{data.kind === IALibraryKind.MODELO ? 'Modelo' : 'Documento'}</Form.Label>
             <div className="alert alert-secondary mb-1 p-0">
               <Suspense fallback={null}>
-                <EditorComp markdown={data.content_markdown || ''} onChange={(text) => setData({ ...data, content_markdown: text })} />
+                <EditorComp markdown={data.content_markdown || ''} onChange={(text) => setData({ ...data, content_markdown: text })} readOnly={isReadOnly} />
               </Suspense>
             </div>
             {isModel && unclosed && (
@@ -283,7 +289,7 @@ export default function LibraryForm({ record }: { record: any }) {
               setFile(f)
               setFileError(null)
               if (f) setData({ ...data, content_type: f.type || 'application/octet-stream' })
-            }} />
+            }} disabled={isReadOnly} />
             {file && (
               <div className="form-text">{file.name} • {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'application/octet-stream'}</div>
             )}
@@ -298,7 +304,7 @@ export default function LibraryForm({ record }: { record: any }) {
         {isModel && (
           <Form.Group className="mb-3">
             <Form.Label>Tipo de Modelo</Form.Label>
-            <Form.Select value={data.model_subtype || ''} onChange={e => setData({ ...data, model_subtype: (e.target.value || null) as IAModelSubtype | null })}>
+            <Form.Select value={data.model_subtype || ''} onChange={e => setData({ ...data, model_subtype: (e.target.value || null) as IAModelSubtype | null })} disabled={isReadOnly}>
               <option value="">Selecione</option>
               {Object.entries(IAModelSubtypeLabels).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
@@ -308,19 +314,19 @@ export default function LibraryForm({ record }: { record: any }) {
         )}
 
         <div className="row">
-          {isModel && (
+          {isModel && !isReadOnly && (
             <Button variant="light" onClick={async () => {
               // ensure saved before opening modal
               const id = await ensureSavedBeforeExamples()
               if (id) setShowExamples(true)
             }}>Acrescentar Exemplos</Button>
           )}
-          {isModel && examples.length > 0 && (
+          {isModel && examples.length > 0 && !isReadOnly && (
             <Button variant="secondary" disabled={runningAI} onClick={generateFromExamples}>Gerar modelo a partir dos exemplos</Button>
           )}
           <div className="col">
             <Button variant="outline-secondary" onClick={() => router.replace('/library')}>Cancelar</Button>
-            {data.id && (<Button variant="outline-danger" className="ms-2" disabled={pending} onClick={async () => {
+            {data.id && data.is_mine && (<Button variant="outline-danger" className="ms-2" disabled={pending} onClick={async () => {
               if (confirm('Tem certeza que deseja excluir este item?')) {
                 setPending(true)
                 try {
@@ -339,25 +345,34 @@ export default function LibraryForm({ record }: { record: any }) {
             }
             }>Excluir</Button>
             )}
+            {data.id && !data.is_mine && (
+              <Button variant="outline-danger" className="ms-2" disabled={pending} onClick={async () => {
+                if (confirm('Deseja remover este item da sua biblioteca?')) {
+                  router.push(`/library/${data.id}/reset-favorite`)
+                }
+              }}>Remover da Biblioteca</Button>
+            )}
           </div>
           <div className="col text-end">
-            {!data.id && (
-              <Button 
-                variant="outline-primary" 
-                disabled={pending || !data.title || data.title.trim() === ''} 
+            {!isReadOnly && !data.id && (
+              <Button
+                variant="outline-primary"
+                disabled={pending || !data.title || data.title.trim() === ''}
                 onClick={() => save(true)}
                 className="me-2"
               >
                 Incluir Anexos
               </Button>
             )}
-            <Button 
-              variant="primary" 
-              disabled={pending || !data.title || data.title.trim() === ''} 
-              onClick={() => save(false)}
-            >
-              Salvar
-            </Button>
+            {!isReadOnly && (
+              <Button
+                variant="primary"
+                disabled={pending || !data.title || data.title.trim() === ''}
+                onClick={() => save(false)}
+              >
+                Salvar
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -388,8 +403,12 @@ export default function LibraryForm({ record }: { record: any }) {
                     <td>{ex.event_number || '-'}</td>
                     <td>{ex.piece_title || '-'}</td>
                     <td className="text-end">
-                      <Button size="sm" variant="light" className="me-2" onClick={() => openSelectPiece(ex.process_number)}>Selecionar peça</Button>
-                      <Button size="sm" variant="outline-danger" onClick={() => removeExample(ex.process_number)}>Excluir</Button>
+                      {!isReadOnly && (
+                        <>
+                          <Button size="sm" variant="light" className="me-2" onClick={() => openSelectPiece(ex.process_number)}>Selecionar peça</Button>
+                          <Button size="sm" variant="outline-danger" onClick={() => removeExample(ex.process_number)}>Excluir</Button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -23,6 +23,7 @@ interface EditorProps {
     markdown: string;
     editorRef?: React.MutableRefObject<MDXEditorMethods | null>;
     onChange: (markdown: string) => void;
+    readOnly?: boolean;
 }
 
 const converter = new showdown.Converter({ tables: true, extensions: [] });
@@ -36,7 +37,7 @@ const TRIPLE_STYLE = "background:#f8c8e6;"; // rosa (outer-if)
  * - tenta RTF/HTML no clipboard (Word); se não for permitido, usa execCommand fallback.
  * - highlights: {{{...}}} (rosa), {{...}} (azul), {...} (amarelo)
  */
-const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange }) => {
+const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange, readOnly }) => {
     const [currentMarkdown, setCurrentMarkdown] = React.useState(markdown);
 
     const handleChange = (newMarkdown: string) => {
@@ -200,6 +201,7 @@ const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange }) => {
             onChange={(e) => handleChange(e)}
             ref={editorRef}
             markdown={markdown}
+            readOnly={readOnly}
             plugins={[
                 headingsPlugin(),
                 listsPlugin(),
