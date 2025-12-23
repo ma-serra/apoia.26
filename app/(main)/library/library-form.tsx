@@ -263,7 +263,7 @@ export default function LibraryForm({ record }: { record: any }) {
             <Form.Label>{data.kind === IALibraryKind.MODELO ? 'Modelo' : 'Documento'}</Form.Label>
             <div className="alert alert-secondary mb-1 p-0">
               <Suspense fallback={null}>
-                <EditorComp markdown={data.content_markdown || ''} onChange={(text) => setData({ ...data, content_markdown: text })} />
+                <EditorComp markdown={data.content_markdown || ''} onChange={(text) => setData({ ...data, content_markdown: text })} showPdfUpload={true} />
               </Suspense>
             </div>
             {isModel && unclosed && (
