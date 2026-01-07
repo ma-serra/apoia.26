@@ -32,6 +32,8 @@ function getEnvKeyByModel(model: string): string {
         return ModelProvider.GROQ.apiKey
     } else if (model.startsWith('deepseek-')) {
         return ModelProvider.DEEPSEEK.apiKey
+    } else if (model.startsWith('lm-studio')) {
+        return ModelProvider.LM_STUDIO.apiKey
     }
     throw new Error('Invalid model')
 }
@@ -51,7 +53,7 @@ export const assertModel = async () => {
     }
 }
 
-export type ModelParams = { model: string, apiKey: string, availableApiKeys: string[], apiKeyFromEnv: boolean, defaultModel?: string, selectableModels?: string[], userMayChangeModel: boolean, azureResourceName: string, awsRegion?: string, awsAccessKeyId?: string }
+export type ModelParams = { model: string, apiKey: string, availableApiKeys: string[], apiKeyFromEnv: boolean, defaultModel?: string, selectableModels?: string[], userMayChangeModel: boolean, azureResourceName: string, lmStudioUrl?: string, awsRegion?: string, awsAccessKeyId?: string }
 export async function getSelectedModelParams(): Promise<ModelParams> {
     const prefs = await getPrefs()
     const user = await getCurrentUser()
@@ -59,6 +61,7 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
 
     let model: string
     let azureResourceName: string
+    let lmStudioUrl: string
     let awsRegion: string
     let awsAccessKeyId: string
 
@@ -80,11 +83,13 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
     }
 
     azureResourceName = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AZURE.resourceName, seqTribunalPai) as string
+    lmStudioUrl = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.LM_STUDIO.resourceName, seqTribunalPai) as string
     awsRegion = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AWS.region, seqTribunalPai) as string
     awsAccessKeyId = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AWS.accessKeyId, seqTribunalPai) as string
 
     if (prefs?.model) model = prefs.model
     if (prefs?.env[ModelProvider.AZURE.resourceName]) azureResourceName = prefs.env[ModelProvider.AZURE.resourceName]
+    if (prefs?.env[ModelProvider.LM_STUDIO.resourceName]) lmStudioUrl = prefs.env[ModelProvider.LM_STUDIO.resourceName]
     if (prefs?.env[ModelProvider.AWS.region]) awsRegion = prefs.env[ModelProvider.AWS.region]
     if (prefs?.env[ModelProvider.AWS.accessKeyId]) awsAccessKeyId = prefs.env[ModelProvider.AWS.accessKeyId]
 
@@ -128,7 +133,7 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
         const envKey = getEnvKeyByModel(model)
         apiKeyFromEnv = apiKey === getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, envKey, seqTribunalPai)
     }
-    return { model, apiKey, availableApiKeys, apiKeyFromEnv, defaultModel, selectableModels, userMayChangeModel, azureResourceName, awsRegion, awsAccessKeyId }
+    return { model, apiKey, availableApiKeys, apiKeyFromEnv, defaultModel, selectableModels, userMayChangeModel, azureResourceName, lmStudioUrl, awsRegion, awsAccessKeyId }
 }
 
 export async function getSelectedModelName(): Promise<string> {
@@ -136,7 +141,7 @@ export async function getSelectedModelName(): Promise<string> {
 }
 
 export async function getModel(params?: { structuredOutputs: boolean, overrideModel?: string }): Promise<{ model: string, modelRef: LanguageModelV2, apiKeyFromEnv: boolean }> {
-    let { model, apiKey, azureResourceName, awsRegion, awsAccessKeyId, apiKeyFromEnv } = await getSelectedModelParams()
+    let { model, apiKey, azureResourceName, lmStudioUrl, awsRegion, awsAccessKeyId, apiKeyFromEnv } = await getSelectedModelParams()
     if (params?.overrideModel) model = params.overrideModel
 
     if (!model) throw new Error('Nenhum modelo de IA configurado. Por favor, acesse /prefs para configurar um modelo.')
@@ -149,6 +154,13 @@ export async function getModel(params?: { structuredOutputs: boolean, overrideMo
     if (getEnvKeyByModel(model) === ModelProvider.OPENAI.apiKey) {
         const openai = createOpenAI({
             apiKey
+        })
+        return { model, modelRef: openai(model) as unknown as LanguageModelV2, apiKeyFromEnv }
+    }
+    if (getEnvKeyByModel(model) === ModelProvider.LM_STUDIO.apiKey) {
+        const openai = createOpenAI({
+            apiKey,
+            baseURL: lmStudioUrl
         })
         return { model, modelRef: openai(model) as unknown as LanguageModelV2, apiKeyFromEnv }
     }

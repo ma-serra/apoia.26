@@ -113,9 +113,9 @@ export default function PrefsForm(params) {
                             <div key={refreshCount}>
                                 {enumSorted(ModelProvider).map((provider) => (
                                     <div className="row mb-2" key={provider.value.name} hidden={params.statusDeLancamento < provider.value.status}>
-                                        <Frm.Input label={`${provider.value.name}: Chave da API`} name={`env['${provider.value.apiKey}']`} validator={(value: string, name: string) => validator(value, name, provider.value.apiKeyRegex)} width={provider.value.resourceName ? 8 : provider.value.accessKeyId ? 4 : 12} />
+                                        <Frm.Input label={`${provider.value.name}: ${provider.value.name === 'LM Studio' ? 'Chave da API (opcional)' : 'Chave da API'}`} name={`env['${provider.value.apiKey}']`} validator={(value: string, name: string) => validator(value, name, provider.value.apiKeyRegex)} width={provider.value.resourceName ? 8 : provider.value.accessKeyId ? 4 : 12} />
                                         {provider.value.resourceName &&
-                                            <Frm.Input label={`Nome do Recurso/URL`} name={`env['${provider.value.resourceName}']`} width="4" />
+                                            <Frm.Input label={provider.value.name === 'LM Studio' ? 'URL do Servidor' : `Nome do Recurso/URL`} name={`env['${provider.value.resourceName}']`} width="4" />
                                         }
                                         {provider.value.accessKeyId && <>
                                             <Frm.Input label={`Id Chave`} name={`env['${provider.value.accessKeyId}']`} width="4" />
