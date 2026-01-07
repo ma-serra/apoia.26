@@ -336,10 +336,9 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
     const inputClass = params.sidekick ? 'btn-outline-secondary' : 'bg-secondary text-white'
 
     const messagesContent = useMemo(() => (
-        <>{messages./*slice(initialMessages?.length || 0).*/map((m, idx) => (
+        <>{messages.slice(initialMessages?.length || 0).map((m, idx) => (
             m.role === 'user' ?
             <div className="row justify-content-end ms-5 g-2 chat-user-container" key={m.id}>
-                    <p>{m.id}</p>
                     <div className={`col col-auto mb-0 icon-container`}>
                         <FontAwesomeIcon onClick={() => handleEditMessage(idx + (initialMessages?.length || 0))} icon={faEdit} className="text-white align-bottom" />
                     </div>
@@ -358,9 +357,8 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                         )}
                     </div>
                 </div>
-                : m.role === 'assistant' ?
+                : m.role === 'assistant' &&
                 <div className="row justify-content-start me-5" key={m.id}>
-                    <p>{m.id}</p>
                     <MessageStatus message={m} />
                     {
                         hasText(m) &&
@@ -370,7 +368,6 @@ export default function Chat(params: { definition: PromptDefinitionType, data: P
                         </div>
                     }
                 </div>
-                : <p>{m.id}</p>
         ))}
 
             {error && <div className="row justify-content-start">
