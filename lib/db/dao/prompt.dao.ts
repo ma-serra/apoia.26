@@ -253,15 +253,12 @@ export class PromptDao {
         if (!knex) return []
         const { court_id, startDate, endDate } = params
 
-        // Load all prompts to map prompt-[id] to name
-        const prompts = await knex('ia_prompt').select('id', 'name')
-        const promptMap = new Map<number, string>()
-        prompts.forEach(p => promptMap.set(p.id, p.name))
-
         const query = knex('ia_generation as g')
             .leftJoin('ia_user as u', 'u.id', 'g.created_by')
+            .leftJoin('ia_prompt as p', 'p.id', 'g.prompt_id')
             .select(
                 knex.raw('g.prompt as prompt_key'),
+                knex.raw('p.name as prompt_name'),
                 knex.raw('EXTRACT(MONTH FROM g.created_at) as month'),
                 knex.raw('EXTRACT(YEAR FROM g.created_at) as year'),
                 knex.raw('COUNT(g.id) as usage_count')
@@ -277,19 +274,14 @@ export class PromptDao {
             query.andWhere('g.created_at', '<=', endDate + ' 23:59:59')
         }
 
-        query.groupBy('g.prompt', knex.raw('EXTRACT(MONTH FROM g.created_at)'), knex.raw('EXTRACT(YEAR FROM g.created_at)'))
+        query.groupBy('g.prompt', 'p.name', knex.raw('EXTRACT(MONTH FROM g.created_at)'), knex.raw('EXTRACT(YEAR FROM g.created_at)'))
         query.orderBy('year', 'desc').orderBy('month', 'desc').orderBy('g.prompt')
 
         const rows: any[] = await query
 
         return rows.map(r => {
-            let promptName = r.prompt_key
-            // Check if it's in format prompt-[number]
-            const match = /^prompt-(\d+)$/.exec(r.prompt_key)
-            if (match) {
-                const promptId = parseInt(match[1], 10)
-                promptName = promptMap.get(promptId) || r.prompt_key
-            }
+            // Use prompt_name from JOIN, fallback to prompt_key
+            const promptName = r.prompt_name || r.prompt_key
             return {
                 prompt_key: r.prompt_key,
                 prompt_name: promptName,
@@ -304,6 +296,10 @@ export class PromptDao {
         if (!knex) return []
         const { prompt_key, month, year, court_id } = params
 
+        // Check if prompt_key is in format "prompt-X" and extract the ID for optimization
+        const promptMatch = /^prompt-(\d+)$/.exec(prompt_key)
+        const promptId = promptMatch ? parseInt(promptMatch[1], 10) : null
+
         const query = knex('ia_generation as g')
             .leftJoin('ia_user as u', 'u.id', 'g.created_by')
             .select(
@@ -312,9 +308,15 @@ export class PromptDao {
                 knex.raw('u.username as username'),
                 knex.raw('COUNT(g.id) as usage_count')
             )
-            .where('g.prompt', prompt_key)
             .whereRaw('EXTRACT(MONTH FROM g.created_at) = ?', [month])
             .whereRaw('EXTRACT(YEAR FROM g.created_at) = ?', [year])
+
+        // Use indexed prompt_id if available, otherwise fallback to prompt text
+        if (promptId !== null) {
+            query.where('g.prompt_id', promptId)
+        } else {
+            query.where('g.prompt', prompt_key)
+        }
 
         if (court_id) {
             query.where('u.court_id', court_id)

@@ -80,7 +80,7 @@ export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText
                 <div className="form-group"><label>{textoDescr}</label></div>
                 <div className="alert alert-secondary mb-1 p-0">
                     <Suspense fallback={null}>
-                        <EditorComp markdown={markdown} onChange={textChanged} />
+                        <EditorComp markdown={markdown} onChange={textChanged} showPdfUpload={true} />
                     </Suspense>
                 </div>
                 {hidden && <>

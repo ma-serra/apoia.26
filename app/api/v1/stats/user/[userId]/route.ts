@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { StatsDao, UserDao } from '@/lib/db/dao'
 import { assertApiUser, isUserCorporativo } from '@/lib/user'
 import { ForbiddenError, withErrorHandler } from '@/lib/utils/api-error'
+import devLog from '@/lib/utils/log'
+
+// Cache de 24 horas para as estatísticas do usuário
+// A função será executada apenas 1x a cada 24h por usuário
+const getUserStatsCached = (userId: number) => unstable_cache(
+    async () => {
+        devLog(`Cache miss: fetching user stats for userId=${userId}`)
+        return await StatsDao.getUserStats(userId)
+    },
+    [`user-stats-${userId}`], // cache key única por usuário
+    {
+        revalidate: 86400, // 24 horas em segundos
+        tags: [`user-stats-${userId}`] // permite invalidação manual com revalidateTag(`user-stats-${userId}`)
+    }
+)
 
 /**
  * @swagger
  * /api/v1/stats/user/{userId}:
  *   get:
  *     summary: Retorna estatísticas do usuário
- *     description: Retorna estatísticas pessoais, badges e feedback da comunidade
+ *     description: Retorna estatísticas pessoais, badges e feedback da comunidade (cache de 24h)
  *     tags:
  *       - Stats
  *     parameters:
@@ -30,6 +46,7 @@ async function GET_HANDLER(
     req: NextRequest,
     { params }: { params: Promise<{ userId: string }> }
 ) {
+    // IMPORTANTE: Valida autenticação e permissões ANTES de buscar dados cacheados
     const user = await assertApiUser()
     
     if (!await isUserCorporativo(user)) {
@@ -49,7 +66,8 @@ async function GET_HANDLER(
         }
     }
 
-    const stats = await StatsDao.getUserStats(userId)
+    // Busca dados do cache (StatsDao.getUserStats só executa 1x a cada 24h por usuário)
+    const stats = await getUserStatsCached(userId)()
 
     return NextResponse.json(stats)
 }

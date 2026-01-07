@@ -53,7 +53,7 @@ async function POST_HANDLER(req: Request) {
         true, // cacheControl
         'chat', // kind
         modelRef,
-        convertToModelMessages(messages),
+        await convertToModelMessages(messages),
         '', // sha256
         {}, // additionalInformation
         {}, // results

@@ -32,7 +32,7 @@ export default function Revison() {
             <PromptConfig kind="refinamento" setPromptConfig={promptConfigChanged} />
             <div className="alert alert-secondary mb-1 p-0">
                 <Suspense fallback={null}>
-                    <EditorComp markdown={markdown} onChange={textChanged} />
+                    <EditorComp markdown={markdown} onChange={textChanged} showPdfUpload={true} />
                 </Suspense>
             </div>
             {hidden && <>

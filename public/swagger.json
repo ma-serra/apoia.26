@@ -794,7 +794,7 @@
     "/api/v1/stats/global": {
       "get": {
         "summary": "Retorna estatísticas globais da comunidade",
-        "description": "Retorna KPIs globais, ranking de tribunais, top contribuidores e prompts em alta",
+        "description": "Retorna KPIs globais, ranking de tribunais, top contribuidores e prompts em alta (cache de 24h)",
         "tags": [
           "Stats"
         ],
@@ -814,7 +814,7 @@
     "/api/v1/stats/user/{userId}": {
       "get": {
         "summary": "Retorna estatísticas do usuário",
-        "description": "Retorna estatísticas pessoais, badges e feedback da comunidade",
+        "description": "Retorna estatísticas pessoais, badges e feedback da comunidade (cache de 24h)",
         "tags": [
           "Stats"
         ],
