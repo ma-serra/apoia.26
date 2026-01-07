@@ -13,7 +13,7 @@ import { createDeepSeek } from "@ai-sdk/deepseek"
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock'
 import { EMPTY_PREFS_COOKIE, PrefsCookieType } from '@/lib/utils/prefs-types'
 import { assertCourtId, getCurrentUser } from "../user"
-import { LanguageModelV2 } from "@ai-sdk/provider"
+import { LanguageModelV3 } from "@ai-sdk/provider"
 import devLog from "../utils/log"
 
 function getEnvKeyByModel(model: string): string {
@@ -140,7 +140,7 @@ export async function getSelectedModelName(): Promise<string> {
     return (await getSelectedModelParams()).model
 }
 
-export async function getModel(params?: { structuredOutputs: boolean, overrideModel?: string }): Promise<{ model: string, modelRef: LanguageModelV2, apiKeyFromEnv: boolean }> {
+export async function getModel(params?: { structuredOutputs: boolean, overrideModel?: string }): Promise<{ model: string, modelRef: LanguageModelV3, apiKeyFromEnv: boolean }> {
     let { model, apiKey, azureResourceName, lmStudioUrl, awsRegion, awsAccessKeyId, apiKeyFromEnv } = await getSelectedModelParams()
     if (params?.overrideModel) model = params.overrideModel
 
@@ -155,14 +155,14 @@ export async function getModel(params?: { structuredOutputs: boolean, overrideMo
         const openai = createOpenAI({
             apiKey
         })
-        return { model, modelRef: openai(model) as unknown as LanguageModelV2, apiKeyFromEnv }
+        return { model, modelRef: openai(model) as unknown as LanguageModelV3, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.LM_STUDIO.apiKey) {
         const openai = createOpenAI({
             apiKey,
             baseURL: lmStudioUrl
         })
-        return { model, modelRef: openai(model) as unknown as LanguageModelV2, apiKeyFromEnv }
+        return { model, modelRef: openai(model) as unknown as LanguageModelV3, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.GOOGLE.apiKey) {
         const google = createGoogleGenerativeAI({ apiKey })
@@ -172,11 +172,11 @@ export async function getModel(params?: { structuredOutputs: boolean, overrideMo
         const azure = azureResourceName?.startsWith('https')
             ? createAzure({ apiKey, baseURL: azureResourceName })
             : createAzure({ apiKey, resourceName: azureResourceName })
-        return { model, modelRef: azure(model.replace('azure-', '')) as unknown as LanguageModelV2, apiKeyFromEnv }
+        return { model, modelRef: azure(model.replace('azure-', '')) as unknown as LanguageModelV3, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.AWS.apiKey) {
         const bedrock = createAmazonBedrock({ region: awsRegion, accessKeyId: awsAccessKeyId, secretAccessKey: apiKey })
-        const modelRef = bedrock(model.replace('aws-', '')) as unknown as LanguageModelV2
+        const modelRef = bedrock(model.replace('aws-', '')) as unknown as LanguageModelV3
         return { model, modelRef, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.GROQ.apiKey) {
