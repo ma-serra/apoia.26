@@ -91,6 +91,7 @@ export type PromptExecutionResultsType = {
     model?: string
     generationId?: number
     messagesOnly?: boolean
+    messages?: ModelMessage[]
 }
 
 // Tipo que representa o resultado da execução de um prompt pelo componente AiContent

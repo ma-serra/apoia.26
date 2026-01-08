@@ -29,7 +29,7 @@ describe('highlightCitationsLongestMatch', () => {
     expect(result).toContain('<span class="citacao"');
     expect(result).toContain('title=');
     // O contexto será do LIBRARY-ATTACHMENT pois é a tag mais interna que define o documento
-    expect(result).toContain('LIBRARY-ATTACHMENT');
+    expect(result).toContain('Anexo da Biblioteca');
     expect(result).toContain('Título: Manual');
     expect(result).toContain('Arq: doc.pdf');
     expect(result).toContain('Pág: 1');
@@ -71,7 +71,7 @@ describe('highlightCitationsLongestMatch', () => {
     
     // Verifica que há citação detectada
     expect(result).toContain('<span class="citacao"');
-    expect(result).toContain('LIBRARY-ATTACHMENT');
+    expect(result).toContain('Anexo da Biblioteca');
     
     // Verifica que os números de página estão presentes
     expect(result).toContain('Pág: 1');
@@ -306,7 +306,7 @@ describe('highlightCitationsLongestMatch', () => {
     
     expect(result).toContain('<span class="citacao"');
     // As tags <p>, <b>, <i> não devem interferir no contexto
-    expect(result).toContain('LIBRARY-DOCUMENT');
+    expect(result).toContain('Documento da Biblioteca');
   });
 
   test('deve lidar com tag que não tem event E label juntos', () => {
@@ -329,4 +329,148 @@ describe('highlightCitationsLongestMatch', () => {
     expect(result).toContain('EVENTO');
     expect(result).toContain('Label');
   });
+
+  test('deve tratar corretamente textos com hífen', () => {
+    const sourceHtml = '<library-document title="Doc">Trata-se de ação de concessão de aposentadoria por idade rural ajuizada por [autor] contra o Instituto Nacional do Seguro Social - INSS, em que requer a concessão do benefício previdenciário de aposentadoria rural</library-document>';
+    const generatedHtml = 'Trata-se de ação de concessão de aposentadoria por idade rural ajuizada por M.E.C.V.R. contra o Instituto Nacional do Seguro Social - INSS, em que requer a concessão do benefício previdenciário de aposentadoria rural';
+    const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml);
+    expect(result).toContain('<span class="citacao"');
+    expect(result).toContain('Trata-se de ação');
+  });
+
+  test('deve limpar corretamente o contexto ao sair de tags', () => {
+    const sourceHtml = `
+      <library-document title="Doc">
+        Texto inicial do documento.
+        <library-attachment filename="anexo.pdf">
+          Texto dentro do anexo.
+        </library-attachment>
+        Texto final do documento.
+      </library-document>
+    `;
+    const generatedHtml = 'Cita: Texto inicial do documento. Depois: Texto dentro do anexo. Finalmente: Texto final do documento.';
+    
+    const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 4);
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Doc">Texto inicial do documento.</span>');
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Doc, Arq: anexo.pdf">Texto dentro do anexo.</span>');
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Doc">Texto final do documento.</span>');
+  });
+
+  test('deve gerenciar corretamente a pilha de contextos em todas as situações possíveis', () => {
+    const sourceHtml = `
+      <library-document title="Manual Principal">
+        Texto raiz do manual principal antes de qualquer anexo ou página específica.
+        <library-attachment filename="anexo1.pdf">
+          <page number="1">
+            Conteúdo da página um do primeiro anexo com informações técnicas detalhadas sobre o sistema operacional.
+          </page>
+          <page number="2">
+            Conteúdo da página dois do primeiro anexo com mais dados complementares sobre configurações avançadas.
+          </page>
+          Texto entre páginas mas ainda dentro do anexo um sem número de página específico.
+          <page number="3">
+            Conteúdo da página três do primeiro anexo com instruções finais de instalação e manutenção.
+          </page>
+        </library-attachment>
+        Texto entre anexos voltando ao contexto do documento principal sem anexo específico.
+        <library-attachment filename="anexo2.pdf">
+          <page number="1">
+            Primeira página do segundo anexo com tabelas de referência técnica importantes.
+          </page>
+        </library-attachment>
+        Texto final do documento principal após todos os anexos terem sido fechados.
+      </library-document>
+      <acordao event="123, 2º Grau" id="456" label="ACOR1">
+        Texto inicial do acórdão antes de qualquer página numerada do processo judicial.
+        <page number="5">
+          Conteúdo da página cinco do acórdão com fundamentação legal detalhada sobre o caso.
+        </page>
+        <page number="6">
+          Conteúdo da página seis do acórdão com conclusões e decisão final do tribunal.
+        </page>
+        Texto final do acórdão após as páginas numeradas mas ainda dentro do documento.
+      </acordao>
+      <library-document title="Segundo Manual">
+        Início do segundo documento da biblioteca completamente separado do primeiro manual.
+        <library-attachment filename="outro-anexo.pdf">
+          <page number="10">
+            Página dez de outro anexo em um documento totalmente diferente com novos dados.
+          </page>
+        </library-attachment>
+      </library-document>
+    `;
+    
+    const generatedHtml = `
+      T1: Texto raiz do manual principal antes de qualquer anexo ou página específica.
+      T2: Conteúdo da página um do primeiro anexo com informações técnicas detalhadas sobre o sistema operacional.
+      T3: Conteúdo da página dois do primeiro anexo com mais dados complementares sobre configurações avançadas.
+      T4: Texto entre páginas mas ainda dentro do anexo um sem número de página específico.
+      T5: Conteúdo da página três do primeiro anexo com instruções finais de instalação e manutenção.
+      T6: Texto entre anexos voltando ao contexto do documento principal sem anexo específico.
+      T7: Primeira página do segundo anexo com tabelas de referência técnica importantes.
+      T8: Texto final do documento principal após todos os anexos terem sido fechados.
+      T9: Texto inicial do acórdão antes de qualquer página numerada do processo judicial.
+      T10: Conteúdo da página cinco do acórdão com fundamentação legal detalhada sobre o caso.
+      T11: Conteúdo da página seis do acórdão com conclusões e decisão final do tribunal.
+      T12: Texto final do acórdão após as páginas numeradas mas ainda dentro do documento.
+      T13: Início do segundo documento da biblioteca completamente separado do primeiro manual.
+      T14: Página dez de outro anexo em um documento totalmente diferente com novos dados.
+    `;
+    
+    const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 4);
+    
+    // T1: Contexto raiz do library-document (só título, sem anexo, sem página)
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Manual Principal">Texto raiz do manual principal');
+    
+    // T2: Dentro de library-attachment > page 1 (herda título + adiciona anexo + página)
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Manual Principal, Arq: anexo1.pdf, Pág: 1">Conteúdo da página um do primeiro anexo');
+    
+    // T3: Dentro de library-attachment > page 2 (mesmo anexo, página diferente)
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Manual Principal, Arq: anexo1.pdf, Pág: 2">Conteúdo da página dois do primeiro anexo');
+    
+    // T4: Dentro de library-attachment mas fora de page (tem anexo mas não tem página)
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Manual Principal, Arq: anexo1.pdf">Texto entre páginas mas ainda dentro do anexo um');
+    
+    // T5: Dentro de library-attachment > page 3
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Manual Principal, Arq: anexo1.pdf, Pág: 3">Conteúdo da página três do primeiro anexo');
+    
+    // T6: Voltou para library-document (fechou anexo1, volta ao contexto do documento)
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Manual Principal">Texto entre anexos voltando ao contexto do documento principal');
+    
+    // T7: Dentro de library-attachment 2 > page 1 (novo anexo do mesmo documento)
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Manual Principal, Arq: anexo2.pdf, Pág: 1">Primeira página do segundo anexo');
+    
+    // T8: Voltou para library-document (fechou anexo2, volta ao documento)
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Manual Principal">Texto final do documento principal após todos os anexos');
+    
+    // T9: Dentro de acordao (tag dinâmica com event e label, sem página)
+    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU)">Texto inicial do acórdão antes de qualquer página');
+    
+    // T10: Dentro de acordao > page 5 (adiciona página ao contexto do acordao)
+    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU), Pág: 5">Conteúdo da página cinco do acórdão');
+    
+    // T11: Dentro de acordao > page 6 (mesma tag dinâmica, página diferente)
+    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU), Pág: 6">Conteúdo da página seis do acórdão');
+    
+    // T12: Voltou para acordao (fechou page 6, volta ao acordao sem página)
+    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU)">Texto final do acórdão após as páginas numeradas');
+    
+    // T13: Novo library-document (contexto completamente novo, independente do anterior)
+    expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Segundo Manual">Início do segundo documento da biblioteca completamente separado');
+    
+    // T14: Dentro do novo document > attachment > page (herda título do novo documento)
+    expect(result).toContain('<span class="citacao" title="Anexo da Biblioteca, Título: Segundo Manual, Arq: outro-anexo.pdf, Pág: 10">Página dez de outro anexo em um documento totalmente diferente');
+    
+    // Verificações adicionais de integridade
+    const spanCount = (result.match(/<span class="citacao"/g) || []).length;
+    expect(spanCount).toBeGreaterThanOrEqual(14); // Pelo menos 14 citações (uma para cada T1-T14)
+    
+    // Não deve haver referência ao anexo1 no T6 (garantir que desempilhou corretamente)
+    const t6Match = result.match(/T6:.*?<span class="citacao" title="([^"]*)">/);
+    if (t6Match) {
+      expect(t6Match[1]).not.toContain('anexo1.pdf');
+      expect(t6Match[1]).not.toContain('anexo2.pdf');
+    }
+  });
+
 });

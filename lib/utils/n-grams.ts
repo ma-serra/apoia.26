@@ -31,11 +31,14 @@ const FIXED_METADATA_TAGS = new Set([
 
 function tokenizeWithContext(html: string, extractMetadata: boolean = true): Token[] {
     // Regex: Tags, Palavras, Pontuação, Espaços
-    const regex = /(<[^>]+>)|([\w\u00C0-\u00FF]+)|([.,;?!§%]+)|(\s+)|([^<>\w\s.,;?!§%]+)/g;
+    const regex = /(<[^>]+>)|([\w\u00C0-\u00FF-]+)|([.,;?!§%]+)|(\s+)|([^<>\w\s.,;?!§%-]+)/g;
 
     const tokens: Token[] = [];
     let currentCtx: SourceContext = {};
 
+    // Pilha de contextos para gerenciar tags aninhadas corretamente
+    const contextStack: SourceContext[] = [];
+    
     // Para lidar com fechamento de tags dinâmicas corretamente
     // Armazenamos quais tags estão abertas e foram consideradas metadados
     const openMetadataTags = new Set<string>();
@@ -63,21 +66,27 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
                         // É Metadado!
                         openMetadataTags.add(tagName);
 
+                        // Salva o contexto atual na pilha antes de criar um novo
+                        contextStack.push({ ...currentCtx });
+
                         // Atualização do Contexto
                         if (tagName === 'page') {
                             // <page> apenas atualiza o número da página, mantém o resto
                             currentCtx = { ...currentCtx, pageNumber: attrs['pageNumber'] };
                         } else {
                             // Outras tags (fixas ou dinâmicas) definem um novo "Documento/Origem"
-                            // Removemos pageNumber antigo pois mudamos de documento
-                            const { pageNumber, ...rest } = currentCtx;
-
-                            currentCtx = {
-                                ...rest, // Mantém contextos superiores (ex: library-document pai) se desejado
+                            // Para library-attachment, queremos herdar title do pai, mas criar novo contexto
+                            const newCtx: SourceContext = {
                                 sourceType: tagName,
-                                pageNumber: undefined, // Reseta página
-                                ...attrs // Espalha event, label, title, id, etc.
+                                ...attrs
                             };
+                            
+                            // Se for library-attachment, herda title do contexto pai se não tiver próprio
+                            if (tagName === 'library-attachment' && !newCtx.title && currentCtx.title) {
+                                newCtx.title = currentCtx.title;
+                            }
+                            
+                            currentCtx = newCtx;
                         }
                         continue; // Não gera token visual
                     }
@@ -87,16 +96,12 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
                     if (openMetadataTags.has(tagName)) {
                         openMetadataTags.delete(tagName);
 
-                        // Lógica simples de "Desempilhar" contexto
-                        if (tagName === 'page') {
-                            const { pageNumber, ...rest } = currentCtx;
-                            currentCtx = rest;
-                        } else if (tagName === currentCtx.sourceType) {
-                            // Se fechou o documento atual (ex: </acordao>), limpamos os dados específicos dele
-                            // Numa implementação ideal com Stack, voltaríamos para o pai.
-                            // Aqui, limpamos o sourceType e atributos específicos.
-                            const { sourceType, event, label, id, ...rest } = currentCtx;
-                            currentCtx = rest;
+                        // Restaura o contexto da pilha
+                        if (contextStack.length > 0) {
+                            currentCtx = contextStack.pop()!;
+                        } else {
+                            // Se a pilha está vazia, limpa o contexto
+                            currentCtx = {};
                         }
                         continue; // Não gera token visual
                     }
@@ -167,18 +172,27 @@ function formatContextToString(ctx?: SourceContext): string {
 
     // Se tiver Label e Evento, prioriza mostrar isso de forma clara
     if (ctx.label && ctx.event) {
-        parts.push(`[${ctx.event.toUpperCase()}: ${ctx.label}]`);
+        parts.push(`${ctx.label} (e. ${ctx.event.toUpperCase()})`);
     }
     // Caso contrário, mostra o tipo da tag (ex: library-document)
     else if (ctx.sourceType) {
-        parts.push(`[${ctx.sourceType.toUpperCase()}]`);
+        switch (ctx.sourceType) {
+            case 'library-document':
+                parts.push('Documento da Biblioteca');
+                break;
+            case 'library-attachment':
+                parts.push('Anexo da Biblioteca');
+                break;
+            default:
+                parts.push(`[${ctx.sourceType.toUpperCase()}]`);
+        }
     }
 
     if (ctx.title) parts.push(`Título: ${ctx.title}`);
     if (ctx.filename) parts.push(`Arq: ${ctx.filename}`);
     if (ctx.pageNumber) parts.push(`Pág: ${ctx.pageNumber}`);
 
-    return parts.join(' | ');
+    return parts.join(', ');
 }
 
 interface MatchRange {
@@ -197,7 +211,7 @@ const METADATA_TAGS = new Set([
 export function highlightCitationsLongestMatch(
     sourceHtml: string,
     generatedHtml: string,
-    nGramSize: number = 12
+    nGramSize: number = 8
 ): string {
 
     // 1. Tokenização
@@ -369,7 +383,7 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
                 outputHtml += `</span><span class="citacao" title="${tokenContextStr}">`;
                 currentContextString = tokenContextStr;
             }
-            
+
             outputHtml += token.content;
         } else if (token.type === 'WHITESPACE') {
             // Whitespace: adiciona dentro do span se estiver em citação e houver próximo match com mesmo contexto
