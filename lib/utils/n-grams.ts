@@ -66,7 +66,7 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
                         // Atualização do Contexto
                         if (tagName === 'page') {
                             // <page> apenas atualiza o número da página, mantém o resto
-                            currentCtx = { ...currentCtx, pageNumber: attrs['number'] || attrs['page'] };
+                            currentCtx = { ...currentCtx, pageNumber: attrs['pageNumber'] };
                         } else {
                             // Outras tags (fixas ou dinâmicas) definem um novo "Documento/Origem"
                             // Removemos pageNumber antigo pois mudamos de documento
@@ -334,6 +334,25 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
     let insideCitation = false;
     let currentContextString = '';
 
+    // Helper para verificar se há próximo token com match
+    const hasNextMatchWithSameContext = (startIndex: number, contextStr: string): boolean => {
+        for (let j = startIndex + 1; j < genTokens.length; j++) {
+            const nextToken = genTokens[j];
+            // Ignora whitespace e tags HTML comuns
+            if (nextToken.type === 'WHITESPACE' || (nextToken.type === 'TAG' && !nextToken.isMatch)) {
+                continue;
+            }
+            // Se encontrou um token significativo
+            if (nextToken.isMatch) {
+                const nextContextStr = formatContextToString(nextToken.context);
+                return nextContextStr === contextStr;
+            }
+            // Se encontrou token sem match, retorna false
+            return false;
+        }
+        return false;
+    };
+
     for (let i = 0; i < genTokens.length; i++) {
         const token = genTokens[i];
 
@@ -341,6 +360,7 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
             const tokenContextStr = formatContextToString(token.context);
 
             if (!insideCitation) {
+                // Abre novo span
                 outputHtml += `<span class="citacao" title="${tokenContextStr}">`;
                 insideCitation = true;
                 currentContextString = tokenContextStr;
@@ -349,18 +369,42 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
                 outputHtml += `</span><span class="citacao" title="${tokenContextStr}">`;
                 currentContextString = tokenContextStr;
             }
-        } else {
-            if (insideCitation) {
+            
+            outputHtml += token.content;
+        } else if (token.type === 'WHITESPACE') {
+            // Whitespace: adiciona dentro do span se estiver em citação e houver próximo match com mesmo contexto
+            if (insideCitation && hasNextMatchWithSameContext(i, currentContextString)) {
+                outputHtml += token.content;
+            } else if (insideCitation) {
+                // Fecha o span antes do whitespace
                 outputHtml += '</span>';
+                outputHtml += token.content;
                 insideCitation = false;
                 currentContextString = '';
+            } else {
+                outputHtml += token.content;
             }
-        }
-
-        if (insideCitation && token.type === 'TAG') {
-            outputHtml += `</span>${token.content}<span class="citacao" title="${currentContextString}">`;
+        } else if (token.type === 'TAG') {
+            // Tag HTML: mantém fora do span de citação
+            if (insideCitation) {
+                outputHtml += `</span>${token.content}`;
+                // Verifica se deve reabrir o span
+                if (hasNextMatchWithSameContext(i, currentContextString)) {
+                    outputHtml += `<span class="citacao" title="${currentContextString}">`;
+                } else {
+                    insideCitation = false;
+                    currentContextString = '';
+                }
+            } else {
+                outputHtml += token.content;
+            }
         } else {
-            outputHtml += token.content;
+            // PUNCTUATION ou outros: trata como token normal
+            if (insideCitation) {
+                outputHtml += token.content;
+            } else {
+                outputHtml += token.content;
+            }
         }
     }
 

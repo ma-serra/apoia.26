@@ -29,11 +29,11 @@ export const formatEprocStandardToHtml = (html: string) => {
 
     html = html.replace(/&nbsp;/g, ' ')
 
-    // Converte <p class="titulo"> de volta para <h2>
-    html = html.replace(/<p[^>]*class="[^"]*titulo[^"]*"[^>]*>/g, '<h2>')
-
     // Converte <p class="subtitulo"> de volta para <h3>
     html = html.replace(/<p[^>]*class="[^"]*subtitulo[^"]*"[^>]*>/g, '<h3>')
+
+    // Converte <p class="titulo"> de volta para <h2>
+    html = html.replace(/<p[^>]*class="[^"]*titulo[^"]*"[^>]*>/g, '<h2>')
 
     // Agrupa parágrafos consecutivos com class="citacao" dentro de <blockquote>
     // Primeiro, substitui cada <p class="citacao"> por um marcador temporário
