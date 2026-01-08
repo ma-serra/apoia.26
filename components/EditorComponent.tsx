@@ -19,6 +19,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy, faFilePdf } from "@fortawesome/free-solid-svg-icons";
 import { Toast, ToastContainer, Spinner } from "react-bootstrap";
+import { set } from "lodash";
 
 interface EditorProps {
     markdown: string;
@@ -44,6 +45,7 @@ const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange, readOnly, show
     const [isProcessingPdf, setIsProcessingPdf] = React.useState(false);
     const [isDragging, setIsDragging] = React.useState(false);
     const [pdfError, setPdfError] = React.useState<string | null>(null);
+    const [reloadCounter, setReloadCounter] = React.useState(0);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Sincronizar quando markdown prop mudar externamente (ex: upload de PDF)
@@ -96,6 +98,7 @@ const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange, readOnly, show
 
             onChange(cleanText);
             setCurrentMarkdown(cleanText);
+            setReloadCounter((c) => c + 1); // forçar reload do editor
         } catch (error) {
             console.error('Erro ao processar PDF:', error);
             setPdfError('Erro ao processar o PDF. Verifique sua conexão e tente novamente.');
@@ -344,7 +347,7 @@ const Editor: FC<EditorProps> = ({ markdown, editorRef, onChange, readOnly, show
                 />
             )}
             <MDXEditor
-                key={markdown}
+                key={reloadCounter}
                 className="mdx-editor p-0"
                 onChange={(e) => handleChange(e)}
                 ref={editorRef}
