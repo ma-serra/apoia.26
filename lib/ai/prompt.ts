@@ -101,7 +101,7 @@ export async function getPiecesWithContent(dadosDoProcesso: DadosDoProcessoType,
 export const promptExecuteBuilder = (definition: PromptDefinitionType, data: PromptDataType, libraryPrompt?: string): PromptExecuteType => {
     const message: ModelMessage[] = []
     if (definition?.kind !== 'chat' && definition?.kind !== 'chat_standalone' && !(definition?.systemPrompt?.includes('{{semPromptPadrao}}') || definition?.prompt?.includes('{{semPromptPadrao}}'))) {
-        sistema.split('\n---\n').forEach(part => {
+        sistema.split(/^\s*---\s*$/gm).forEach(part => {
             const content = applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt)
             devLog('System message content type:', typeof content, 'isArray:', Array.isArray(content))
             message.push({ role: 'system', content } as ModelMessage)
@@ -109,7 +109,7 @@ export const promptExecuteBuilder = (definition: PromptDefinitionType, data: Pro
     }
 
     if (definition.systemPrompt) {
-        definition.systemPrompt.split('\n---\n').forEach(part => {
+        definition.systemPrompt.split(/^\s*---\s*$/gm).forEach(part => {
             const content = applyTextsAndVariables(part, data, definition.jsonSchema, definition.template, libraryPrompt)
             devLog('SystemPrompt content type:', typeof content, 'isArray:', Array.isArray(content))
             message.push({ role: 'system', content } as ModelMessage)

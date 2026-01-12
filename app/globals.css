@@ -531,3 +531,9 @@
             transform: translateY(0);
         }
     }
+
+    span.citacao {
+        color: #0b3415;
+        background-color: #cdffd0;
+        /* border-bottom: 1px dashed #856404; */
+    }

@@ -10,47 +10,82 @@ export class LibraryDao {
         return rows
     }
 
-    static async listLibraryHeaders(): Promise<Omit<mysqlTypes.IALibrary, 'content_markdown' | 'content_binary'>[]> {
+    static async listLibraryHeaders(): Promise<(Omit<mysqlTypes.IALibrary, 'content_markdown' | 'content_binary'> & { is_mine: boolean })[]> {
         const userId = await UserDao.getCurrentUserId()
         const rows = await knex('ia_library')
-            .select('id', 'user_id', 'kind', 'model_subtype', 'title', 'content_type', 'inclusion', 'context', 'created_at', 'created_by')
-            .where({ user_id: userId })
-            .orderBy('created_at', 'desc')
+            .leftJoin('ia_library_favorite', function () {
+                this.on('ia_library.id', '=', 'ia_library_favorite.library_id')
+                    .andOn('ia_library_favorite.user_id', '=', knex.raw('?', [userId]))
+            })
+            .select('ia_library.id', 'ia_library.user_id', 'ia_library.kind', 'ia_library.model_subtype', 'ia_library.title', 'ia_library.content_type', 'ia_library.inclusion', 'ia_library.context', 'ia_library.created_at', 'ia_library.created_by')
+            .select(knex.raw('ia_library.user_id = ? as is_mine', [userId]))
+            .where('ia_library.user_id', userId)
+            .orWhere('ia_library_favorite.user_id', userId)
+            .orderBy('ia_library.created_at', 'desc')
         return rows
     }
 
     static async listLibraryForPrompt(ids?: number[]): Promise<Omit<mysqlTypes.IALibrary, 'content_binary'>[]> {
         const userId = await UserDao.getCurrentUserId()
         const query = knex('ia_library')
-            .select('id', 'user_id', 'kind', 'model_subtype', 'title', 'content_type', 'content_markdown', 'inclusion', 'context', 'created_at', 'created_by')
-            .where({ user_id: userId })
-            .whereNotNull('content_markdown')
-            .where('content_markdown', '!=', '')
+            .leftJoin('ia_library_favorite', function () {
+                this.on('ia_library.id', '=', 'ia_library_favorite.library_id')
+                    .andOn('ia_library_favorite.user_id', '=', knex.raw('?', [userId]))
+            })
+            .select('ia_library.id', 'ia_library.user_id', 'ia_library.kind', 'ia_library.model_subtype', 'ia_library.title', 'ia_library.content_type', 'ia_library.content_markdown', 'ia_library.inclusion', 'ia_library.context', 'ia_library.created_at', 'ia_library.created_by')
+            .where(builder => {
+                builder.where('ia_library.user_id', userId)
+                    .orWhere('ia_library_favorite.user_id', userId)
+            })
+            .whereNotNull('ia_library.content_markdown')
+            .where('ia_library.content_markdown', '!=', '')
 
         if (ids !== undefined) {
             query.where(builder => {
                 if (ids.length > 0) {
-                    builder.whereIn('id', ids)
+                    builder.whereIn('ia_library.id', ids)
                 }
-                builder.orWhere('inclusion', mysqlTypes.IALibraryInclusion.CONTEXTUAL)
+                builder.orWhere('ia_library.inclusion', mysqlTypes.IALibraryInclusion.CONTEXTUAL)
             })
         } else {
-            query.whereIn('inclusion', [mysqlTypes.IALibraryInclusion.SIM, mysqlTypes.IALibraryInclusion.CONTEXTUAL])
+            query.whereIn('ia_library.inclusion', [mysqlTypes.IALibraryInclusion.SIM, mysqlTypes.IALibraryInclusion.CONTEXTUAL])
         }
 
-        query.orderBy('created_at', 'desc')
+        query.orderBy('ia_library.created_at', 'desc')
         return await query
     }
 
-    static async getLibraryById(id: number): Promise<mysqlTypes.IALibrary | undefined> {
+    static async getLibraryById(id: number): Promise<(mysqlTypes.IALibrary & { is_mine: boolean }) | undefined> {
         const userId = await UserDao.getCurrentUserId()
-        const row = await knex('ia_library').select('*').where({ id, user_id: userId }).first()
+        const row = await knex('ia_library')
+            .leftJoin('ia_library_favorite', function () {
+                this.on('ia_library.id', '=', 'ia_library_favorite.library_id')
+                    .andOn('ia_library_favorite.user_id', '=', knex.raw('?', [userId]))
+            })
+            .select('ia_library.*')
+            .select(knex.raw('ia_library.user_id = ? as is_mine', [userId]))
+            .where('ia_library.id', id)
+            .andWhere(builder => {
+                builder.where('ia_library.user_id', userId)
+                    .orWhere('ia_library_favorite.user_id', userId)
+            })
+            .first()
         return row
     }
 
     static async getLibrariesByIds(ids: number[]): Promise<mysqlTypes.IALibrary[]> {
         const userId = await UserDao.getCurrentUserId()
-        const rows = await knex('ia_library').select('*').where({ user_id: userId }).whereIn('id', ids)
+        const rows = await knex('ia_library')
+            .leftJoin('ia_library_favorite', function () {
+                this.on('ia_library.id', '=', 'ia_library_favorite.library_id')
+                    .andOn('ia_library_favorite.user_id', '=', knex.raw('?', [userId]))
+            })
+            .select('ia_library.*')
+            .whereIn('ia_library.id', ids)
+            .andWhere(builder => {
+                builder.where('ia_library.user_id', userId)
+                    .orWhere('ia_library_favorite.user_id', userId)
+            })
         return rows
     }
 
@@ -90,6 +125,14 @@ export class LibraryDao {
         const userId = await UserDao.getCurrentUserId()
         const del = await knex('ia_library').delete().where({ id, user_id: userId })
         return del > 0
+    }
+
+    static async setFavorite(libraryId: number, userId: number): Promise<void> {
+        await knex('ia_library_favorite').insert({ library_id: libraryId, user_id: userId }).onConflict().ignore()
+    }
+
+    static async resetFavorite(libraryId: number, userId: number): Promise<void> {
+        await knex('ia_library_favorite').where({ library_id: libraryId, user_id: userId }).delete()
     }
 
     static async listLibraryExamples(library_id: number): Promise<mysqlTypes.IALibraryExample[]> {

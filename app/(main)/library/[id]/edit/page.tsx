@@ -12,7 +12,7 @@ export default async function Edit(props: { params: Promise<{ id: string }> }) {
   const { content_binary, ...safe } = record as any
   return (
     <Container fluid={false}>
-      <h1 className="mt-5 mb-3">Editar Item</h1>
+      <h1 className="mt-5 mb-3">{safe.is_mine ? 'Editar Item' : 'Visualizar Item'}</h1>
       <LibraryForm record={safe} />
     </Container>
   )

@@ -192,7 +192,26 @@ async function POST_HANDLER(request: Request) {
     }
 
     if (ret.cached) {
-        return new Response(ret.cached, { status: 200 })
+        const stream = createUIMessageStream<UIMessage>({
+            execute: async ({ writer }) => {
+                writer.write({ type: 'start', messageId: crypto.randomUUID() });
+                writer.write({ type: 'start-step' });
+                writer.write({ type: 'text-start', id: '1' });
+                writer.write({ type: 'text-delta', delta: ret.cached, id: '1' });
+                writer.write({ type: 'text-end', id: '1' });
+                writer.write({ type: 'finish-step' });
+                writer.write({
+                    type: 'finish',
+                    messageMetadata: {
+                        model: ret.model,
+                        usage: ret.usage,
+                        messages: executionResults.messages
+                    },
+                });
+            }
+        })
+        return createUIMessageStreamResponse({ stream });
+        // return new Response(ret.cached, { status: 200 })
     }
 
     if (ret.textStream && searchParams.get('uiMessageStream') === 'true') {
@@ -204,7 +223,7 @@ async function POST_HANDLER(request: Request) {
                 }
                 writer.write({
                     type: 'finish',
-                    messageMetadata: { model: ret.model, usage: ret.usage },
+                    messageMetadata: { model: ret.model, usage: ret.usage, messages: executionResults.messages },
                 });
             }
         })

@@ -84,7 +84,7 @@ export default function AnonymPage() {
 
             <div className="alert alert-secondary mb-1 p-0">
                 <Suspense fallback={null}>
-                    <EditorComp markdown={markdown} onChange={setMarkdown} />
+                    <EditorComp markdown={markdown} onChange={setMarkdown} showPdfUpload={true} />
                 </Suspense>
             </div>
             <div className="row">

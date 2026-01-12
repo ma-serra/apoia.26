@@ -42,7 +42,7 @@ export default function Revison() {
             <div className="form-group"><label>Voto </label></div>
             <div className="alert alert-secondary mb-1 p-0">
                 <Suspense fallback={null}>
-                    <EditorComp markdown={markdown} onChange={textChanged} />
+                    <EditorComp markdown={markdown} onChange={textChanged} showPdfUpload={true} />
                 </Suspense>
             </div>
             {hidden && <>
@@ -58,7 +58,7 @@ export default function Revison() {
                     definition={getInternalPrompt('ementa')}
                     // data={{ textos: [{ descr: 'EXTRATO DE ATA', slug: 'extrato-de-ata', texto: `ÓRGÃO JULGADOR: ${orgaoJulgador}\nTIPO DE DECISÁO: UNÂMINE` }, { descr: 'Voto', slug: 'voto', texto: markdown }] }}
                     data={{ textos: [{ numeroDoProcesso: '', descr: 'Voto', slug: 'voto', texto: markdown, sigilo: '0' }] }}
-                    options={{ cacheControl: true }} config={promptConfig} dossierCode={undefined}/>
+                    options={{ cacheControl: true }} config={promptConfig} dossierCode={undefined} />
             </>}
         </div>
     )

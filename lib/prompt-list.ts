@@ -4,12 +4,14 @@ import { IAPromptList } from './db/mysql-types'
 import { TipoDeSinteseMap } from './proc/combinacoes'
 import { Instance, Matter, Scope, Share, StatusDeLancamento } from './proc/process-types'
 
-export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao = false): Promise<IAPromptList[]> {
+export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao = false, isBetaTester?: boolean): Promise<IAPromptList[]> {
 
-    // Determine beta tester cookie
-    const cookieStore = await cookies()
-    const betaCookie = cookieStore.get('beta-tester')?.value
-    const isBetaTester = betaCookie === '2'
+    // Determine beta tester cookie (only if not provided as parameter)
+    if (isBetaTester === undefined) {
+        const cookieStore = await cookies()
+        const betaCookie = cookieStore.get('beta-tester')?.value
+        isBetaTester = betaCookie === '2'
+    }
 
     // Build overlay list for seeds based on map status and beta gating
     const baseByKind = new Map<string, IAPromptList>()

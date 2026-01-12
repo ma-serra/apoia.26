@@ -13,6 +13,7 @@ export type IAGenerated = {
     output_tokens?: number | null
     reasoning_tokens?: number | null
     approximate_cost?: number | null
+    prompt_id?: number | null
 }
 
 export type IASystem = {
@@ -34,6 +35,7 @@ export type IAGeneration = {
     output_tokens?: number | null
     reasoning_tokens?: number | null
     approximate_cost?: number | null
+    prompt_id?: number | null
 }
 
 export type AIBatchIdAndEnumId = {

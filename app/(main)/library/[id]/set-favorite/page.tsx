@@ -1,0 +1,18 @@
+'use server'
+
+import { unstable_noStore as noStore } from 'next/cache'
+import { UserDao, LibraryDao } from '@/lib/db/dao'
+import { redirect } from 'next/navigation';
+import { assertCurrentUser } from '@/lib/user'
+
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
+    noStore()
+    const user = await assertCurrentUser()
+    const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
+
+    await LibraryDao.setFavorite(parseInt(params.id), user_id)
+
+    redirect('/library')
+    return null
+}

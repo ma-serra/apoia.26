@@ -13,7 +13,7 @@ import { createDeepSeek } from "@ai-sdk/deepseek"
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock'
 import { EMPTY_PREFS_COOKIE, PrefsCookieType } from '@/lib/utils/prefs-types'
 import { assertCourtId, getCurrentUser } from "../user"
-import { LanguageModelV2 } from "@ai-sdk/provider"
+import { LanguageModelV3 } from "@ai-sdk/provider"
 import devLog from "../utils/log"
 
 function getEnvKeyByModel(model: string): string {
@@ -32,6 +32,8 @@ function getEnvKeyByModel(model: string): string {
         return ModelProvider.GROQ.apiKey
     } else if (model.startsWith('deepseek-')) {
         return ModelProvider.DEEPSEEK.apiKey
+    } else if (model.startsWith('lm-studio')) {
+        return ModelProvider.LM_STUDIO.apiKey
     }
     throw new Error('Invalid model')
 }
@@ -51,7 +53,7 @@ export const assertModel = async () => {
     }
 }
 
-export type ModelParams = { model: string, apiKey: string, availableApiKeys: string[], apiKeyFromEnv: boolean, defaultModel?: string, selectableModels?: string[], userMayChangeModel: boolean, azureResourceName: string, awsRegion?: string, awsAccessKeyId?: string }
+export type ModelParams = { model: string, apiKey: string, availableApiKeys: string[], apiKeyFromEnv: boolean, defaultModel?: string, selectableModels?: string[], userMayChangeModel: boolean, azureResourceName: string, lmStudioUrl?: string, awsRegion?: string, awsAccessKeyId?: string }
 export async function getSelectedModelParams(): Promise<ModelParams> {
     const prefs = await getPrefs()
     const user = await getCurrentUser()
@@ -59,6 +61,7 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
 
     let model: string
     let azureResourceName: string
+    let lmStudioUrl: string
     let awsRegion: string
     let awsAccessKeyId: string
 
@@ -80,11 +83,13 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
     }
 
     azureResourceName = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AZURE.resourceName, seqTribunalPai) as string
+    lmStudioUrl = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.LM_STUDIO.resourceName, seqTribunalPai) as string
     awsRegion = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AWS.region, seqTribunalPai) as string
     awsAccessKeyId = getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, ModelProvider.AWS.accessKeyId, seqTribunalPai) as string
 
     if (prefs?.model) model = prefs.model
     if (prefs?.env[ModelProvider.AZURE.resourceName]) azureResourceName = prefs.env[ModelProvider.AZURE.resourceName]
+    if (prefs?.env[ModelProvider.LM_STUDIO.resourceName]) lmStudioUrl = prefs.env[ModelProvider.LM_STUDIO.resourceName]
     if (prefs?.env[ModelProvider.AWS.region]) awsRegion = prefs.env[ModelProvider.AWS.region]
     if (prefs?.env[ModelProvider.AWS.accessKeyId]) awsAccessKeyId = prefs.env[ModelProvider.AWS.accessKeyId]
 
@@ -128,15 +133,15 @@ export async function getSelectedModelParams(): Promise<ModelParams> {
         const envKey = getEnvKeyByModel(model)
         apiKeyFromEnv = apiKey === getEnvStringPrefixedIfUserIsAllowed(user?.preferredUsername, envKey, seqTribunalPai)
     }
-    return { model, apiKey, availableApiKeys, apiKeyFromEnv, defaultModel, selectableModels, userMayChangeModel, azureResourceName, awsRegion, awsAccessKeyId }
+    return { model, apiKey, availableApiKeys, apiKeyFromEnv, defaultModel, selectableModels, userMayChangeModel, azureResourceName, lmStudioUrl, awsRegion, awsAccessKeyId }
 }
 
 export async function getSelectedModelName(): Promise<string> {
     return (await getSelectedModelParams()).model
 }
 
-export async function getModel(params?: { structuredOutputs: boolean, overrideModel?: string }): Promise<{ model: string, modelRef: LanguageModelV2, apiKeyFromEnv: boolean }> {
-    let { model, apiKey, azureResourceName, awsRegion, awsAccessKeyId, apiKeyFromEnv } = await getSelectedModelParams()
+export async function getModel(params?: { structuredOutputs: boolean, overrideModel?: string }): Promise<{ model: string, modelRef: LanguageModelV3, apiKeyFromEnv: boolean }> {
+    let { model, apiKey, azureResourceName, lmStudioUrl, awsRegion, awsAccessKeyId, apiKeyFromEnv } = await getSelectedModelParams()
     if (params?.overrideModel) model = params.overrideModel
 
     if (!model) throw new Error('Nenhum modelo de IA configurado. Por favor, acesse /prefs para configurar um modelo.')
@@ -150,7 +155,14 @@ export async function getModel(params?: { structuredOutputs: boolean, overrideMo
         const openai = createOpenAI({
             apiKey
         })
-        return { model, modelRef: openai(model) as unknown as LanguageModelV2, apiKeyFromEnv }
+        return { model, modelRef: openai(model) as unknown as LanguageModelV3, apiKeyFromEnv }
+    }
+    if (getEnvKeyByModel(model) === ModelProvider.LM_STUDIO.apiKey) {
+        const openai = createOpenAI({
+            apiKey,
+            baseURL: lmStudioUrl
+        })
+        return { model, modelRef: openai(model) as unknown as LanguageModelV3, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.GOOGLE.apiKey) {
         const google = createGoogleGenerativeAI({ apiKey })
@@ -160,11 +172,11 @@ export async function getModel(params?: { structuredOutputs: boolean, overrideMo
         const azure = azureResourceName?.startsWith('https')
             ? createAzure({ apiKey, baseURL: azureResourceName })
             : createAzure({ apiKey, resourceName: azureResourceName })
-        return { model, modelRef: azure(model.replace('azure-', '')) as unknown as LanguageModelV2, apiKeyFromEnv }
+        return { model, modelRef: azure(model.replace('azure-', '')) as unknown as LanguageModelV3, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.AWS.apiKey) {
         const bedrock = createAmazonBedrock({ region: awsRegion, accessKeyId: awsAccessKeyId, secretAccessKey: apiKey })
-        const modelRef = bedrock(model.replace('aws-', '')) as unknown as LanguageModelV2
+        const modelRef = bedrock(model.replace('aws-', '')) as unknown as LanguageModelV3
         return { model, modelRef, apiKeyFromEnv }
     }
     if (getEnvKeyByModel(model) === ModelProvider.GROQ.apiKey) {

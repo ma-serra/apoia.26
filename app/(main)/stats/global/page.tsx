@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRocket, faClock, faUsers, faBuilding, faStar, faTrophy, faFire, faLightbulb, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
+import { STATS_CONFIG } from '@/lib/utils/stats-config'
 
 interface GlobalStats {
     totalExecutions: number
@@ -142,14 +143,14 @@ export default function GlobalStatsPage() {
                         Isso equivale a aproximadamente <strong className="text-primary">{daysEquivalent} dias</strong> de trabalho!
                         <OverlayTrigger
                             placement="top"
-                            overlay={<BsTooltip>Calculado considerando que cada utilização da IA economiza 15 minutos ao usuário (tempo medio estimado)</BsTooltip>}
+                            overlay={<BsTooltip>Calculado considerando que cada utilização da IA economiza {STATS_CONFIG.TEMPO_MEDIO_ECONOMIA_POR_EXECUCAO_MINUTOS} minutos ao usuário (tempo medio estimado)</BsTooltip>}
                         >
                             <FontAwesomeIcon icon={faInfoCircle} className="ms-2 text-secondary" style={{ cursor: 'help' }} />
                         </OverlayTrigger>
                     </p>
                 </Card.Body>
             </Card>
-            
+
             {/* Stats Cards */}
             <Row className="g-3 mb-4">
                 <Col sm={6} lg={3}>
@@ -249,9 +250,9 @@ export default function GlobalStatsPage() {
                                     >
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis type="number" />
-                                        <YAxis 
-                                            dataKey="name" 
-                                            type="category" 
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
                                             width={55}
                                             tick={{ fontSize: 12 }}
                                         />
@@ -307,7 +308,7 @@ export default function GlobalStatsPage() {
                                                 )}
                                             </div>
                                             <div className="flex-grow-1">
-                                                <Link 
+                                                <Link
                                                     href={`/prompts?prompt_id=${prompt.promptBaseId}`}
                                                     className="text-decoration-none fw-semibold"
                                                 >
