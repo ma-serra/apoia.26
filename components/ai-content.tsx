@@ -257,14 +257,14 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const color = getColor(current, errormsg)
 
     const preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
-    // if (complete && (!visualizationId || visualizationId === VisualizationEnum.TEXT_EDITED)) {
-    //     const promptMessages = (currentMessage?.metadata as any)?.messages
-    //     if (promptMessages) {
-    //         let a: string[] = []
-    //         for (const m of promptMessages) a.push(`${m.role === 'system' ? '---\\# SYSTEM PROMPT' : m.role === 'user' ? '---\\# PROMPT' : `---\\# ROLE: ${m.role}`}\n\n${typeof m.content === 'string' ? m.content : m.content && typeof m.content === 'object' ? JSON.stringify(m.content, null, 2) : String(m.content)}\n\n`)
-    //         preprocessed.text = highlightCitationsLongestMatch(a.join(''), preprocessed.text)
-    //     }
-    // }
+    if (complete && (!visualizationId || visualizationId === VisualizationEnum.TEXT_EDITED)) {
+        const promptMessages = (currentMessage?.metadata as any)?.messages
+        if (promptMessages) {
+            let a: string[] = []
+            for (const m of promptMessages) a.push(`${m.role === 'system' ? '---\\# SYSTEM PROMPT' : m.role === 'user' ? '---\\# PROMPT' : `---\\# ROLE: ${m.role}`}\n\n${typeof m.content === 'string' ? m.content : m.content && typeof m.content === 'object' ? JSON.stringify(m.content, null, 2) : String(m.content)}\n\n`)
+            preprocessed.text = highlightCitationsLongestMatch(a.join(''), preprocessed.text)
+        }
+    }
 
     return <>
         <MessageStatus message={currentMessage} />

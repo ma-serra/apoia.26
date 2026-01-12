@@ -473,4 +473,232 @@ describe('highlightCitationsLongestMatch', () => {
     }
   });
 
+  // ========================================
+  // TESTES DE ISOLAMENTO DE BUGS ESPECÍFICOS
+  // ========================================
+
+  describe('Isolamento de bugs com tags HTML', () => {
+    
+    test('palavra única em bold deve ser marcada corretamente', () => {
+      const sourceHtml = '<library-document title="Doc">Este texto tem uma palavra muito importante destacada neste contexto específico da citação.</library-document>';
+      const generatedHtml = 'Cita: Este texto tem uma <b>palavra</b> muito importante destacada neste contexto específico da citação.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 8);
+      
+      // Deve marcar toda a sequência incluindo a palavra em bold
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('Este texto tem uma <b>palavra</b> muito importante');
+    });
+
+    test('múltiplas tags inline no meio da citação', () => {
+      const sourceHtml = '<library-document title="Doc">O texto contém palavras em negrito e itálico e sublinhado no meio da frase longa.</library-document>';
+      const generatedHtml = 'Cita: O texto contém <b>palavras</b> em <i>negrito</i> e <u>itálico</u> e <em>sublinhado</em> no meio da frase longa.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 8);
+      
+      expect(result).toContain('<span class="citacao"');
+      // Todas as tags devem estar dentro da citação
+      expect(result).toContain('<b>palavras</b>');
+      expect(result).toContain('<i>negrito</i>');
+    });
+
+    test('tag no início da frase', () => {
+      const sourceHtml = '<library-document title="Doc">Importante este é o início da frase com palavras destacadas no contexto.</library-document>';
+      const generatedHtml = '<b>Importante</b> este é o início da frase com palavras destacadas no contexto.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6);
+      
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('<b>Importante</b>');
+    });
+
+    test('tag no final da frase', () => {
+      const sourceHtml = '<library-document title="Doc">Este é o texto completo com palavra destacada no final.</library-document>';
+      const generatedHtml = 'Este é o texto completo com palavra destacada no <b>final</b>.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6);
+      
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('no <b>final</b>');
+    });
+
+    test('tags aninhadas complexas', () => {
+      const sourceHtml = '<library-document title="Doc">Este texto tem formatação complexa aninhada dentro da citação longa.</library-document>';
+      const generatedHtml = 'Este texto tem <b><i>formatação complexa</i></b> aninhada dentro da <u>citação</u> longa.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6);
+      
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('<b><i>formatação complexa</i></b>');
+    });
+  });
+
+  describe('Isolamento de bugs com nao-citacao', () => {
+    
+    test('nao-citacao NÃO deve aparecer no início do texto', () => {
+      const sourceHtml = '<library-document title="Doc">Este é o trecho citado que aparece depois do início do texto gerado.</library-document>';
+      const generatedHtml = 'Introdução breve aqui. Este é o trecho citado que aparece depois do início do texto gerado.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6, 5);
+      
+      // "Introdução breve aqui" NÃO deve ter nao-citacao (não está entre citações)
+      expect(result).not.toContain('<span class="nao-citacao">Introdução');
+      // A citação deve existir
+      expect(result).toContain('<span class="citacao"');
+    });
+
+    test('nao-citacao NÃO deve aparecer no final do texto', () => {
+      const sourceHtml = '<library-document title="Doc">Este é o trecho citado que aparece antes do final do texto gerado.</library-document>';
+      const generatedHtml = 'Este é o trecho citado que aparece antes do final do texto gerado. Conclusão breve aqui.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6, 5);
+      
+      // "Conclusão breve aqui" NÃO deve ter nao-citacao (não está entre citações)
+      expect(result).not.toContain('<span class="nao-citacao">Conclusão');
+      // A citação deve existir
+      expect(result).toContain('<span class="citacao"');
+    });
+
+    test('nao-citacao DEVE aparecer entre duas citações', () => {
+      const sourceHtml = `
+        <library-document title="Doc1">Primeira citação tem um texto único aqui completamente diferente mesmo.</library-document>
+        <library-document title="Doc2">Segunda citação tem outro texto único aqui bem diferente também.</library-document>
+      `;
+      const generatedHtml = 'Primeira citação tem um texto único aqui completamente diferente mesmo. Gap curto. Segunda citação tem outro texto único aqui bem diferente também.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6, 3);
+      
+      // Deve ter duas citações
+      const citacaoCount = (result.match(/<span class="citacao"/g) || []).length;
+      expect(citacaoCount).toBe(2);
+      
+      // "Gap curto" DEVE ter nao-citacao (está entre duas citações e tem 2 palavras <= 3)
+      expect(result).toContain('<span class="nao-citacao">Gap curto.</span>');
+    });
+
+    test('nao-citacao NÃO deve aparecer se o gap for maior que o threshold', () => {
+      const sourceHtml = `
+        <library-document title="Doc1">Primeira citação com texto diferente e único para evitar overlap.</library-document>
+        <library-document title="Doc2">Segunda citação com texto diferente e único para evitar overlap.</library-document>
+      `;
+      const generatedHtml = 'Primeira citação com texto diferente e único para evitar overlap. Este é um gap muito longo com várias palavras que ultrapassa o limite. Segunda citação com texto diferente e único para evitar overlap.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6, 3);
+      
+      // Deve ter duas citações
+      const citacaoCount = (result.match(/<span class="citacao"/g) || []).length;
+      expect(citacaoCount).toBe(2);
+      
+      // O gap longo NÃO deve ter nao-citacao (tem mais de 3 palavras)
+      expect(result).not.toContain('<span class="nao-citacao">Este é um gap muito longo');
+    });
+
+    test('nao-citacao com threshold 0 não deve marcar nada', () => {
+      const sourceHtml = `
+        <library-document title="Doc1">Primeira citação textos bem longos.</library-document>
+        <library-document title="Doc2">Segunda citação textos bem longos.</library-document>
+      `;
+      const generatedHtml = 'Primeira citação textos bem longos. Gap. Segunda citação textos bem longos.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 3, 0);
+      
+      // Com threshold 0, não deve marcar nao-citacao
+      expect(result).not.toContain('class="nao-citacao"');
+    });
+
+    test('múltiplos gaps pequenos entre múltiplas citações', () => {
+      const sourceHtml = `
+        <library-document title="Doc1">Citação um é longa e suficiente.</library-document>
+        <library-document title="Doc2">Citação dois é longa e suficiente.</library-document>
+        <library-document title="Doc3">Citação três é longa e suficiente.</library-document>
+      `;
+      const generatedHtml = 'Citação um é longa e suficiente. Gap A. Citação dois é longa e suficiente. Gap B. Citação três é longa e suficiente.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 3, 3);
+      
+      // Deve ter três citações
+      const citacaoCount = (result.match(/<span class="citacao"/g) || []).length;
+      expect(citacaoCount).toBe(3);
+      
+      // Ambos gaps DEVEM ter nao-citacao
+      expect(result).toContain('<span class="nao-citacao">Gap A.</span>');
+      expect(result).toContain('<span class="nao-citacao">Gap B.</span>');
+    });
+  });
+
+  describe('Isolamento de bugs com n-grams quebrados', () => {
+    
+    test('fonte com tags HTML inline deve permitir match completo', () => {
+      const sourceHtml = '<library-document title="Doc">Este <b>texto</b> tem <i>tags</i> no meio mas deve formar n-gram completo.</library-document>';
+      const generatedHtml = 'Este texto tem tags no meio mas deve formar n-gram completo.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 8);
+      
+      // Deve encontrar o match completo apesar das tags no source
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('Este texto tem tags no meio mas deve formar n-gram completo');
+    });
+
+    test('fonte com tags block-level NO MEIO da frase', () => {
+      const sourceHtml = '<library-document title="Doc">Esta é uma frase que continua<p>em outro parágrafo</p> mas ainda faz parte do mesmo contexto.</library-document>';
+      const generatedHtml = 'Esta é uma frase que continua em outro parágrafo mas ainda faz parte do mesmo contexto.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6);
+      
+      // Tags block podem quebrar o n-gram, então pode não dar match completo
+      // Mas deve marcar pelo menos as partes que dão match
+      expect(result).toContain('<span class="citacao"');
+    });
+
+    test('gerado com tags HTML inline deve encontrar match', () => {
+      const sourceHtml = '<library-document title="Doc">Este texto simples sem tags deve ser encontrado corretamente.</library-document>';
+      const generatedHtml = 'Este <b>texto simples</b> sem <i>tags</i> deve ser <u>encontrado</u> corretamente.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 6);
+      
+      // Deve encontrar match completo
+      expect(result).toContain('<span class="citacao"');
+      expect(result).toContain('Este <b>texto simples</b>');
+    });
+
+
+    test('último item de lista não sendo marcado', () => {
+      const sourceHtml = `
+        <library-document title="Doc">
+          <ol>
+            <li>Primeira consideração aborda aspectos técnicos fundamentais relevantes e necessários para compreensão completa.</li>
+            <li>Segunda deliberação examina questões operacionais específicas importantes e críticas para execução adequada.</li>
+            <li>Terceira análise verifica elementos práticos.</li>
+          </ol>
+        </library-document>
+      `;
+      const generatedHtml = 'Primeira consideração aborda aspectos técnicos fundamentais relevantes e necessários para compreensão completa. Segunda deliberação examina questões operacionais específicas importantes e críticas para execução adequada. Terceira análise verifica elementos práticos essenciais críticos e vitais para resultados esperados finais.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 10);
+      
+      // Todos os itens devem ser marcados (podem estar no mesmo span se não houver quebra)
+      expect(result).toContain('Primeira consideração');
+      expect(result).toContain('Segunda deliberação');
+      expect(result).toContain('Terceira análise');
+      
+      // Deve ter pelo menos 1 citação (todo o texto é do source)
+      const citacaoCount = (result.match(/<span class="citacao"/g) || []).length;
+      expect(citacaoCount).toEqual(3);
+      
+      // Nenhuma parte deve ficar sem marcação de citação
+      expect(result).toContain('<span class="citacao"');
+    });
+
+    test('último trecho menor que nGramSize deve ser processado', () => {
+      const sourceHtml = '<library-document title="Doc">Este é um texto longo completo com bastante conteúdo para testar. Final curto.</library-document>';
+      const generatedHtml = 'Este é um texto longo completo com bastante conteúdo para testar. Final curto.';
+      
+      const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 8);
+      
+      // "Final curto" tem apenas 2 palavras, mas deve ser marcado
+      expect(result).toContain('Final curto');
+      expect(result).toContain('<span class="citacao"');
+    });
+  });
+
 });

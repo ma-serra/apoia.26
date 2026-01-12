@@ -31,7 +31,7 @@ const FIXED_METADATA_TAGS = new Set([
 
 function tokenizeWithContext(html: string, extractMetadata: boolean = true): Token[] {
     // Regex: Tags, Palavras, Pontuação, Espaços
-    const regex = /(<[^>]+>)|([\w\u00C0-\u00FF-]+)|([.,;?!§%]+)|(\s+)|([^<>\w\s.,;?!§%-]+)/g;
+    const regex = /(?<tag><[^>]+>)|(?<word>[\w\u00C0-\u00FF-]+)|(?<punct>[.,;?!§%\/\(\)"']+)|(?<space>\s+)|(?<other>[^<>\w\s.,;?!§%-]+)/g;
 
     const tokens: Token[] = [];
     let currentCtx: SourceContext = {};
@@ -45,7 +45,8 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
 
     let match;
     while ((match = regex.exec(html)) !== null) {
-        const [fullMatch, tagGroup, wordGroup, punctGroup, spaceGroup] = match;
+        const fullMatch = match[0];
+        const { tag: tagGroup, word: wordGroup, punct: punctGroup, space: spaceGroup } = match.groups!;
 
         if (tagGroup) {
             if (extractMetadata) {
@@ -186,6 +187,8 @@ function formatContextToString(ctx?: SourceContext): string {
             default:
                 parts.push(`[${ctx.sourceType.toUpperCase()}]`);
         }
+    } else {
+        parts.push('Trecho encontrado no prompt');
     }
 
     if (ctx.title) parts.push(`Título: ${ctx.title}`);
@@ -211,7 +214,8 @@ const METADATA_TAGS = new Set([
 export function highlightCitationsLongestMatch(
     sourceHtml: string,
     generatedHtml: string,
-    nGramSize: number = 8
+    nGramSize: number = 8,
+    maxNonCitationHighlight: number = 8
 ): string {
 
     // 1. Tokenização
@@ -306,8 +310,53 @@ export function highlightCitationsLongestMatch(
         genIndex++;
     }
 
+    // 3.5. Processar tokens restantes (tail processing)
+    // Tokens que não formam n-gram completo mas podem ter match menor
+    while (genIndex < genSig.length) {
+        // Tenta encontrar match com os tokens restantes
+        const remainingSize = genSig.length - genIndex;
+        
+        for (let size = remainingSize; size >= Math.min(3, nGramSize); size--) {
+            const chunk = genSig.slice(genIndex, genIndex + size);
+            const key = chunk.map(t => t.normalized).join(' ');
+            
+            if (sourceMap.has(key)) {
+                const candidates = sourceMap.get(key)!;
+                let bestMatch = -1;
+                let maxLen = -1;
+                
+                for (const sourceStart of candidates) {
+                    const len = measureMatchLength(genSig, sourceSig, genIndex, sourceStart);
+                    if (len > maxLen) {
+                        maxLen = len;
+                        bestMatch = sourceStart;
+                    }
+                }
+                
+                if (bestMatch !== -1) {
+                    for (let offset = 0; offset < maxLen; offset++) {
+                        const genSigRef = genSig[genIndex + offset];
+                        const genTokenActual = genTokens[genSigRef.originalIndex];
+                        const sourceSigRef = sourceSig[bestMatch + offset];
+                        
+                        if (sourceSigRef) {
+                            genTokenActual.isMatch = true;
+                            genTokenActual.context = sourceSigRef.context;
+                        }
+                    }
+                    genIndex += maxLen;
+                    break;
+                }
+            }
+        }
+        
+        if (genIndex < genSig.length && !genTokens[genSig[genIndex].originalIndex].isMatch) {
+            genIndex++;
+        }
+    }
+
     // 5. Reconstrução do HTML (Mesma lógica da resposta anterior)
-    return rebuildHtmlWithTooltips(genTokens);
+    return rebuildHtmlWithTooltips(genTokens, maxNonCitationHighlight);
 }
 
 /**
@@ -343,34 +392,93 @@ function measureMatchLength(
 /**
  * Helper: Reconstrução do HTML (Extraído para clareza)
  */
-function rebuildHtmlWithTooltips(genTokens: any[]): string {
+function rebuildHtmlWithTooltips(genTokens: any[], maxNonCitationHighlight: number = 0): string {
     let outputHtml = '';
     let insideCitation = false;
     let currentContextString = '';
+    let hadAnyCitation = false; // Flag para saber se já houve alguma citação
+
+    // Tags que forçam o fechamento do span (block-level que quebram contexto)
+    const BLOCK_TAGS = new Set([
+        'p', '/p', 'div', '/div', 'section', '/section', 'article', '/article',
+        'h1', '/h1', 'h2', '/h2', 'h3', '/h3', 'h4', '/h4', 'h5', '/h5', 'h6', '/h6',
+        'table', '/table', 'thead', '/thead', 'tbody', '/tbody', 'tr', '/tr', 'li', '/li',
+        'ul', '/ul', 'ol', '/ol', 'br', '/br', 'hr', '/hr', 'blockquote', '/blockquote'
+    ]);
+
+    // Helper para verificar se uma tag deve fechar o span
+    const shouldBreakSpan = (tagContent: string): boolean => {
+        const tagName = getTagName(tagContent);
+        return BLOCK_TAGS.has(tagName);
+    };
 
     // Helper para verificar se há próximo token com match
     const hasNextMatchWithSameContext = (startIndex: number, contextStr: string): boolean => {
         for (let j = startIndex + 1; j < genTokens.length; j++) {
             const nextToken = genTokens[j];
-            // Ignora whitespace e tags HTML comuns
-            if (nextToken.type === 'WHITESPACE' || (nextToken.type === 'TAG' && !nextToken.isMatch)) {
+            
+            // Ignora apenas whitespace
+            if (nextToken.type === 'WHITESPACE') {
                 continue;
             }
+            
+            // Se for uma tag inline (não block), continua procurando
+            if (nextToken.type === 'TAG' && !shouldBreakSpan(nextToken.content)) {
+                continue;
+            }
+            
+            // Se for uma tag block, não há continuidade
+            if (nextToken.type === 'TAG' && shouldBreakSpan(nextToken.content)) {
+                return false;
+            }
+            
             // Se encontrou um token significativo
             if (nextToken.isMatch) {
                 const nextContextStr = formatContextToString(nextToken.context);
                 return nextContextStr === contextStr;
             }
+            
             // Se encontrou token sem match, retorna false
             return false;
         }
         return false;
     };
 
+    // Buffer para acumular tokens não-citados
+    let nonCitationBuffer: any[] = [];
+    
+    // Helper para processar o buffer de não-citação
+    const flushNonCitationBuffer = (isBeforeCitation: boolean = false) => {
+        if (nonCitationBuffer.length === 0) return;
+        
+        // Conta tokens significativos no buffer
+        const significantTokens = nonCitationBuffer.filter(t => 
+            t.type === 'WORD' || t.type === 'PUNCTUATION'
+        ).length;
+        
+        // Só marca como não-citação se:
+        // 1. Já houve uma citação antes E
+        // 2. Vai ter uma citação depois (isBeforeCitation) E
+        // 3. Está dentro do threshold
+        if (hadAnyCitation && isBeforeCitation && maxNonCitationHighlight > 0 && significantTokens > 0 && significantTokens <= maxNonCitationHighlight) {
+            outputHtml += '<span class="nao-citacao">';
+            nonCitationBuffer.forEach(t => outputHtml += t.content);
+            outputHtml += '</span>';
+        } else {
+            // Caso contrário, adiciona sem marcação
+            nonCitationBuffer.forEach(t => outputHtml += t.content);
+        }
+        
+        nonCitationBuffer = [];
+    };
+
     for (let i = 0; i < genTokens.length; i++) {
         const token = genTokens[i];
 
         if (token.isMatch) {
+            // Processa buffer acumulado antes de iniciar citação
+            flushNonCitationBuffer(true); // true = vai ter citação depois
+            hadAnyCitation = true;
             const tokenContextStr = formatContextToString(token.context);
 
             if (!insideCitation) {
@@ -379,9 +487,9 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
                 insideCitation = true;
                 currentContextString = tokenContextStr;
             } else if (tokenContextStr !== currentContextString) {
-                // Contexto mudou no meio da sequência (ex: virou a página)
-                outputHtml += `</span><span class="citacao" title="${tokenContextStr}">`;
-                currentContextString = tokenContextStr;
+                // Contexto mudou - mas só reabre span se o próximo token também tiver match
+                // Isso evita spans microscópicos de 1 palavra quando há matches overlapping
+                // Mantém o contexto anterior por continuidade
             }
 
             outputHtml += token.content;
@@ -390,40 +498,60 @@ function rebuildHtmlWithTooltips(genTokens: any[]): string {
             if (insideCitation && hasNextMatchWithSameContext(i, currentContextString)) {
                 outputHtml += token.content;
             } else if (insideCitation) {
-                // Fecha o span antes do whitespace
+                // Fecha o span antes do whitespace (evita spans vazios)
                 outputHtml += '</span>';
-                outputHtml += token.content;
                 insideCitation = false;
                 currentContextString = '';
+                // Adiciona ao buffer de não-citação
+                nonCitationBuffer.push(token);
             } else {
-                outputHtml += token.content;
+                // Adiciona ao buffer de não-citação
+                nonCitationBuffer.push(token);
             }
         } else if (token.type === 'TAG') {
-            // Tag HTML: mantém fora do span de citação
-            if (insideCitation) {
-                outputHtml += `</span>${token.content}`;
-                // Verifica se deve reabrir o span
-                if (hasNextMatchWithSameContext(i, currentContextString)) {
-                    outputHtml += `<span class="citacao" title="${currentContextString}">`;
-                } else {
+            // Tag HTML: verifica se é uma tag que deve quebrar o span
+            if (shouldBreakSpan(token.content)) {
+                // Tags block-level fecham o span
+                if (insideCitation) {
+                    outputHtml += `</span>${token.content}`;
                     insideCitation = false;
                     currentContextString = '';
+                    // Não adiciona ao buffer - tags block quebram contexto
+                    flushNonCitationBuffer();
+                    // Verifica se deve reabrir o span
+                    if (hasNextMatchWithSameContext(i, currentContextString)) {
+                        outputHtml += `<span class="citacao" title="${currentContextString}">`;
+                        insideCitation = true;
+                    }
+                } else {
+                    // Processa buffer antes de tag block
+                    flushNonCitationBuffer();
+                    outputHtml += token.content;
                 }
             } else {
-                outputHtml += token.content;
+                // Tags inline
+                if (insideCitation) {
+                    outputHtml += token.content;
+                } else {
+                    nonCitationBuffer.push(token);
+                }
             }
         } else {
             // PUNCTUATION ou outros: trata como token normal
             if (insideCitation) {
                 outputHtml += token.content;
             } else {
-                outputHtml += token.content;
+                nonCitationBuffer.push(token);
             }
         }
     }
 
     if (insideCitation) outputHtml += '</span>';
+    
+    // Processa qualquer buffer restante (false = não vai ter citação depois)
+    flushNonCitationBuffer(false);
+    
     // Remove spans vazios
-    return outputHtml.replace(/<span class="citacao"[^>]*><\/span>/g, '');
+    return outputHtml.replace(/<span class="(citacao|nao-citacao)"[^>]*><\/span>/g, '');
 }
 
