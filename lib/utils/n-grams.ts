@@ -17,6 +17,7 @@ interface Token {
     normalized?: string;
     isMatch?: boolean;
     context?: SourceContext;
+    startsAfterBlockTag?: boolean; // Marca se este token vem logo após uma tag de bloco no source
 }
 
 // --- Configuração das Tags Fixas ---
@@ -25,6 +26,14 @@ const FIXED_METADATA_TAGS = new Set([
     'library-document',
     'library-attachment',
     'page'
+]);
+
+// Tags que forçam o fechamento do span (block-level que quebram contexto)
+const BLOCK_TAGS = new Set([
+    'p', '/p', 'div', '/div', 'section', '/section', 'article', '/article',
+    'h1', '/h1', 'h2', '/h2', 'h3', '/h3', 'h4', '/h4', 'h5', '/h5', 'h6', '/h6',
+    'table', '/table', 'thead', '/thead', 'tbody', '/tbody', 'tr', '/tr', 'li', '/li',
+    'ul', '/ul', 'ol', '/ol', 'br', '/br', 'hr', '/hr', 'blockquote', '/blockquote'
 ]);
 
 // --- Tokenizer com Lógica Dinâmica ---
@@ -42,6 +51,9 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
     // Para lidar com fechamento de tags dinâmicas corretamente
     // Armazenamos quais tags estão abertas e foram consideradas metadados
     const openMetadataTags = new Set<string>();
+
+    // Track se acabamos de ver uma tag de bloco (para marcar próximo token significativo)
+    let justSawBlockTag = false;
 
     let match;
     while ((match = regex.exec(html)) !== null) {
@@ -111,23 +123,34 @@ function tokenizeWithContext(html: string, extractMetadata: boolean = true): Tok
 
             // Se chegou aqui, é uma tag HTML comum (<b>, <div>, etc) ou metadata desativado
             tokens.push({ type: 'TAG', content: fullMatch });
+            
+            // Se é uma tag de bloco, marca flag para próximo token significativo
+            const tagName = getTagName(fullMatch);
+            if (BLOCK_TAGS.has(tagName)) {
+                justSawBlockTag = true;
+            }
 
         } else if (wordGroup) {
             tokens.push({
                 type: 'WORD',
                 content: fullMatch,
                 normalized: fullMatch.toLowerCase(),
-                context: { ...currentCtx } // Clona o contexto atual
+                context: { ...currentCtx }, // Clona o contexto atual
+                startsAfterBlockTag: justSawBlockTag
             });
+            justSawBlockTag = false; // Reset após marcar
         } else if (punctGroup) {
             tokens.push({
                 type: 'PUNCTUATION',
                 content: fullMatch,
                 normalized: fullMatch,
-                context: { ...currentCtx }
+                context: { ...currentCtx },
+                startsAfterBlockTag: justSawBlockTag
             });
+            justSawBlockTag = false; // Reset após marcar
         } else if (spaceGroup) {
             tokens.push({ type: 'WHITESPACE', content: fullMatch });
+            // Não resetamos justSawBlockTag aqui, só após token significativo
         } else {
             tokens.push({ type: 'TAG', content: fullMatch }); // Lixo/Símbolos
         }
@@ -295,6 +318,11 @@ export function highlightCitationsLongestMatch(
                         // Se a sequência cruzar de uma página para outra no original,
                         // o contexto vai mudar corretamente no meio da frase gerada também.
                         genTokenActual.context = sourceSigRef.context;
+                        
+                        // Propagar flag de block boundary do source para o generated
+                        if (sourceSigRef.startsAfterBlockTag) {
+                            genTokenActual.startsAfterBlockTag = true;
+                        }
                     }
                 }
 
@@ -342,6 +370,11 @@ export function highlightCitationsLongestMatch(
                         if (sourceSigRef) {
                             genTokenActual.isMatch = true;
                             genTokenActual.context = sourceSigRef.context;
+                            
+                            // Propagar flag de block boundary
+                            if (sourceSigRef.startsAfterBlockTag) {
+                                genTokenActual.startsAfterBlockTag = true;
+                            }
                         }
                     }
                     genIndex += maxLen;
@@ -397,14 +430,6 @@ function rebuildHtmlWithTooltips(genTokens: any[], maxNonCitationHighlight: numb
     let insideCitation = false;
     let currentContextString = '';
     let hadAnyCitation = false; // Flag para saber se já houve alguma citação
-
-    // Tags que forçam o fechamento do span (block-level que quebram contexto)
-    const BLOCK_TAGS = new Set([
-        'p', '/p', 'div', '/div', 'section', '/section', 'article', '/article',
-        'h1', '/h1', 'h2', '/h2', 'h3', '/h3', 'h4', '/h4', 'h5', '/h5', 'h6', '/h6',
-        'table', '/table', 'thead', '/thead', 'tbody', '/tbody', 'tr', '/tr', 'li', '/li',
-        'ul', '/ul', 'ol', '/ol', 'br', '/br', 'hr', '/hr', 'blockquote', '/blockquote'
-    ]);
 
     // Helper para verificar se uma tag deve fechar o span
     const shouldBreakSpan = (tagContent: string): boolean => {
@@ -481,15 +506,21 @@ function rebuildHtmlWithTooltips(genTokens: any[], maxNonCitationHighlight: numb
             hadAnyCitation = true;
             const tokenContextStr = formatContextToString(token.context);
 
+            // Se o token começa após uma tag de bloco no source, força quebra do span
+            const shouldBreakForBlockBoundary = token.startsAfterBlockTag && insideCitation;
+            
             if (!insideCitation) {
                 // Abre novo span
                 outputHtml += `<span class="citacao" title="${tokenContextStr}">`;
                 insideCitation = true;
                 currentContextString = tokenContextStr;
-            } else if (tokenContextStr !== currentContextString) {
-                // Contexto mudou - mas só reabre span se o próximo token também tiver match
-                // Isso evita spans microscópicos de 1 palavra quando há matches overlapping
-                // Mantém o contexto anterior por continuidade
+            } else if (shouldBreakForBlockBoundary || tokenContextStr !== currentContextString) {
+                // Fecha span atual e abre novo quando:
+                // 1. Token vem após block tag no source, OU
+                // 2. Contexto mudou
+                outputHtml += '</span>';
+                outputHtml += `<span class="citacao" title="${tokenContextStr}">`;
+                currentContextString = tokenContextStr;
             }
 
             outputHtml += token.content;

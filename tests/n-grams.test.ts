@@ -672,7 +672,7 @@ describe('highlightCitationsLongestMatch', () => {
           </ol>
         </library-document>
       `;
-      const generatedHtml = 'Primeira consideração aborda aspectos técnicos fundamentais relevantes e necessários para compreensão completa. Segunda deliberação examina questões operacionais específicas importantes e críticas para execução adequada. Terceira análise verifica elementos práticos essenciais críticos e vitais para resultados esperados finais.';
+      const generatedHtml = 'Primeira consideração aborda aspectos técnicos fundamentais relevantes e necessários para compreensão completa. Segunda deliberação examina questões operacionais específicas importantes e críticas para execução adequada. Terceira análise verifica elementos práticos.';
       
       const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 10);
       
