@@ -61,10 +61,10 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
             columns: [
                 {
                     header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => data.row.original.is_favorite
-                        ? <span className="text-primary" onClick={() => handleFavorites(data.row.original.base_id, 'reset')}>
+                        ? <span role="button" className="text-primary" onClick={() => handleFavorites(data.row.original.base_id, 'reset')}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faHeartSolid} />
                         </span>
-                        : <span className="text-secondary opacity-50" onClick={() => handleFavorites(data.row.original.base_id, 'set')}>
+                        : <span role="button" className="text-secondary opacity-50" onClick={() => handleFavorites(data.row.original.base_id, 'set')}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faHeart} />
                         </span>
                 },
