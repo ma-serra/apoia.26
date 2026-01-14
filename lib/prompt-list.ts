@@ -4,37 +4,62 @@ import { IAPromptList } from './db/mysql-types'
 import { TipoDeSinteseMap } from './proc/combinacoes'
 import { Instance, Matter, Scope, Share, StatusDeLancamento } from './proc/process-types'
 
-export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao = false, isBetaTester?: boolean): Promise<IAPromptList[]> {
-
-    // Determine beta tester cookie (only if not provided as parameter)
-    if (isBetaTester === undefined) {
-        const cookieStore = await cookies()
-        const betaCookie = cookieStore.get('beta-tester')?.value
-        isBetaTester = betaCookie === '2'
+/**
+ * Synchronizes internal prompts in database based on TipoDeSinteseMap
+ * Adds missing prompts and removes obsolete ones
+ */
+async function syncInternalPrompts(basePrompts: IAPromptList[]): Promise<Map<string, IAPromptList>> {
+    const baseByKind = new Map<string, IAPromptList>()
+    for (const p of basePrompts) {
+        if (p.kind?.startsWith('^')) {
+            baseByKind.set(p.kind, p)
+        }
     }
 
-    // Build overlay list for seeds based on map status and beta gating
-    const baseByKind = new Map<string, IAPromptList>()
-    for (const p of basePrompts) if (p.kind?.startsWith('^')) baseByKind.set(p.kind, p)
+    // Ensure all prompts from TipoDeSinteseMap exist in database
+    const allMapKeys = Object.keys(TipoDeSinteseMap)
+    for (const key of allMapKeys) {
+        const kind = `^${key}`
+        if (!baseByKind.has(kind)) {
+            const newPrompt = await PromptDao.addInternalPrompt(kind) as IAPromptList
+            baseByKind.set(kind, newPrompt)
+        }
+    }
 
-    const visibleKeys = Object.keys(TipoDeSinteseMap).filter(k => {
-        const def = TipoDeSinteseMap[k]
-        return def.status === StatusDeLancamento.PUBLICO || (def.status === StatusDeLancamento.EM_DESENVOLVIMENTO && isBetaTester)
-    })
-    const visibleKinds = new Set(visibleKeys.map(k => `^${k}`))
+    // Remove prompts that no longer exist in TipoDeSinteseMap
+    const validKinds = new Set(allMapKeys.map(k => `^${k}`))
+    for (const [kind, prompt] of baseByKind.entries()) {
+        if (!validKinds.has(kind)) {
+            await PromptDao.removeInternalPrompt(kind)
+            baseByKind.delete(kind)
+        }
+    }
 
-    // Convert seeded (possibly missing from base list) into IAPromptList shape and overlay display info
+    return baseByKind
+}
+
+/**
+ * Builds list of visible prompts with overlays based on user permissions and settings
+ */
+async function buildVisiblePrompts(
+    baseByKind: Map<string, IAPromptList>, 
+    isBetaTester: boolean, 
+    showChatPadrao: boolean
+): Promise<IAPromptList[]> {
     const seededOverlay: IAPromptList[] = []
+    
     for (const key of Object.keys(TipoDeSinteseMap)) {
         const def = TipoDeSinteseMap[key]
+        
+        // Skip CHAT_STANDALONE if not showing chat padrão
         if (!showChatPadrao && key === 'CHAT_STANDALONE') continue
+        
+        // Skip development features for non-beta testers
+        if (def.status === StatusDeLancamento.EM_DESENVOLVIMENTO && !isBetaTester) continue
+        
         const base = baseByKind.get(`^${key}`)
-            ? baseByKind.get(`^${key}`)
-            : await PromptDao.addInternalPrompt(`^${key}`) as IAPromptList
-        if (def.status === StatusDeLancamento.EM_DESENVOLVIMENTO && !isBetaTester) {
-            baseByKind.delete(`^${key}`)
-            continue
-        }
+        if (!base) continue // Should not happen after sync, but defensive programming
+        
         // Overlay display fields: name and filters (content.*)
         const over: IAPromptList = {
             ...base,
@@ -56,18 +81,30 @@ export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao 
             favorite_count: (base as any).favorite_count ?? 0,
         }
         seededOverlay.push(over)
-        baseByKind.delete(`^${key}`) // Mark as processed
     }
 
-    // Remove seeded entries that no longer exist in the map
-    for (const k of baseByKind.keys()) {
-        await PromptDao.removeInternalPrompt(k)
-        baseByKind.delete(k)
+    return seededOverlay
+}
+
+/**
+ * Main function that orchestrates prompt list processing
+ */
+export async function fixPromptList(basePrompts: IAPromptList[], showChatPadrao = false, isBetaTester?: boolean): Promise<IAPromptList[]> {
+    // Determine beta tester cookie (only if not provided as parameter)
+    if (isBetaTester === undefined) {
+        const cookieStore = await cookies()
+        const betaCookie = cookieStore.get('beta-tester')?.value
+        isBetaTester = betaCookie === '2'
     }
 
-    // Non-seeded prompts from base list
+    // Step 1: Sync internal prompts with database
+    const syncedPrompts = await syncInternalPrompts(basePrompts)
+    
+    // Step 2: Build visible prompts list
+    const seededOverlay = await buildVisiblePrompts(syncedPrompts, isBetaTester, showChatPadrao)
+    
+    // Step 3: Combine with non-seeded prompts and sort
     const nonSeeded = basePrompts.filter(p => !p.kind?.startsWith('^'))
-    // Merge and sort
     const prompts: IAPromptList[] = [...nonSeeded, ...seededOverlay]
 
     prompts.sort((a, b) => {
