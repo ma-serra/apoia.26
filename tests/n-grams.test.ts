@@ -1,4 +1,4 @@
-import { highlightCitationsLongestMatch } from '../lib/utils/n-grams';
+import { highlightCitationsLongestMatch } from '../lib/n-grams';
 
 describe('highlightCitationsLongestMatch', () => {
 
@@ -444,16 +444,16 @@ describe('highlightCitationsLongestMatch', () => {
     expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Manual Principal">Texto final do documento principal após todos os anexos');
 
     // T9: Dentro de acordao (tag dinâmica com event e label, sem página)
-    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU)">Texto inicial do acórdão antes de qualquer página');
+    expect(result).toContain('<span class="citacao" title="Trecho encontrado na peça ACOR1 (e. 123, 2º GRAU)">Texto inicial do acórdão antes de qualquer página');
 
     // T10: Dentro de acordao > page 5 (adiciona página ao contexto do acordao)
-    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU), Pág: 5">Conteúdo da página cinco do acórdão');
+    expect(result).toContain('<span class="citacao" title="Trecho encontrado na peça ACOR1 (e. 123, 2º GRAU), Pág: 5">Conteúdo da página cinco do acórdão');
 
     // T11: Dentro de acordao > page 6 (mesma tag dinâmica, página diferente)
-    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU), Pág: 6">Conteúdo da página seis do acórdão');
+    expect(result).toContain('<span class="citacao" title="Trecho encontrado na peça ACOR1 (e. 123, 2º GRAU), Pág: 6">Conteúdo da página seis do acórdão');
 
     // T12: Voltou para acordao (fechou page 6, volta ao acordao sem página)
-    expect(result).toContain('<span class="citacao" title="ACOR1 (e. 123, 2º GRAU)">Texto final do acórdão após as páginas numeradas');
+    expect(result).toContain('<span class="citacao" title="Trecho encontrado na peça ACOR1 (e. 123, 2º GRAU)">Texto final do acórdão após as páginas numeradas');
 
     // T13: Novo library-document (contexto completamente novo, independente do anterior)
     expect(result).toContain('<span class="citacao" title="Documento da Biblioteca, Título: Segundo Manual">Início do segundo documento da biblioteca completamente separado');
@@ -710,5 +710,23 @@ describe('highlightCitationsLongestMatch', () => {
       expect(result).toContain('<span class="citacao"');
     });
   });
+
+
+  //   test('embargos de declaracao desprovidos', () => {
+  //     const sourceHtml = `
+  // o momento no qual é verificada a disponibilidade jurídica de renda em repetição de indébito tributário ou em reconhecimento do direito à compensação julgado procedente e já transitado em julgado, para a caracterização do fato gerador do IRPJ e da CSLL, na hipótese de créditos ilíquidos 
+
+  //     `;
+  //     const generatedHtml = `
+  // <p>Discute-se, no presente caso, o momento no qual é verificada a disponibilidade jurídica de renda em repetição de indébito tributário ou em reconhecimento do direito à compensação julgado procedente e já transitado em julgado, para a caracterização do fato gerador do IRPJ e da CSLL, na hipótese de créditos ilíquidos.</p>
+  //     `;
+
+  //     const result = highlightCitationsLongestMatch(sourceHtml, generatedHtml, 8, 8);
+
+  //     console.log('Result:', result);
+  //     // O gap longo NÃO deve ter nao-citacao (tem mais de 3 palavras)
+  //     expect(result).not.toContain('<li>Embargos de declaração desprovidos.</li>');
+  //     // expect(result).toContain('<li><span class="citacao" title="gproc_20001282156.html (e. 72, 2º GRAU)">Embargos de declaração desprovidos.</span></li>');
+  //   });
 
 });

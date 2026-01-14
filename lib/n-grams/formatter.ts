@@ -28,7 +28,10 @@ export function formatContextToString(ctx?: SourceContext): string {
 
     // Prioriza label+event para tags dinâmicas
     if (ctx.label && ctx.event) {
-        parts.push(`${ctx.label} (e. ${ctx.event.toUpperCase()})`);
+        if (ctx.event === '-')
+            parts.push(`${ctx.label}`);
+        else
+            parts.push(`Trecho encontrado na peça ${ctx.label} (e. ${ctx.event.toUpperCase()})`);
     } else if (ctx.sourceType) {
         parts.push(formatSourceType(ctx.sourceType));
     } else {
