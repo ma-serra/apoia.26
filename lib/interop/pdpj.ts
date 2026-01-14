@@ -2,8 +2,8 @@ import { fixSigiloDePecas, Interop, ObterPecaType } from './interop'
 import { DadosDoProcessoType, Instance, PecaType } from '../proc/process-types'
 import { parseYYYYMMDDHHMMSS, slugify } from '../utils/utils'
 import { assertNivelDeSigilo } from '../proc/sigilo'
-import { getCurrentUser } from '../user'
-import { envString } from '../utils/env'
+import { assertCourtId, getCurrentUser } from '../user'
+import { envString, envStringPrefixed } from '../utils/env'
 import { tua } from '../proc/tua'
 import { InteropProcessoType } from './interop-types'
 import { mapPdpjToSimplified, PdpjInput } from './pdpj-mapping'
@@ -99,9 +99,12 @@ export const nivelDeSigiloFromNivel = (nivel: string): string => {
 
 export class InteropPDPJ implements Interop {
     private accessToken: string
+    private datalakeApiUrl: string
 
     async init() {
         const user = await getCurrentUser()
+        const seqTribunalPai = user ? '' + (await assertCourtId(user)) : undefined
+        this.datalakeApiUrl = envStringPrefixed('DATALAKE_API_URL', seqTribunalPai)
 
         // Utiliza um token fixo, previamente configurado
         if (envString('DATALAKE_TOKEN')) {
@@ -153,7 +156,7 @@ export class InteropPDPJ implements Interop {
         const num = (numeroDoProcesso || '').replace(/\D/g, '')
         if (num.length !== 20) throw new InvalidProcessNumberError(`Número do processo inválido: ${numeroDoProcesso}`)
         const response = await fetch(
-            envString('DATALAKE_API_URL') + `/processos/${numeroDoProcesso}`,
+            `${this.datalakeApiUrl}/processos/${numeroDoProcesso}`,
             {
                 method: 'GET',
                 headers: {
@@ -161,7 +164,7 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                next: { revalidate: REVALIDATE } 
+                next: { revalidate: REVALIDATE }
             }
         )
 
@@ -304,7 +307,7 @@ export class InteropPDPJ implements Interop {
     public obterPeca = async (numeroDoProcesso, idDaPeca, binary?: boolean): Promise<ObterPecaType> => {
         try {
             const response = await fetch(
-                envString('DATALAKE_API_URL') + `/processos/${numeroDoProcesso}/documentos/${idDaPeca}/${binary ? 'binario' : 'texto'}`,
+                `${this.datalakeApiUrl}/processos/${numeroDoProcesso}/documentos/${idDaPeca}/${binary ? 'binario' : 'texto'}`,
                 {
                     method: 'GET',
                     headers: {
