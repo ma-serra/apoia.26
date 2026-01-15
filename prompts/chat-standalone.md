@@ -67,10 +67,6 @@
 - Se houver referências na biblioteca que possam ser carregadas pelo getLibraryDocument, a lista estará contida entre <library-refs> e </library-refs> e será composta de elementos do tipo: <library-ref id="?" title="?" context="?"/>. Nesse caso, o atributo 'context' de cada referência indica o contexto em que ela deve ser carregada.
 - Sempre que o contexto de uma referência for compatível com o processo em questão, você deve solicitar o carregamento do documento usando getLibraryDocument.
 
-## Biblioteca de Documentos do Usuário
-
-{{biblioteca}}
-
 ## CASO O USUÁRIO PEÇA PARA GERAR UMA SENTENÇA
 
 {{prompt:sentenca}}
@@ -78,3 +74,8 @@
 ## CASO O USUÁRIO PEÇA PARA GERAR UM VOTO
 
 {{prompt:voto}}
+
+---
+## Biblioteca de Documentos do Usuário
+
+{{biblioteca}}

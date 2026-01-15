@@ -21,6 +21,7 @@ import { Button, Col, Row } from 'react-bootstrap'
 import { SinkFromURLType, SourcePayloadType } from '@/lib/utils/messaging'
 import { sendApproveMessageToParent } from '@/lib/utils/messaging-helper'
 import { usePromptContext } from '@/app/(main)/prompts/context/PromptContext'
+import { PedidosViabilidadeRecurso } from './pedidos-viabilidade-recurso'
 
 const Frm = new FormHelper(true)
 
@@ -34,7 +35,7 @@ const onReady = (Frm: FormHelper, requests: GeneratedContent[], idx: number, con
     Frm.set(`generated[${idx}]`, content)
 
     // Frm.set(`flow.ready[${idx}]`, content)
-    if (requests[idx].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS && content.json) {
+    if ((requests[idx].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS || requests[idx].produto === P.JUIZO_VIABILIDADE_RECURSO) && content.json) {
         Frm.set('pedidos', content.json)
     }
     if (content.json && isInformationExtractionPrompt(requests[idx].internalPrompt?.prompt)) {
@@ -103,6 +104,18 @@ function requestSlot(Frm: FormHelper, requests: GeneratedContent[], idx: number,
                 </Row>}
             </>
         }
+    } else if (request.produto === P.JUIZO_VIABILIDADE_RECURSO) {
+        console.log('requestSlot.PEDIDOS_VIABILIDADE_RECURSO', { request, pedidos })
+        if (previousArePending(Frm, requests, idx)) return null
+        requestComTextosAnteriores = { ...requestComTextosAnteriores, data: dataComTextosAnteriores(Frm, requests, idx) }
+        if (pedidos) {
+            return <>
+                <PedidosViabilidadeRecurso pedidos={pedidos} request={requestComTextosAnteriores} nextRequest={requests[idx + 1]} Frm={Frm} key={idx} dossierCode={dossierCode} onBusy={() => onBusy(Frm, requests, idx + 1)} onReady={(content) => onReady(Frm, requests, idx + 1, content)} />
+                {!!sidekick && sinkFromURL === 'to-parent' && Frm.get(`generated[${idx + 1}]`) && <Row className="h-print mb-3">
+                    <Col><Button variant="success" onClick={() => sendApproveMessageToParent(Frm.get(`generated[${idx + 1}]`), sourcePayload, slugify(requests[idx + 1]?.internalPrompt?.kind || ''), 'PROCESSO')} className="float-end">{sinkButtonText || 'Aprovar'}</Button></Col>
+                </Row>}
+            </>
+        }
     } else if (isInformationExtractionPrompt(request.internalPrompt?.prompt) && information_extraction) {
         return <div key={idx}>
             <AiTitle request={request} />
@@ -141,6 +154,7 @@ export const ListaDeProdutos = ({ dadosDoProcesso, requests, model, sidekick, pr
     const ctrls = []
     for (let idx = 0; idx < requests.length; idx++) {
         if (idx > 0 && requests[idx - 1].produto === P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS) continue
+        if (idx > 0 && requests[idx - 1].produto === P.JUIZO_VIABILIDADE_RECURSO) continue
         const ctrl = requestSlot(Frm, requests, idx, dadosDoProcesso.numeroDoProcesso, model, sidekick, promptButtons, sinkFromURL, sinkButtonText, sourcePayload)
         if (ctrl === null) break
         ctrls.push(ctrl)

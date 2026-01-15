@@ -3,6 +3,7 @@ import * as mysqlTypes from '../mysql-types'
 import { assertCurrentUser } from '../../user'
 import { getId } from './utils'
 import { dailyLimits } from '../../utils/limits'
+import { OutOfQuotaError } from '@/lib/utils/api-error'
 
 export class UserDao {
     static async getCurrentUserId() {
@@ -186,10 +187,10 @@ export class UserDao {
 
         if (userDailyUsageId) {
             if (user_usage_count && user_usage_count > 0 && userDailyUsageId.usage_count >= user_usage_count) {
-                throw new Error(`Limite diário de consultas do usuário foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
+                throw new OutOfQuotaError(`Limite diário de consultas do usuário foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
             }
             if (user_usage_count && user_usage_cost > 0 && userDailyUsageId.approximate_cost >= user_usage_cost) {
-                throw new Error(`Limite diário de gastos do usuário foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
+                throw new OutOfQuotaError(`Limite diário de gastos do usuário foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
             }
         }
 
@@ -197,10 +198,10 @@ export class UserDao {
             .where({ usage_date, court_id, user_id: null }).first()
         if (courtDailyUsageId) {
             if (court_usage_count && court_usage_count > 0 && courtDailyUsageId.usage_count >= court_usage_count) {
-                throw new Error(`Limite diário de consultas do tribunal foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
+                throw new OutOfQuotaError(`Limite diário de consultas do tribunal foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
             }
             if (court_usage_cost && court_usage_cost > 0 && courtDailyUsageId.approximate_cost >= court_usage_cost) {
-                throw new Error(`Limite diário de gastos do tribunal foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
+                throw new OutOfQuotaError(`Limite diário de gastos do tribunal foi atingido, por favor, aguarde até amanhã para poder usar novamente.`)
             }
         }
     }

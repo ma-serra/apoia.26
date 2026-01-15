@@ -28,6 +28,7 @@ const ModelProviderArray = [
     { id: 7, name: 'AWS', apiKey: 'AWS_SECRET_ACCESS_KEY', accessKeyId: 'AWS_ACCESS_KEY_ID', region: 'AWS_REGION', apiKeyRegex: /^sk-[a-zA-Z0-9]{32}$/, status: StatusDeLancamento.PUBLICO },
     { id: 5, name: 'Groq', apiKey: 'GROQ_API_KEY', apiKeyRegex: /^gsk_[a-zA-Z0-9]{52}$/, status: StatusDeLancamento.EM_DESENVOLVIMENTO },
     { id: 6, name: 'DeepSeek', apiKey: 'DEEPSEEK_API_KEY', apiKeyRegex: /^sk-[a-zA-Z0-9]{32}$/, status: StatusDeLancamento.EM_DESENVOLVIMENTO },
+    { id: 8, name: 'LM Studio', apiKey: 'LM_STUDIO_API_KEY', resourceName: 'LM_STUDIO_URL', apiKeyRegex: /.*/, status: StatusDeLancamento.EM_DESENVOLVIMENTO },
 ]
 
 export type ModelProviderValueType = EnumOfObjectsValueType & { apiKey: string, resourceName?: string, region?: string, accessKeyId?: string, apiKeyRegex: RegExp, status: StatusDeLancamento }
@@ -59,10 +60,14 @@ type ModelArrayType = {
 }
 
 const ModelArray: ModelArrayType[] = [
+    { id: 15, name: 'gpt-5.2', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.175, inputTokenPPM: 1.75, outputTokenPPM: 14, status: StatusDeLancamento.PUBLICO },
+    { id: 15, name: 'gpt-5.2-chat-latest', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.175, inputTokenPPM: 1.75, outputTokenPPM: 14, status: StatusDeLancamento.PUBLICO },
+    { id: 15, name: 'gpt-5.1', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
+    { id: 15, name: 'gpt-5.1-chat-latest', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
     { id: 16, name: 'gpt-5-mini', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.025, inputTokenPPM: 0.25, outputTokenPPM: 2, status: StatusDeLancamento.PUBLICO },
     { id: 17, name: 'gpt-5-nano', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.005, inputTokenPPM: 0.05, outputTokenPPM: 0.4, status: StatusDeLancamento.PUBLICO },
-    { id: 15, name: 'gpt-5.1', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
     { id: 15, name: 'gpt-5', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
+    { id: 15, name: 'gpt-5-chat-latest', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
     { id: 16, name: 'gpt-4.1-mini', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.2, inputTokenPPM: 0.4, outputTokenPPM: 1.6, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 17, name: 'gpt-4.1-nano', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.05, inputTokenPPM: 0.1, outputTokenPPM: 0.4, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 15, name: 'gpt-4.1', provider: ModelProvider.OPENAI, cachedInputTokenPPM: 0.75, inputTokenPPM: 2, outputTokenPPM: 8, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF] },
@@ -77,6 +82,7 @@ const ModelArray: ModelArrayType[] = [
     { id: 14, name: 'claude-haiku-4-5-20251001', provider: ModelProvider.ANTHROPIC, cachedInputTokenPPM: 0.1, inputTokenPPM: 1, outputTokenPPM: 5, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 14, name: 'claude-3-5-haiku-20241022', provider: ModelProvider.ANTHROPIC, cachedInputTokenPPM: 0.08, inputTokenPPM: 0.8, outputTokenPPM: 4, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     // { id: 18, name: 'gemini-flash-latest', provider: ModelProvider.GOOGLE, cachedInputTokenPPM: 0.03, inputTokenPPM: 0.30, outputTokenPPM: 2.5, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF, FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, FileTypeEnum.AIFF, FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC] },
+    { id: 10, name: 'gemini-3-flash-preview', provider: ModelProvider.GOOGLE, cachedInputTokenPPM: 0.05, inputTokenPPM: 0.50, outputTokenPPM: 3, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF, FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, FileTypeEnum.AIFF, FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC] },
     { id: 18, name: 'gemini-2.5-flash', provider: ModelProvider.GOOGLE, cachedInputTokenPPM: 0.03, inputTokenPPM: 0.30, outputTokenPPM: 2.5, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF, FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, FileTypeEnum.AIFF, FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC] },
     // { id: 18, name: 'gemini-flash-lite-latest', provider: ModelProvider.GOOGLE, cachedInputTokenPPM: 0.01, inputTokenPPM: 0.10, outputTokenPPM: 0.40, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF, FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, FileTypeEnum.AIFF, FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC] },
     { id: 18, name: 'gemini-2.5-flash-lite', provider: ModelProvider.GOOGLE, cachedInputTokenPPM: 0.01, inputTokenPPM: 0.10, outputTokenPPM: 0.40, status: StatusDeLancamento.PUBLICO, clip: 1000, supportedFileTypes: [FileTypeEnum.PDF, FileTypeEnum.MP3, FileTypeEnum.MP4, FileTypeEnum.WAV, FileTypeEnum.AIFF, FileTypeEnum.AAC, FileTypeEnum.OGG, FileTypeEnum.FLAC] },
@@ -92,6 +98,14 @@ const ModelArray: ModelArrayType[] = [
     // { id: 20, name: 'azure-gpt-5-nano', provider: ModelProvider.AZURE, inputTokenPPM: 0.05, outputTokenPPM: 0.4, status: StatusDeLancamento.PUBLICO },
     // { id: 21, name: 'azure-gpt-5', provider: ModelProvider.AZURE, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
     // { id: 21, name: 'azure-gpt-5-chat', provider: ModelProvider.AZURE, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO },
+    { id: 21, name: 'azure-gpt-5.2', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.175, inputTokenPPM: 1.75, outputTokenPPM: 14, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 21, name: 'azure-gpt-5.2-chat', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.175, inputTokenPPM: 1.75, outputTokenPPM: 14, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 21, name: 'azure-gpt-5.1', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.13, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 21, name: 'azure-gpt-5.1-chat', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.13, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 19, name: 'azure-gpt-5-mini', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.025, inputTokenPPM: 0.25, outputTokenPPM: 2, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 20, name: 'azure-gpt-5-nano', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.005, inputTokenPPM: 0.05, outputTokenPPM: 0.4, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 21, name: 'azure-gpt-5', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.125, inputTokenPPM: 1.25, outputTokenPPM: 10, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 21, name: 'azure-gpt-5-chat', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.75, inputTokenPPM: 2, outputTokenPPM: 8, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 19, name: 'azure-gpt-4.1-mini', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.2, inputTokenPPM: 0.4, outputTokenPPM: 1.6, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 20, name: 'azure-gpt-4.1-nano', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.05, inputTokenPPM: 0.1, outputTokenPPM: 0.4, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 21, name: 'azure-gpt-4.1', provider: ModelProvider.AZURE, cachedInputTokenPPM: 0.75, inputTokenPPM: 2, outputTokenPPM: 8, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
@@ -100,6 +114,7 @@ const ModelArray: ModelArrayType[] = [
     // { id: 22, name: 'aws-anthropic.claude-3-haiku-20240307-v1:0', provider: ModelProvider.AWS, status: StatusDeLancamento.PUBLICO },
     { id: 22, name: 'aws-us.anthropic.claude-3-5-haiku-20241022-v1:0', provider: ModelProvider.AWS, cachedInputTokenPPM: 0.08, inputTokenPPM: 0.8, outputTokenPPM: 4, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
     { id: 22, name: 'aws-us.anthropic.claude-sonnet-4-20250514-v1:0', provider: ModelProvider.AWS, cachedInputTokenPPM: 0.3, inputTokenPPM: 3, outputTokenPPM: 15, status: StatusDeLancamento.PUBLICO, supportedFileTypes: [FileTypeEnum.PDF] },
+    { id: 23, name: 'lm-studio', provider: ModelProvider.LM_STUDIO, cachedInputTokenPPM: 0, inputTokenPPM: 0, outputTokenPPM: 0, status: StatusDeLancamento.EM_DESENVOLVIMENTO },
 ]
 
 export type ModelValueType = EnumOfObjectsValueType & { provider: ModelProviderValueType, cachedInputTokenPPM: number, inputTokenPPM: number, outputTokenPPM: number, status: StatusDeLancamento, clip?: number, supportedFileTypes?: FileTypeEnum[] }

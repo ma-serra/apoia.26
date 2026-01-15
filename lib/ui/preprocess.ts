@@ -44,6 +44,8 @@ export const filterText = (text) => {
     }
     let s = text
 
+    s = s.replace(/\u00a0/g, ' ')
+
     if (s.includes('<scratchpad>'))
         s = s.split('<scratchpad>')[1]
     if (s.includes('</scratchpad>'))

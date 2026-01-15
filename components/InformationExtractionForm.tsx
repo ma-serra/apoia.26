@@ -93,12 +93,15 @@ export const InformationExtractionForm: React.FC<PromptFormProps> = ({ promptMar
     // if (!variables || variables.length === 0) return null
 
     if (!Frm.get('information_extraction_editing')) {
+        let html = JSON.stringify(Frm.get(variableName), null, 2).replaceAll('\n', '<br/>').replaceAll(' ', '&nbsp;')
         let promptFormatPreprocessed = promptFormat
-        promptFormatPreprocessed = promptFormatPreprocessed.replace(/{{/g, '<ins class="diffins-highlight">{{')
-        promptFormatPreprocessed = promptFormatPreprocessed.replace(/}}/g, '}}</ins>')
-        promptFormatPreprocessed = promptFormatPreprocessed.replace(/{=/g, '{{')
-        promptFormatPreprocessed = promptFormatPreprocessed.replace(/=}/g, '}}')
-        const html = preprocess(JSON.stringify(Frm.get(variableName)), { format: promptFormatPreprocessed } as PromptDefinitionType, undefined, true).text
+        if (promptFormat) {
+            promptFormatPreprocessed = promptFormatPreprocessed.replace(/{{/g, '<ins class="diffins-highlight">{{')
+            promptFormatPreprocessed = promptFormatPreprocessed.replace(/}}/g, '}}</ins>')
+            promptFormatPreprocessed = promptFormatPreprocessed.replace(/{=/g, '{{')
+            promptFormatPreprocessed = promptFormatPreprocessed.replace(/=}/g, '}}')
+            html = preprocess(JSON.stringify(Frm.get(variableName)), { format: promptFormatPreprocessed } as PromptDefinitionType, undefined, true).text
+        }
         return <>
             <div className="alert alert-info ai-content mb-3" dangerouslySetInnerHTML={{ __html: html }} />
             <div className="row h-print mb-3">

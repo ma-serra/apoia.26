@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { trackAIStart, trackAIComplete, trackAIError } from '@/lib/utils/ga'
 import EvaluationModal from './ai-evaluation'
 import { evaluate } from '../lib/ai/generate'
@@ -19,6 +19,7 @@ import MessageStatus from './message-status'
 import MessageFooter from './message-footer'
 import { html2md } from '@/lib/utils/html2md'
 import { formatHtmlToEprocStandard } from '@/lib/utils/messaging-helper'
+import { highlightCitationsLongestMatch } from '@/lib/n-grams'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -285,6 +286,26 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     console.log('ai content options:', params.options)
 
+    // Memoizar o processamento custoso das mensagens do prompt
+    const processedText = useMemo(() => {
+        let resultText = preprocessed.text
+
+        // // For text edited visualization, highlight citations in the prompt messages
+        // if (complete && (!visualizationId || visualizationId === VisualizationEnum.TEXT_EDITED)) {
+        //     const promptMessages = (currentMessage?.metadata as any)?.messages
+        //     if (promptMessages) {
+        //         let a: string[] = []
+        //         for (const m of promptMessages) a.push(`${m.role === 'system' ? '---\\# SYSTEM PROMPT' : m.role === 'user' ? '---\\# PROMPT' : `---\\# ROLE: ${m.role}`}\n\n${typeof m.content === 'string' ? m.content : m.content && typeof m.content === 'object' ? JSON.stringify(m.content, null, 2) : String(m.content)}\n\n`)
+        //         let promptAsHtml = a.join('')
+        //         promptAsHtml = promptAsHtml.replace(/^\s+/gm, '')
+        //         promptAsHtml = preprocess(promptAsHtml, { kind: '' }, { textos: [] }, true).text
+        //         resultText = highlightCitationsLongestMatch(promptAsHtml, resultText)
+        //     }
+        // }
+
+        return resultText
+    }, [complete, visualizationId, currentMessage?.metadata, preprocessed.text])
+
     return <>
         <MessageStatus message={currentMessage} />
         {current || errormsg
@@ -306,7 +327,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                     )}
                     {errormsg
                         ? <ErrorMessage message={errormsg} />
-                        : <div dangerouslySetInnerHTML={{ __html: spinner(preprocessed.text, complete) }} />}
+                        : <div dangerouslySetInnerHTML={{ __html: spinner(processedText, complete) }} />}
                     <EvaluationModal show={show} onClose={handleClose} />
                 </div>
                 {complete && <MessageFooter message={currentMessage} />}

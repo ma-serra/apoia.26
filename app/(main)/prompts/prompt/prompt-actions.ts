@@ -1,11 +1,12 @@
 'use server'
 
-import { FormState, fromErrorToFormState, numericString } from '@/lib/ui/form-support'
+import { FormState, fromErrorToFormState } from '@/lib/ui/form-support'
 import { PromptDao } from '@/lib/db/dao'
 import test from 'node:test'
 import z, { ZodError } from 'zod'
 import { IAPromptToInsert } from '@/lib/db/mysql-types'
 import { Instance, Matter, Scope } from '@/lib/proc/process-types'
+import { numericString } from '@/lib/ui/form-util'
 
 // import { redirect } from 'next/navigation'
 // redirect(`/posts/${data.id}`)
@@ -20,7 +21,7 @@ const promptSchema = z.object({
     created_by: numericString(z.number()).nullable().optional(),
     content: z.object({
         author: z.string(),
-        
+
         scope: z.string().array().nullable().optional(),
         instance: z.string().array().nullable().optional(),
         matter: z.string().array().nullable().optional(),

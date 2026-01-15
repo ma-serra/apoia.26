@@ -1,9 +1,10 @@
 'use server'
 
-import { FormState, fromErrorToFormState, numericString } from '@/lib/ui/form-support'
+import { FormState, fromErrorToFormState } from '@/lib/ui/form-support'
 import { PromptDao, TestDao } from '@/lib/db/dao'
 import test from 'node:test'
 import z, { ZodError } from 'zod'
+import { numericString } from '@/lib/ui/form-util'
 
 // import { redirect } from 'next/navigation'
 // redirect(`/posts/${data.id}`)

@@ -1,6 +1,6 @@
 'use server'
 
-import { streamText, StreamTextResult, LanguageModel, streamObject, StreamObjectResult, DeepPartial, ModelMessage, generateText, ToolSet, stepCountIs } from 'ai'
+import { streamText, StreamTextResult, LanguageModel, streamObject, StreamObjectResult, DeepPartial, ModelMessage, generateText, ToolSet, stepCountIs, Output } from 'ai'
 import { IAGenerated, IAGeneration } from '../db/mysql-types'
 import { GenerationDao, SystemDao, DossierDao, UserDao } from '../db/dao'
 import { assertCourtId, assertCurrentUser, assertSystemCode, UserType } from '../user'
@@ -168,6 +168,8 @@ export async function streamContent(definition: PromptDefinitionType, data: Prom
             if (results) {
                 results.generationId = cached.id
                 results.model = cached.model || model
+                const { processedMessagesLog } = await processMessages(model, messages)
+                results.messages = processedMessagesLog
             }
             return { model, cached: cached.generation }
         }
@@ -187,6 +189,79 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     const court_id = await assertCourtId(user)
     const returnData: PromptReturnType = { model }
 
+    devLog('streaming text', kind) //, messages, modelRef)
+    if (apiKeyFromEnv) {
+        await UserDao.assertIAUserDailyUsageId(user_id, court_id)
+    }
+    // writeResponseToFile(kind, processedMessagesLog, 'antes de executar')
+    // if (model.startsWith('aws-')) {
+    //     const { text, usage } = await generateText({
+    //         model: modelRef as LanguageModel,
+    //         messages,
+    //         maxRetries: 0,
+    //         // temperature: 1.5,
+    //     })
+    //     writeUsage(usage, model, results?.user_id, results?.court_id)
+    //     if (cacheControl !== false) {
+    //         const generationId = await saveToCache(sha256, model, kind, text, attempt || null)
+    //         if (results) results.generationId = generationId
+    //     }
+    //     writeResponseToFile(kind, messages, text)
+    //     return text
+    // } else {
+    const { processedMessagesModel, processedMessagesLog } = await processMessages(model, messages)
+    if (results) results.messages = processedMessagesLog
+    const pResult = streamText({
+        model: modelRef as LanguageModel,
+        messages: processedMessagesModel,
+        maxRetries: 0,
+        onStepFinish: ({ text, usage }) => {
+            // if (isDev()) process.stdout.write(text)
+        },
+        onError: (error) => {
+            Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
+            console.error('Error during streaming:', error, (error as any)?.cause)
+        },
+        onFinish: async ({ text, usage, providerMetadata }) => {
+            returnData.usage = { ...usage, dollarValue: modelCalcUsage(model, usage).approximate_cost }
+            if (apiKeyFromEnv)
+                writeUsage(usage, model, user_id, court_id)
+            if (cacheControl !== false) {
+                const generationId = await saveLog(user, additionalInformation, model, usage, sha256, kind, text, attempt, processedMessagesLog)
+                if (results) results.generationId = generationId
+            }
+            writeResponseToFile(kind, processedMessagesLog, text)
+            if (providerMetadata) {
+                devLog('Provider metadata:', providerMetadata)
+            }
+        },
+        tools: structuredOutputs ? undefined : tools, // Gemini models don't support tools when structured outputs are used
+        stopWhen: stepCountIs(10),
+        providerOptions: {
+            google: {
+                thinkingConfig: {
+                    // thinkingBudget: 2024, // Set a budget (0 to disable, up to 24576 for Flash)
+                    includeThoughts: true, // Crucial to include the thinking process in the response
+                },
+            } satisfies GoogleGenerativeAIProviderOptions,
+            openai: {
+                reasoningSummary: 'auto',
+            } satisfies OpenAIResponsesProviderOptions,
+        },
+        output: structuredOutputs
+            ? Output.object({ schema: structuredOutputs.schema })
+            : Output.text(),
+        //    if (!\structuredOutputs) { // text streaming branch
+        //            schemaName: `schema${kind}`,
+        //            schemaDescription: `A schema for the prompt ${kind}`,
+        //            schema: structuredOutputs.schema,
+    })
+    returnData.textStream = pResult as any
+    return returnData
+    // }
+}
+
+async function processMessages(model: string, messages: ModelMessage[]): Promise<{ processedMessagesModel: ModelMessage[], processedMessagesLog: ModelMessage[] }> {
     // --- PDF processing & logging sanitization ---
     const modelSupportsPdf = () => {
         const details = Object.values(Model).find(m => m.name === model)
@@ -266,100 +341,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
         processedMessagesModel.push({ ...(m as any), content: newPartsModel })
         processedMessagesLog.push({ ...(m as any), content: newPartsLog })
     }
-
-    if (!structuredOutputs) { // text streaming branch
-        devLog('streaming text', kind) //, messages, modelRef)
-        if (apiKeyFromEnv) {
-            await UserDao.assertIAUserDailyUsageId(user_id, court_id)
-        }
-        // writeResponseToFile(kind, processedMessagesLog, 'antes de executar')
-        // if (model.startsWith('aws-')) {
-        //     const { text, usage } = await generateText({
-        //         model: modelRef as LanguageModel,
-        //         messages,
-        //         maxRetries: 0,
-        //         // temperature: 1.5,
-        //     })
-        //     writeUsage(usage, model, results?.user_id, results?.court_id)
-        //     if (cacheControl !== false) {
-        //         const generationId = await saveToCache(sha256, model, kind, text, attempt || null)
-        //         if (results) results.generationId = generationId
-        //     }
-        //     writeResponseToFile(kind, messages, text)
-        //     return text
-        // } else {
-        const pResult = streamText({
-            model: modelRef as LanguageModel,
-            messages: processedMessagesModel,
-            maxRetries: 0,
-            onStepFinish: ({ text, usage }) => {
-                // if (isDev()) process.stdout.write(text)
-            },
-            onError: (error) => {
-                Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
-                console.error('Error during streaming:', error, (error as any)?.cause)
-            },
-            onFinish: async ({ text, usage, providerMetadata }) => {
-                returnData.usage = { ...usage, dollarValue: modelCalcUsage(model, usage).approximate_cost }
-                if (apiKeyFromEnv)
-                    writeUsage(usage, model, user_id, court_id)
-                if (cacheControl !== false) {
-                    const generationId = await saveLog(user, additionalInformation, model, usage, sha256, kind, text, attempt, processedMessagesLog)
-                    if (results) results.generationId = generationId
-                }
-                writeResponseToFile(kind, processedMessagesLog, text)
-                if (providerMetadata) {
-                    devLog('Provider metadata:', providerMetadata)
-                }
-            },
-            tools,
-            stopWhen: stepCountIs(10),
-            providerOptions: {
-                google: {
-                    thinkingConfig: {
-                        // thinkingBudget: 2024, // Set a budget (0 to disable, up to 24576 for Flash)
-                        includeThoughts: true, // Crucial to include the thinking process in the response
-                    },
-                } satisfies GoogleGenerativeAIProviderOptions,
-                openai: {
-                    reasoningSummary: 'auto',
-                } satisfies OpenAIResponsesProviderOptions,
-            },
-        })
-        returnData.textStream = pResult as any
-        return returnData
-        // }
-    } else {
-        devLog('streaming object', kind) //, messages, modelRef, structuredOutputs.schema)
-        if (apiKeyFromEnv) {
-            await UserDao.assertIAUserDailyUsageId(user_id, court_id)
-        }
-        const pResult = streamObject({
-            model: modelRef as LanguageModel,
-            messages: processedMessagesModel,
-            maxRetries: 1,
-            onError: (error) => {
-                Sentry.captureException(error, { extra: { context: 'streamingText', model, kind, user_id, court_id } })
-                console.error('Error during streaming:', error)
-            },
-            onFinish: async ({ object, usage }) => {
-                returnData.usage = { ...usage, dollarValue: modelCalcUsage(model, usage).approximate_cost }
-                if (apiKeyFromEnv)
-                    writeUsage(usage, model, user_id, court_id)
-                if (cacheControl !== false) {
-                    const generationId = await saveLog(user, additionalInformation, model, usage, sha256, kind, JSON.stringify(object), attempt, processedMessagesLog)
-                    if (results) results.generationId = generationId
-                }
-                writeResponseToFile(kind, processedMessagesLog, JSON.stringify(object))
-            },
-            schemaName: `schema${kind}`,
-            schemaDescription: `A schema for the prompt ${kind}`,
-            schema: structuredOutputs.schema,
-        })
-        // @ts-ignore-next-line
-        returnData.objectStream = pResult
-        return returnData
-    }
+    return { processedMessagesModel, processedMessagesLog }
 }
 
 export async function evaluate(definition: PromptDefinitionType, data: PromptDataType, evaluation_id: number, evaluation_descr: string | null):

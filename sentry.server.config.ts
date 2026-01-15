@@ -15,4 +15,19 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  beforeSend(event, hint) {
+    const error = hint.originalException;
+    
+    // Verifica recursivamente se o erro ou qualquer causa tem skipSentry = true
+    let currentError: any = error;
+    while (currentError) {
+      if (currentError.skipSentry === true) {
+        return null; // Não envia para o Sentry
+      }
+      currentError = currentError.cause || currentError.causedBy;
+    }
+    
+    return event;
+  },
 });

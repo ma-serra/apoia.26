@@ -358,6 +358,60 @@
         }
       }
     },
+    "/api/v1/pangea/search": {
+      "post": {
+        "description": "Busca teses, súmulas, OJs, temas de repercussão geral e repetitivos no Pangea",
+        "tags": [
+          "pangea"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Termo de busca (mínimo 3 caracteres)"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "Número da página (1-10)",
+                    "default": 1
+                  },
+                  "orgaos": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Órgãos a filtrar (ex. STF, STJ, TST)"
+                  },
+                  "especies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Espécies a filtrar (ex. RG, RESP, SUM)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultados da busca"
+          },
+          "400": {
+            "description": "Parâmetros inválidos"
+          }
+        }
+      }
+    },
     "/api/v1/process/{number}/analysis": {
       "get": {
         "description": "Analisa um processo judicial, produzindo resumo das principais peças e gerando o conteúdo dos produtos pertinentes",
@@ -794,7 +848,7 @@
     "/api/v1/stats/global": {
       "get": {
         "summary": "Retorna estatísticas globais da comunidade",
-        "description": "Retorna KPIs globais, ranking de tribunais, top contribuidores e prompts em alta",
+        "description": "Retorna KPIs globais, ranking de tribunais, top contribuidores e prompts em alta (cache de 24h)",
         "tags": [
           "Stats"
         ],
@@ -814,7 +868,7 @@
     "/api/v1/stats/user/{userId}": {
       "get": {
         "summary": "Retorna estatísticas do usuário",
-        "description": "Retorna estatísticas pessoais, badges e feedback da comunidade",
+        "description": "Retorna estatísticas pessoais, badges e feedback da comunidade (cache de 24h)",
         "tags": [
           "Stats"
         ],

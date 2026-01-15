@@ -32,11 +32,18 @@ export default function Simplification() {
             <PromptConfig kind="refinamento" setPromptConfig={promptConfigChanged} />
             <div className="alert alert-secondary mb-1 p-0">
                 <Suspense fallback={null}>
-                    <EditorComp markdown={markdown} onChange={textChanged} />
+                    <EditorComp
+                        markdown={markdown}
+                        onChange={textChanged}
+                        showPdfUpload={true}
+                    />
                 </Suspense>
             </div>
             {hidden && <>
-                <div className="text-body-tertiary">Cole o texto a ser convertido para Linguagem Simples (Gralha) na caixa acima e clique em &quot;Simplificar&quot;.</div>
+                <div className="text-body-tertiary">
+                    Cole o texto, selecione ou arraste um PDF a ser convertido para Linguagem Simples (Gralha).
+                    {' '}Clique em &quot;Simplificar&quot; para continuar.
+                </div>
                 <Button disabled={!markdown} className="mt-3" onClick={() => setHidden(false)}>Simplificar</Button>
             </>}
             {!hidden && markdown && <>

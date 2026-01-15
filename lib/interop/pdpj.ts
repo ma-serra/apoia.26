@@ -2,13 +2,14 @@ import { fixSigiloDePecas, Interop, ObterPecaType } from './interop'
 import { DadosDoProcessoType, Instance, PecaType } from '../proc/process-types'
 import { parseYYYYMMDDHHMMSS, slugify } from '../utils/utils'
 import { assertNivelDeSigilo } from '../proc/sigilo'
-import { getCurrentUser } from '../user'
-import { envString } from '../utils/env'
+import { assertCourtId, getCurrentUser } from '../user'
+import { envString, envStringPrefixed } from '../utils/env'
 import { tua } from '../proc/tua'
 import { InteropProcessoType } from './interop-types'
 import { mapPdpjToSimplified, PdpjInput } from './pdpj-mapping'
 import { P, T } from '../proc/combinacoes'
 import { serviceMonitor } from './pdpjServiceMonitor'
+import { CannotAccessPieceTextError, CannotAccessProcessMetadataError, InvalidProcessNumberError, SilentError } from '../utils/api-error'
 
 const REVALIDATE = undefined //600 // 10 minutes
 
@@ -98,9 +99,12 @@ export const nivelDeSigiloFromNivel = (nivel: string): string => {
 
 export class InteropPDPJ implements Interop {
     private accessToken: string
+    private datalakeApiUrl: string
 
     async init() {
         const user = await getCurrentUser()
+        const seqTribunalPai = user ? '' + (await assertCourtId(user)) : undefined
+        this.datalakeApiUrl = envStringPrefixed('DATALAKE_API_URL', seqTribunalPai)
 
         // Utiliza um token fixo, previamente configurado
         if (envString('DATALAKE_TOKEN')) {
@@ -150,9 +154,9 @@ export class InteropPDPJ implements Interop {
 
     private consultarProcessoPdpj = async (numeroDoProcesso: string) => {
         const num = (numeroDoProcesso || '').replace(/\D/g, '')
-        if (num.length !== 20) throw new Error(`Número do processo inválido: ${numeroDoProcesso}`)
+        if (num.length !== 20) throw new InvalidProcessNumberError(`Número do processo inválido: ${numeroDoProcesso}`)
         const response = await fetch(
-            envString('DATALAKE_API_URL') + `/processos/${numeroDoProcesso}`,
+            `${this.datalakeApiUrl}/processos/${numeroDoProcesso}`,
             {
                 method: 'GET',
                 headers: {
@@ -160,7 +164,7 @@ export class InteropPDPJ implements Interop {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'User-Agent': 'curl'
                 },
-                next: { revalidate: REVALIDATE } 
+                next: { revalidate: REVALIDATE }
             }
         )
 
@@ -172,7 +176,7 @@ export class InteropPDPJ implements Interop {
             data = JSON.parse(texto)
         if (response.status !== 200) {
             serviceMonitor.recordFailure(numeroDoProcesso)
-            throw new Error(`Não foi possível acessar o processo ${numeroDoProcesso} no DataLake/Codex da PDPJ (${data ? data?.message || JSON.stringify(data) : response.statusText})`)
+            throw new CannotAccessProcessMetadataError(`Não foi possível acessar o processo ${numeroDoProcesso} no DataLake/Codex da PDPJ (${data ? data?.message || JSON.stringify(data) : response.statusText})`)
         }
         return data
     }
@@ -303,7 +307,7 @@ export class InteropPDPJ implements Interop {
     public obterPeca = async (numeroDoProcesso, idDaPeca, binary?: boolean): Promise<ObterPecaType> => {
         try {
             const response = await fetch(
-                envString('DATALAKE_API_URL') + `/processos/${numeroDoProcesso}/documentos/${idDaPeca}/${binary ? 'binario' : 'texto'}`,
+                `${this.datalakeApiUrl}/processos/${numeroDoProcesso}/documentos/${idDaPeca}/${binary ? 'binario' : 'texto'}`,
                 {
                     method: 'GET',
                     headers: {
@@ -325,7 +329,7 @@ export class InteropPDPJ implements Interop {
                         throw new Error(data.message)
                     }
                 } catch (e) {
-                    throw new Error(`Não foi possível obter o texto da peça no DataLake/Codex da PDPJ. (${e} - ${numeroDoProcesso}/${idDaPeca})`)
+                    throw new CannotAccessPieceTextError(`Não foi possível obter o texto da peça no DataLake/Codex da PDPJ. (${e} - ${numeroDoProcesso}/${idDaPeca})`)
                 }
             }
             serviceMonitor.recordSuccess()

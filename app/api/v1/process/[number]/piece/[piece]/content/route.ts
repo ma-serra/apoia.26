@@ -6,7 +6,7 @@ import { getCurrentUser, assertApiUser } from "@/lib/user"
 import { obterDadosDoProcesso } from "@/lib/proc/process"
 import { PecaConteudoType } from "@/lib/proc/process-types"
 import * as Sentry from '@sentry/nextjs'
-import { UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
+import { CannotAccessPieceTextError, withErrorHandler } from '@/lib/utils/api-error'
 
 export const maxDuration = 60
 // export const runtime = 'edge'
@@ -58,7 +58,7 @@ async function GET_HANDLER(
     throw new Error(dadosDoProcesso.errorMsg)
   if (!dadosDoProcesso.pecas[0].conteudo && dadosDoProcesso.pecas[0].pConteudo) {
     const conteudo: PecaConteudoType = await dadosDoProcesso.pecas[0].pConteudo
-    if (conteudo.errorMsg) throw new Error(conteudo.errorMsg)
+    if (conteudo.errorMsg) throw new CannotAccessPieceTextError(conteudo.errorMsg)
     dadosDoProcesso.pecas[0].conteudo = conteudo.conteudo
   }
   return Response.json({ status: 'OK', content: dadosDoProcesso.pecas[0].conteudo })

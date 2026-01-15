@@ -29,7 +29,11 @@ export enum T {
     AGRAVO_INTERNO = 'AGRAVO INTERNO',
     RECURSO = 'RECURSO',
     RECURSO_INOMINADO = 'RECURSO INOMINADO',
+    RECURSO_EXTRAORDINARIO = 'RECURSO EXTRAORDINÁRIO',
+    RECURSO_ESPECIAL = 'RECURSO ESPECIAL',
     CONTRARRAZOES = 'CONTRARRAZÕES',
+    CONTRARRAZOES_AO_RECURSO_EXTRAORDINARIO = 'CONTRARRAZÕES AO RECURSO EXTRAORDINÁRIO',
+    CONTRARRAZOES_AO_RECURSO_ESPECIAL = 'CONTRARRAZÕES AO RECURSO ESPECIAL',
     RELATORIO = 'RELATÓRIO',
     EXTRATO_DE_ATA = 'EXTRATO DE ATA',
     VOTO = 'VOTO',
@@ -55,6 +59,9 @@ export enum P {
     PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS = 'Pedidos, Fundamentações e Dispositivos',
     SENTENCA = 'Sentença',
     VOTO = 'Voto',
+    JUIZO_VIABILIDADE_RECURSO = 'Juízo de Viabilidade de Recurso',
+    DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO = 'Decisão de Viabilidade de Recurso Extraordinário',
+    DECISAO_VIABILIDADE_RECURSO_ESPECIAL = 'Decisão de Viabilidade de Recurso Especial',
     INDICE = 'Índice',
     LITIGANCIA_PREDATORIA = 'Litigância Predatória',
     CHAT = 'Chat',
@@ -96,6 +103,9 @@ export const ProdutosValidos = {
     [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS]: { titulo: P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, prompt: 'pedidos-fundamentacoes-e-dispositivos', plugins: [] },
     [P.SENTENCA]: { titulo: P.SENTENCA, prompt: 'sentenca', plugins: [] },
     [P.VOTO]: { titulo: P.VOTO, prompt: 'voto', plugins: [] },
+    [P.JUIZO_VIABILIDADE_RECURSO]: { titulo: P.JUIZO_VIABILIDADE_RECURSO, prompt: 'pedidos-viabilidade-recurso', plugins: [] },
+    [P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO]: { titulo: P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO, prompt: 'decisao-viabilidade-recurso-extraordinario', plugins: [] },
+    [P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL]: { titulo: P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL, prompt: 'decisao-viabilidade-recurso-especial', plugins: [] },
     [P.INDICE]: { titulo: P.INDICE, prompt: 'indice', plugins: [] },
     [P.LITIGANCIA_PREDATORIA]: { titulo: P.LITIGANCIA_PREDATORIA, prompt: 'litigancia-predatoria', plugins: [] },
     [P.CHAT]: { titulo: P.CHAT, prompt: 'chat', plugins: [] },
@@ -227,6 +237,43 @@ const pecasRelevantesDaFaseDeConhecimentoPara2aInstancia = [
 const pecasRelevantes2aInstancia = [
     ...pecasRelevantes2aInstanciaRecursos,
     ...pecasRelevantes2aInstanciaContrarrazoes
+]
+
+const pecasRelevantesViabilidadeDeRecursoExtraordinario = [
+    T.RECURSO_EXTRAORDINARIO,
+    T.CONTRARRAZOES_AO_RECURSO_EXTRAORDINARIO,
+]
+
+export const padraoViabilidadeDeRecursoExtraordinario = [
+    ANY(),
+    ANY({
+        capture: [T.RELATORIO, T.VOTO], greedy: true, except: pecasQueFinalizamFases
+    }),
+    PHASE('Viabilidade de Recurso Extraordinário'),
+    EXACT(T.ACORDAO),
+    ANY({
+        greedy: false, except: pecasQueFinalizamFases
+    }),
+    EXACT(T.RECURSO_EXTRAORDINARIO),
+    ANY({
+        capture: [T.CONTRARRAZOES_AO_RECURSO_EXTRAORDINARIO], greedy: true, except: pecasQueFinalizamFases
+    }),
+]
+
+export const padraoViabilidadeDeRecursoEspecial = [
+    ANY(),
+    ANY({
+        capture: [T.RELATORIO, T.VOTO], greedy: true, except: pecasQueFinalizamFases
+    }),
+    PHASE('Viabilidade de Recurso Especial'),
+    EXACT(T.ACORDAO),
+    ANY({
+        greedy: false, except: pecasQueFinalizamFases
+    }),
+    EXACT(T.RECURSO_ESPECIAL),
+    ANY({
+        capture: [T.CONTRARRAZOES_AO_RECURSO_ESPECIAL], greedy: true, except: pecasQueFinalizamFases
+    }),
 ]
 
 export const padraoAgravoAberta = [
@@ -425,6 +472,20 @@ export const TipoDeSinteseMap: Record<string, TipoDeSinteseType> = {
         padroes: [...padroesBasicosSegundaInstancia, padraoApelacaoForcado],
         produtos: [P.PEDIDOS_FUNDAMENTACOES_E_DISPOSITIVOS, P.VOTO, P.CHAT],
         instance: [Instance.SEGUNDO_GRAU.name]
+    },
+    DECISAO_DE_VIABILIDADE_DE_RE: {
+        status: StatusDeLancamento.EM_DESENVOLVIMENTO,
+        sort: 3,
+        nome: 'Minuta de Decisão de Viabilidade de Recurso Extraordinário',
+        padroes: [padraoViabilidadeDeRecursoExtraordinario],
+        produtos: [P.JUIZO_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO, P.CHAT]
+    },
+    DECISAO_DE_VIABILIDADE_DE_RESP: {
+        status: StatusDeLancamento.EM_DESENVOLVIMENTO,
+        sort: 3,
+        nome: 'Minuta de Decisão de Viabilidade de Recurso Especial',
+        padroes: [padraoViabilidadeDeRecursoEspecial],
+        produtos: [P.JUIZO_VIABILIDADE_RECURSO, P.DECISAO_VIABILIDADE_RECURSO_ESPECIAL, P.CHAT]
     },
     RESUMOS: {
         status: StatusDeLancamento.PUBLICO,

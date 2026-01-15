@@ -47,6 +47,48 @@ export class ForbiddenError extends ApiError {
     }
 }
 
+/**
+ * Error que não será enviado para o Sentry.
+ * Use para erros esperados/controlados que não requerem alertas.
+ */
+export class SilentError extends ApiError {
+    public readonly skipSentry = true;
+    
+    constructor(message: string, status: number) {
+        super(message, status);
+    }
+}
+
+export class CannotAccessProcessMetadataError extends SilentError {
+    constructor(message: string = 'Cannot access process metadata') {
+        super(message, 500);
+    }
+}
+
+export class CannotAccessPieceTextError extends SilentError {
+    constructor(message: string = 'Cannot access piece text') {
+        super(message, 500);
+    }
+}
+
+export class InvalidProcessNumberError extends SilentError {
+    constructor(message: string = 'Invalid process number') {
+        super(message, 400);
+    }
+}
+
+export class InvalidPieceContentTypeError extends SilentError {
+    constructor(message: string = 'Invalid piece content type') {
+        super(message, 400);
+    }
+}
+
+export class OutOfQuotaError extends SilentError {
+    constructor(message: string = 'Out of quota') {
+        super(message, 429);
+    }
+}
+
 // A type for API handlers to ensure consistency.
 // Note: 'props' is 'any' to accommodate different route parameter structures.
 type ApiHandler = (req: NextRequest, props: any) => Promise<NextResponse>;
