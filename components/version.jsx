@@ -1,6 +1,5 @@
-import getConfig from 'next/config';
-const { publicRuntimeConfig } = getConfig();
-const version = publicRuntimeConfig?.version
+// Runtime config was removed in Next.js 16, using environment variable instead
+const version = process.env.NEXT_PUBLIC_VERSION || '0.1.0'
 
 export default function Version() {
     return (<>
