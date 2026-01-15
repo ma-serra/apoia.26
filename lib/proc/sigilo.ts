@@ -16,10 +16,8 @@ export const nivelDeSigiloPermitido = (nivel: string, descrDaPeca?) => {
 }
 
 export const assertNivelDeSigilo = (nivel, descrDaPeca?) => {
-    const nivelMax = parseInt(envString('CONFIDENTIALITY_LEVEL_MAX') as string || '0')
-    const n = parseInt(nivel)
-    if (n > nivelMax)
-        throw new Error(`Nível de sigilo '${n}'${descrDaPeca ? ' da peça ' + descrDaPeca : ''} maior que o máximo permitido '${nivelMax}'.`)
+    if (!nivelDeSigiloPermitido(nivel, descrDaPeca))
+        throw new Error(`Nível de sigilo '${nivel}'${descrDaPeca ? ' da peça ' + descrDaPeca : ''} maior que o máximo permitido.`)
 }
 
 export const assertAnonimizacaoAutomatica = (nivel: string, descr?) => {
