@@ -255,7 +255,35 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     const color = getColor(current, errormsg)
 
-    const preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
+    let preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
+
+    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\)/gm, (match, eventNumber) => {
+        const eventNum = parseInt(eventNumber);
+        const foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
+        
+        if (foundTexto) {
+            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}</a>`;
+        }
+        
+        return match;
+    })
+
+    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\se\s(\d+)\)/gm, (match, eventNumber) => {
+        const eventNum = parseInt(eventNumber);
+        const foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
+        
+        if (foundTexto) {
+            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}</a>`;
+        }
+        
+        return match;
+    })
+
+    console.log(preprocessed)
+
+    console.log('ai content data:', params.data)
+
+    console.log('ai content options:', params.options)
 
     return <>
         <MessageStatus message={currentMessage} />
