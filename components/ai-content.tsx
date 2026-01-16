@@ -258,39 +258,73 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     let preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
 
-    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)/gm, (match, eventNumber) => {
+    preprocessed.text = preprocessed.text.replace(/evento\s(\d+)(?:,\s*([a-z]+\d+))?/gmi, (match, eventNumber, label) => {
         const eventNum = parseInt(eventNumber);
-        const foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
+        let foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
+        
+        // Se um label foi especificado, procurar pelo texto que corresponda ao evento E ao label
+        if (label && foundTexto) {
+            const textoWithLabel = params.data.textos?.find((texto) => 
+                texto.event === String(eventNum) && 
+                texto.label?.toLowerCase().includes(label.toLowerCase())
+            );
+            if (textoWithLabel) {
+                foundTexto = textoWithLabel;
+            }
+        }
         
         if (foundTexto) {
-            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}, ${foundTexto.label}</a>`;
+            // Se não houver label no texto, usar o label de foundTexto
+            const displayText = label ? match : `evento ${eventNumber}, ${foundTexto.label}`;
+            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${displayText}</a>`;
         }
         
         return match;
     })
 
-    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\se\s(\d+)\)/gm, (match, eventNumber1, eventNumber2) => {
-        const eventNum1 = parseInt(eventNumber1);
-        const eventNum2 = parseInt(eventNumber2);
-        const foundTexto1 = params.data.textos?.find((texto) => texto.event === String(eventNum1));
-        const foundTexto2 = params.data.textos?.find((texto) => texto.event === String(eventNum2));
+    // preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)(?:,\s*([a-z]+\d+))?\se\s(\d+)(?:,\s*([a-z]+\d+))?\)/gmi, (match, eventNumber1, label1, eventNumber2, label2) => {
+    //     const eventNum1 = parseInt(eventNumber1);
+    //     const eventNum2 = parseInt(eventNumber2);
         
-        const link1 = foundTexto1 
-            ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto1.id}/binary" target="_blank" title="${foundTexto1.label}">${eventNumber1}, ${foundTexto1.label}</a>`
-            : eventNumber1;
+    //     let foundTexto1 = params.data.textos?.find((texto) => texto.event === String(eventNum1));
+    //     let foundTexto2 = params.data.textos?.find((texto) => texto.event === String(eventNum2));
+        
+    //     // Se um label foi especificado para o primeiro evento
+    //     if (label1 && foundTexto1) {
+    //         const textoWithLabel = params.data.textos?.find((texto) => 
+    //             texto.event === String(eventNum1) && 
+    //             texto.label?.toLowerCase().includes(label1.toLowerCase())
+    //         );
+    //         if (textoWithLabel) {
+    //             foundTexto1 = textoWithLabel;
+    //         }
+    //     }
+        
+    //     // Se um label foi especificado para o segundo evento
+    //     if (label2 && foundTexto2) {
+    //         const textoWithLabel = params.data.textos?.find((texto) => 
+    //             texto.event === String(eventNum2) && 
+    //             texto.label?.toLowerCase().includes(label2.toLowerCase())
+    //         );
+    //         if (textoWithLabel) {
+    //             foundTexto2 = textoWithLabel;
+    //         }
+    //     }
+        
+    //     const displayText1 = label1 ? `${eventNumber1}, ${label1}` : eventNumber1;
+    //     const displayText2 = label2 ? `${eventNumber2}, ${label2}` : eventNumber2;
+        
+    //     const link1 = foundTexto1 
+    //         ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto1.id}/binary" target="_blank" title="${foundTexto1.label}">${eventNumber1}, ${foundTexto1.label}</a>`
+    //         : eventNumber1;
             
-        const link2 = foundTexto2
-            ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto2.id}/binary" target="_blank" title="${foundTexto2.label}">${eventNumber2}, ${foundTexto2.label}</a>`
-            : eventNumber2;
+    //     const link2 = foundTexto2
+    //         ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto2.id}/binary" target="_blank" title="${foundTexto2.label}">${eventNumber2}, ${foundTexto2.label}</a>`
+    //         : eventNumber2;
         
-        return `(evento ${link1} e ${link2})`;
-    })
+    //     return `(evento ${link1} e ${link2})`;
+    // })
 
-    console.log(preprocessed)
-
-    console.log('ai content data:', params.data)
-
-    console.log('ai content options:', params.options)
 
     // Memoizar o processamento custoso das mensagens do prompt
     const processedText = useMemo(() => {
