@@ -186,7 +186,7 @@ export async function generateAndStreamContent(model: string, structuredOutputs:
     const pUser = assertCurrentUser()
     const user = await pUser
     const user_id = await UserDao.assertIAUserId(user.preferredUsername || user.name)
-    const court_id = await assertCourtId(user)
+    const court_id = assertCourtId(user)
     const returnData: PromptReturnType = { model }
 
     devLog('streaming text', kind) //, messages, modelRef)

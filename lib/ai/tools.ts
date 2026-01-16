@@ -179,7 +179,7 @@ export const getTools = async (pUser: Promise<UserType>) => {
     try {
         // Check if the user is allowed to access the precedent tool, must be TRF2 and have a specific CPF
         const user = await pUser
-        const courtId = await assertCourtId(user)
+        const courtId = assertCourtId(user)
         if (courtId === 999998 || courtId === 999999 || courtId === 4) {
             if (isAllowedUser(user.preferredUsername, courtId)) {
                 (toools as any).getPrecedent = getPrecedentTool(pUser)

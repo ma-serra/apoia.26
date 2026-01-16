@@ -33,6 +33,7 @@ export interface UsePromptStateResult {
     sourcePayload: SourcePayloadType | null
     setSourcePayload: (payload: SourcePayloadType | null) => void
     replacePiecesParam: (numbersOrNull: number[] | null) => void
+    maxConfidentialityLevel: number
 }
 
 export function usePromptState(
@@ -46,6 +47,7 @@ export function usePromptState(
     setDadosDoProcesso: (dados: any | null) => void,
     setIdxProcesso: (idx: number) => void,
     setTramFromUrl: (tram: number | null) => void,
+    maxConfidentialityLevel: number,
     sidekick?: boolean
 ): UsePromptStateResult {
     const currentSearchParams = useSearchParams()
@@ -296,5 +298,6 @@ export function usePromptState(
         sourcePayload,
         setSourcePayload,
         replacePiecesParam,
+        maxConfidentialityLevel
     }
 }

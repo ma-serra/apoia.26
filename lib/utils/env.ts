@@ -1,4 +1,6 @@
-import Cryptr from "cryptr";
+import 'server-only'
+
+import Cryptr from "cryptr"
 
 enum EnvPublicEnum {
     NEXT_PUBLIC_BASE_URL,

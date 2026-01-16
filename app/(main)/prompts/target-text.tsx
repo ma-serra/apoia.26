@@ -12,8 +12,8 @@ import Print from '@/components/slots/print'
 import { getInternalPrompt, promptExecuteBuilder } from '@/lib/ai/prompt'
 import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { infoDeProduto } from '@/lib/proc/info-de-produto'
-import { SinkFromURLType, SourcePayloadType } from '@/lib/utils/messaging'
 import { sendApproveMessageToParent } from '@/lib/utils/messaging-helper'
+import { usePromptContext } from './context/PromptContext'
 
 const EditorComp = dynamic(() => import('@/components/EditorComponent'), { ssr: false })
 
@@ -35,11 +35,14 @@ const buildDefinition = (prompt: IAPrompt): PromptDefinitionType => {
     }
 }
 
-export default function TargetText({ prompt, source, sinkFromURL, sinkButtonText, visualization, apiKeyProvided, sourcePayload }: { prompt: IAPrompt, source?: string, sinkFromURL?: SinkFromURLType, sinkButtonText?: string | null, visualization?: VisualizationEnum, apiKeyProvided: boolean, sourcePayload?: SourcePayloadType | null }) {
+export default function TargetText({ visualization, apiKeyProvided }: { visualization?: VisualizationEnum, apiKeyProvided: boolean }) {
+    const { prompt, source, sinkFromURL, sinkButtonText, sourcePayload } = usePromptContext()
     const [markdown, setMarkdown] = useState(source || '')
     const [hidden, setHidden] = useState(!source)
     const [promptConfig, setPromptConfig] = useState({} as PromptConfigType)
     const [content, setContent] = useState<ContentType>()
+
+    if (!prompt) return null
 
     const textChanged = (text) => {
         setMarkdown(text)

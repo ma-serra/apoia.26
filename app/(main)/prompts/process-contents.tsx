@@ -1,7 +1,7 @@
 'use client'
 
 import { IALibrary, IALibraryInclusion, IAPrompt } from "@/lib/db/mysql-types";
-import { DadosDoProcessoType, PecaType, TEXTO_PECA_COM_ERRO } from "@/lib/proc/process-types";
+import { PecaType, TEXTO_PECA_COM_ERRO } from "@/lib/proc/process-types";
 import { ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PieceStrategy, selecionarPecasPorPadraoComFase, T, TipoDeSinteseMap } from "@/lib/proc/combinacoes";
@@ -15,26 +15,36 @@ import ErrorMsg from "./error-msg";
 import { ListaDeProdutos } from "@/components/slots/lista-produtos-client";
 import { PromptParaCopiar } from "./prompt-to-copy";
 import { buildFooterFromPieces } from "@/lib/utils/footer";
-import { nivelDeSigiloPermitido } from "@/lib/proc/sigilo";
 import { formatDateTime } from "@/lib/utils/date";
 import { buildRequests } from "@/lib/ai/build-requests";
-import { SinkFromURLType, SourcePayloadType } from "@/lib/utils/messaging";
+import { usePromptContext } from "./context/PromptContext";
 
-export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent, setPieceContent, apiKeyProvided, model, allLibraryDocuments, children, sidekick, promptButtons, sinkFromURL, sinkButtonText, sourcePayload }: {
-    prompt: IAPrompt,
-    dadosDoProcesso: DadosDoProcessoType,
-    pieceContent: any,
-    setPieceContent: (pieceContent: any) => void,
+// Helper function to check confidentiality level on client side
+const isNivelDeSigiloPermitidoClient = (maxConfidentialityLevel: number, nivel: string): boolean => {
+    const n = parseInt(nivel)
+    return n <= maxConfidentialityLevel
+}
+
+export default function ProcessContents({ apiKeyProvided, model, children, sidekick, promptButtons }: {
     apiKeyProvided: boolean,
     model?: string,
-    allLibraryDocuments?: IALibrary[],
     children?: ReactNode,
     sidekick?: boolean
     promptButtons?: ReactNode
-    sinkFromURL?: SinkFromURLType
-    sinkButtonText?: string
-    sourcePayload?: SourcePayloadType | null
 }) {
+    const {
+        prompt,
+        dadosDoProcesso,
+        pieceContent,
+        setPieceContent,
+        allLibraryDocuments,
+        sinkFromURL,
+        sinkButtonText,
+        sourcePayload,
+        maxConfidentialityLevel
+    } = usePromptContext()
+    
+    if (!prompt || !dadosDoProcesso) return null
     const [selectedPieces, setSelectedPieces] = useState<PecaType[] | null>(null)
     const [defaultPieceIds, setDefaultPieceIds] = useState<string[] | null>(null)
     const [selectedLibraryDocuments, setSelectedLibraryDocuments] = useState<IALibrary[] | null>(null)
@@ -60,14 +70,14 @@ export default function ProcessContents({ prompt, dadosDoProcesso, pieceContent,
             const key = prompt.kind.substring(1)
             const def = TipoDeSinteseMap[key]
             if (def) {
-                const pecasAcessiveis = allPieces.filter(p => nivelDeSigiloPermitido(p.sigilo))
+                const pecasAcessiveis = allPieces.filter(p => isNivelDeSigiloPermitidoClient(maxConfidentialityLevel, p.sigilo))
                 const selecao = selecionarPecasPorPadraoComFase(pecasAcessiveis, def.padroes)
                 return selecao.pecas || []
             }
         }
         const pattern = PieceStrategy[pieceStrategy].pattern
         if (pattern) {
-            const pecasAcessiveis = allPieces.filter(p => nivelDeSigiloPermitido(p.sigilo))
+            const pecasAcessiveis = allPieces.filter(p => isNivelDeSigiloPermitidoClient(maxConfidentialityLevel, p.sigilo))
             const selecao = selecionarPecasPorPadraoComFase(pecasAcessiveis, pattern)
             const pecasSelecionadas = selecao.pecas
             return pecasSelecionadas || []

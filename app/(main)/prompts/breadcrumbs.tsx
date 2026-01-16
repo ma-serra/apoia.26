@@ -1,9 +1,13 @@
-import { IAPrompt, IAPromptList } from "@/lib/db/mysql-types";
+'use client'
+
 import { faHome } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Breadcrumb } from "react-bootstrap";
+import { usePromptContext } from "./context/PromptContext";
 
-export default function BreadCrumbs({ numeroDoProcesso, resetToHome, resetProcess, prompt, resetPrompt }: { numeroDoProcesso: string, resetToHome: () => void, resetProcess: () => void, prompt: IAPromptList, resetPrompt: () => void }) {
+export default function BreadCrumbs({ resetToHome, resetProcess, resetPrompt }: { resetToHome: () => void, resetProcess: () => void, resetPrompt: () => void }) {
+    const { numeroDoProcesso, prompt } = usePromptContext()
+    
     if (!numeroDoProcesso && !prompt) return null
     return (
         <Breadcrumb className="mt-2" style={{ fontSize: '1em' }}>

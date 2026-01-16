@@ -4,7 +4,7 @@ import { decrypt } from '../utils/crypt'
 import { SystemDao, DossierDao, DocumentDao } from '../db/dao'
 import { inferirCategoriaDaPeca } from '../category'
 import { obterConteudoDaPeca, obterDocumentoGravado } from './piece'
-import { nivelDeSigiloPermitido } from './sigilo'
+import { isNivelDeSigiloPermitido } from './sigilo'
 import { selecionarPecasPorPadraoComFase, T, TipoDeSinteseEnum, TipoDeSinteseMap, SelecionarPecasResultado } from './combinacoes'
 import { TiposDeSinteseValido } from './info-de-produto'
 import { getInterop, Interop } from '../interop/interop'
@@ -221,7 +221,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         // Localiza um tipo de síntese válido
         const tipos = TiposDeSinteseValido.filter(t => t.status <= statusDeSintese)
         for (const tipoDeSintese of tipos) {
-            const pecasAcessiveis = pecas.filter(p => nivelDeSigiloPermitido(p.sigilo))
+            const pecasAcessiveis = pecas.filter(p => isNivelDeSigiloPermitido(user, p.sigilo))
             selecao = selecionarPecasPorPadraoComFase(pecasAcessiveis, tipoDeSintese.padroes)
             pecasSelecionadas = selecao.pecas
             if (pecasSelecionadas !== null) {
@@ -235,7 +235,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
         if (kind === '0') kind = undefined
         if (kind) {
             tipoDeSinteseSelecionado = kind
-            const pecasAcessiveis = pecas.filter(p => nivelDeSigiloPermitido(p.sigilo))
+            const pecasAcessiveis = pecas.filter(p => isNivelDeSigiloPermitido(user, p.sigilo))
             selecao = selecionarPecasPorPadraoComFase(pecasAcessiveis, TipoDeSinteseMap[kind].padroes)
             pecasSelecionadas = selecao.pecas
         }
@@ -248,7 +248,7 @@ export const obterDadosDoProcesso = async ({ numeroDoProcesso, pUser, idDaPeca, 
 
         // Se a peça for sigilosa, remove o conteúdo
         for (const peca of pecas)
-            if (!nivelDeSigiloPermitido(peca.sigilo)) {
+            if (!isNivelDeSigiloPermitido(user, peca.sigilo)) {
                 devLog('removendo conteúdo de peca com sigilo', peca.id, peca.sigilo)
                 peca.pConteudo = undefined
                 peca.conteudo = TEXTO_PECA_SIGILOSA

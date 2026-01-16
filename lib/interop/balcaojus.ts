@@ -1,5 +1,5 @@
 import { System, systems } from '@/lib/utils/env'
-import { assertCurrentUser } from '@/lib/user'
+import { assertCurrentUser, UserType } from '@/lib/user'
 import pLimit from 'p-limit'
 import { fixSigiloDePecas, Interop, ObterPecaType } from './interop'
 import { aggregateProcessos } from './pdpj'
@@ -50,6 +50,7 @@ export class InteropBalcaojus implements Interop {
     private username: string
     private password: string
     private token: string
+    private user: UserType
 
     constructor(system: string, username: string, password: string) {
         this.system = systems.find(s => s.system === system)
@@ -58,7 +59,9 @@ export class InteropBalcaojus implements Interop {
         this.password = password
     }
 
-    public init = async () => { }
+    public init = async () => {
+        this.user = await assertCurrentUser()
+    }
 
     public autenticar = async (system: string): Promise<boolean> => {
         const url = `${this.system.api}/autenticar`
@@ -121,7 +124,7 @@ export class InteropBalcaojus implements Interop {
         if (!value?.dadosBasicos) return []
         const dadosBasicos = value.dadosBasicos
         const sigilo = '' + (dadosBasicos.nivelSigilo ?? dadosBasicos.nivelSigilo === 0 ? dadosBasicos.nivelSigilo : '')
-        assertNivelDeSigilo(sigilo)
+        assertNivelDeSigilo(this.user, sigilo)
 
         const dataAjuizamento = dadosBasicos.dataAjuizamento
         const ajuizamento = dataAjuizamento ? parseYYYYMMDDHHMMSS(dataAjuizamento) : undefined
