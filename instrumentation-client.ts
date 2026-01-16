@@ -7,6 +7,13 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: "https://b266ea35a9ed6e281997bfca92d559af@o4510119948451840.ingest.us.sentry.io/4510119949697024",
 
+  ignoreErrors: [
+    'Não foi possível acessar o processo',
+    'You exceeded your current quota, please check your plan and billing details.',
+    'Não foi possível obter o texto da peça no DataLake/Codex da PDPJ.',
+    'Failed to fetch'
+  ],
+
   // Add optional integrations for additional features
   // integrations: [Sentry.replayIntegration(),],
 
