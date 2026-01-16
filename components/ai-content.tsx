@@ -258,26 +258,32 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     let preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
 
-    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\)/gm, (match, eventNumber) => {
+    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)/gm, (match, eventNumber) => {
         const eventNum = parseInt(eventNumber);
         const foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
         
         if (foundTexto) {
-            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}</a>`;
+            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}, ${foundTexto.label}</a>`;
         }
         
         return match;
     })
 
-    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\se\s(\d+)\)/gm, (match, eventNumber) => {
-        const eventNum = parseInt(eventNumber);
-        const foundTexto = params.data.textos?.find((texto) => texto.event === String(eventNum));
+    preprocessed.text = preprocessed.text.replace(/\(evento\s(\d+)\se\s(\d+)\)/gm, (match, eventNumber1, eventNumber2) => {
+        const eventNum1 = parseInt(eventNumber1);
+        const eventNum2 = parseInt(eventNumber2);
+        const foundTexto1 = params.data.textos?.find((texto) => texto.event === String(eventNum1));
+        const foundTexto2 = params.data.textos?.find((texto) => texto.event === String(eventNum2));
         
-        if (foundTexto) {
-            return `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${match}</a>`;
-        }
+        const link1 = foundTexto1 
+            ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto1.id}/binary" target="_blank" title="${foundTexto1.label}">${eventNumber1}, ${foundTexto1.label}</a>`
+            : eventNumber1;
+            
+        const link2 = foundTexto2
+            ? `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto2.id}/binary" target="_blank" title="${foundTexto2.label}">${eventNumber2}, ${foundTexto2.label}</a>`
+            : eventNumber2;
         
-        return match;
+        return `(evento ${link1} e ${link2})`;
     })
 
     console.log(preprocessed)
