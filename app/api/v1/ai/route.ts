@@ -11,6 +11,30 @@ import { getTools } from '@/lib/ai/tools'
 
 export const maxDuration = 60
 
+/**
+ * JSON.stringify protegido contra referências circulares.
+ * Substitui referências circulares por "[Circular]".
+ */
+function safeStringify(obj: any, space?: number): string {
+    const seen = new WeakSet()
+    return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+                return '[Circular]'
+            }
+            seen.add(value)
+        }
+        // Converte funções e promessas para representação legível
+        if (typeof value === 'function') {
+            return '[Function]'
+        }
+        if (value instanceof Promise) {
+            return '[Promise]'
+        }
+        return value
+    }, space)
+}
+
 async function getPromptDefinition(kind: string, promptSlug?: string, promptId?: number): Promise<PromptDefinitionType> {
     let prompt: IAPrompt | undefined = undefined
     if (promptId) {
@@ -272,7 +296,7 @@ async function POST_HANDLER(request: Request) {
         })
     }
 
-    throw new ApiError(`Resposta inválida do provedor de IA (${JSON.stringify(ret)})`, 500)
+    throw new ApiError(`Resposta inválida do provedor de IA (${safeStringify(ret)})`, 500)
 }
 
 export const POST = withErrorHandler(POST_HANDLER as any)

@@ -15,13 +15,18 @@ import { anonymizeText } from "../anonym/anonym"
 import { isAllowedUser } from "../utils/env"
 import { assertAnonimizacaoAutomatica } from "../proc/sigilo"
 
-const anonymizeRecursively = (data: any): any => {
+const anonymizeRecursively = (data: any, seen: WeakSet<object> = new WeakSet()): any => {
     if (Array.isArray(data)) {
-        return data.map(item => anonymizeRecursively(item));
+        return data.map(item => anonymizeRecursively(item, seen));
     }
     if (data !== null && typeof data === 'object') {
+        // Protect against circular references
+        if (seen.has(data)) {
+            return '[Circular Reference]';
+        }
+        seen.add(data);
         return Object.entries(data).reduce((acc, [key, value]) => {
-            acc[key] = anonymizeRecursively(value);
+            acc[key] = anonymizeRecursively(value, seen);
             return acc;
         }, {} as { [key: string]: any });
     }
