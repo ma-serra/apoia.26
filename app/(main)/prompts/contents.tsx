@@ -24,6 +24,7 @@ export const copyPromptToClipboard = (prompt: IAPromptList) => {
 function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick, toastMessage }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean, toastMessage?: (message: string, variant: string) => void }) {
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
     const [viewKey, setViewKey] = useState<number>(0)
+    const [promptsState, setPromptsState] = useState<IAPromptList[]>(prompts)
 
     const {
         prompt,
@@ -77,7 +78,17 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
                         await axios.delete(`/api/v1/prompt/${row.base_id}/favorite`)
                     }
 
-                    row.callback && row.callback()
+                    setPromptsState(prevPrompts =>
+                        prevPrompts.map(p =>
+                            p.base_id === row.base_id
+                                ? {
+                                    ...p,
+                                    is_favorite: row.action === 'set' ? 1 : 0,
+                                    favorite_count: Number(p.favorite_count || 0) + (row.action === 'set' ? 1 : -1)
+                                }
+                                : p
+                        )
+                    )
 
                 } catch (error) {
                     console.error('Error updating favorite status:', error)
@@ -121,8 +132,8 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     }
 
     const filteredPromptsBase = useMemo(
-        () => filterPrompts(prompts, { scope, instance, matter }),
-        [prompts, scope, instance, matter]
+        () => filterPrompts(promptsState, { scope, instance, matter }),
+        [promptsState, scope, instance, matter]
     )
 
     const promptsPrincipais = useMemo(

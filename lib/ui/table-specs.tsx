@@ -8,7 +8,6 @@ import { Instance, Matter, Scope, Share } from "../proc/process-types"
 import { formatDateTime, formatDuration } from "../utils/date"
 import { RatingCell } from "@/components/RatingCell"
 import devLog from "../utils/log"
-import { useState } from "react"
 
 
 const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void, options?: any) => {
@@ -53,13 +52,13 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
             columns: [
                 {
                     header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => {
-                        const [favorite, setFavorite] = useState<boolean>(data.row.original.is_favorite);
+                        const isFavorite = data.row.original.is_favorite;
 
-                        return favorite
-                        ? <span role="button" className="text-primary" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'reset', callback: () => setFavorite(!favorite)})}>
+                        return isFavorite
+                        ? <span role="button" className="text-primary" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'reset'})}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faHeartSolid} />
                         </span>
-                        : <span role="button" className="text-secondary opacity-50" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'set', callback: () => setFavorite(!favorite)})}>
+                        : <span role="button" className="text-secondary opacity-50" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'set'})}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faHeart} />
                         </span>}
                 },
