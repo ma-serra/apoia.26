@@ -256,7 +256,32 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     const color = getColor(current, errormsg)
 
-    const preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
+    let preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
+
+    preprocessed.text = preprocessed.text.replace(/evento\s+(\d+)([^;)]*)/gmi, (match, eventNumber, rest) => {
+        const eventNum = parseInt(eventNumber);
+        
+        // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
+        const labelRegex = /\b([A-Z]+\d+)\b/g;
+        let labelMatch;
+        let replacedRest = rest;
+        
+        while ((labelMatch = labelRegex.exec(rest)) !== null) {
+            const label = labelMatch[1];
+            const foundTexto = params.data.textos?.find((texto) => 
+                texto.event === String(eventNum) && 
+                texto.label?.toLowerCase().includes(label.toLowerCase())
+            );
+            
+            if (foundTexto) {
+                const link = `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${label}</a>`;
+                replacedRest = replacedRest.replace(label, link);
+            }
+        }
+        
+        return `evento ${eventNumber}${replacedRest}`;
+    })
+
 
     // Memoizar o processamento custoso das mensagens do prompt
     const processedText = useMemo(() => {
