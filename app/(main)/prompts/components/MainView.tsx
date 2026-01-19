@@ -9,7 +9,6 @@ interface MainViewProps {
     promptsPrincipais: IAPromptList[]
     promptsComunidade: IAPromptList[]
     promptOnClick: (kind: string, row: any) => void
-    onProcessNumberChange: (numero: string) => void
     isModerator: boolean
     apiKeyProvided: boolean
 }
@@ -18,11 +17,10 @@ export function MainView({
     promptsPrincipais,
     promptsComunidade,
     promptOnClick,
-    onProcessNumberChange,
     isModerator,
     apiKeyProvided
 }: MainViewProps) {
-    const { activeTab, setActiveTab } = usePromptContext()
+    const { activeTab, setActiveTab, setNumeroDoProcesso } = usePromptContext()
     return (
         <>
             <ProcessFilters />
@@ -42,7 +40,7 @@ export function MainView({
                         <PromptsTable 
                             prompts={promptsPrincipais} 
                             onClick={promptOnClick} 
-                            onProcessNumberChange={onProcessNumberChange} 
+                            onProcessNumberChange={setNumeroDoProcesso} 
                             isModerator={isModerator}
                         >
                             {CriarNovo()}
@@ -53,7 +51,7 @@ export function MainView({
                         <PromptsTable 
                             prompts={promptsComunidade} 
                             onClick={promptOnClick} 
-                            onProcessNumberChange={onProcessNumberChange} 
+                            onProcessNumberChange={setNumeroDoProcesso} 
                             isModerator={isModerator}
                         >
                             {CriarNovo()}

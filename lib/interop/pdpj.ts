@@ -2,7 +2,7 @@ import { fixSigiloDePecas, Interop, ObterPecaType } from './interop'
 import { DadosDoProcessoType, Instance, PecaType } from '../proc/process-types'
 import { parseYYYYMMDDHHMMSS, slugify } from '../utils/utils'
 import { assertNivelDeSigilo } from '../proc/sigilo'
-import { assertCourtId, getCurrentUser } from '../user'
+import { assertCourtId, getCurrentUser, UserType } from '../user'
 import { envString, envStringPrefixed } from '../utils/env'
 import { tua } from '../proc/tua'
 import { InteropProcessoType } from './interop-types'
@@ -100,10 +100,11 @@ export const nivelDeSigiloFromNivel = (nivel: string): string => {
 export class InteropPDPJ implements Interop {
     private accessToken: string
     private datalakeApiUrl: string
+    private user: UserType
 
     async init() {
-        const user = await getCurrentUser()
-        const seqTribunalPai = user ? '' + (await assertCourtId(user)) : undefined
+        this.user = await getCurrentUser()
+        const seqTribunalPai = this.user ? '' + (assertCourtId(this.user)) : undefined
         this.datalakeApiUrl = envStringPrefixed('DATALAKE_API_URL', seqTribunalPai)
 
         // Utiliza um token fixo, previamente configurado
@@ -113,8 +114,8 @@ export class InteropPDPJ implements Interop {
         }
 
         // Obter o token de acesso do usuário logado pelo keycloak
-        if (user.accessToken) {
-            this.accessToken = user.accessToken
+        if (this.user.accessToken) {
+            this.accessToken = this.user.accessToken
             return
         }
 
@@ -201,7 +202,7 @@ export class InteropPDPJ implements Interop {
         const resp: DadosDoProcessoType[] = []
         for (const processo of data[0].tramitacoes) {
             const idClasse = processo?.classe?.[0]?.codigo
-            assertNivelDeSigilo('' + processo.nivelSigilo)
+            assertNivelDeSigilo(this.user, '' + processo.nivelSigilo)
 
             const ajuizamento = new Date(processo.dataHoraAjuizamento)
             const nomeOrgaoJulgador = processo.tribunal.nome

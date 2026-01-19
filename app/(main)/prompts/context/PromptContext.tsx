@@ -18,7 +18,7 @@ interface PromptContextValue {
     setDadosDoProcesso: (dados: DadosDoProcessoType | null) => void
     number: string
     setNumber: (number: string) => void
-    
+
     // Prompt State
     prompt: IAPromptList | null
     setPrompt: (prompt: IAPromptList | null) => void
@@ -43,6 +43,7 @@ interface PromptContextValue {
     sourcePayload: SourcePayloadType | null
     setSourcePayload: (payload: SourcePayloadType | null) => void
     replacePiecesParam: (numbersOrNull: number[] | null) => void
+    maxConfidentialityLevel: number
 }
 
 const PromptContext = createContext<PromptContextValue | undefined>(undefined)
@@ -51,10 +52,11 @@ interface PromptProviderProps {
     children: ReactNode
     prompts: IAPromptList[]
     toastMessage: (message: string, variant: string) => void
+    maxConfidentialityLevel: number
     sidekick?: boolean
 }
 
-export function PromptProvider({ children, prompts, toastMessage, sidekick }: PromptProviderProps) {
+export function PromptProvider({ children, prompts, toastMessage, maxConfidentialityLevel, sidekick }: PromptProviderProps) {
     const processData = useProcessData(toastMessage)
     const {
         numeroDoProcesso,
@@ -80,6 +82,7 @@ export function PromptProvider({ children, prompts, toastMessage, sidekick }: Pr
         setDadosDoProcesso,
         setIdxProcesso,
         setTramFromUrl,
+        maxConfidentialityLevel,
         sidekick
     )
 
@@ -94,7 +97,7 @@ export function PromptProvider({ children, prompts, toastMessage, sidekick }: Pr
         setDadosDoProcesso,
         number,
         setNumber,
-        
+
         // Prompt State
         ...promptState
     }), [

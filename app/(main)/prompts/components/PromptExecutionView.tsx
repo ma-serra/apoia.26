@@ -1,5 +1,4 @@
 import { Container } from "react-bootstrap"
-import { IAPromptList } from "@/lib/db/mysql-types"
 import ProcessNumberForm from "../process-number-form"
 import ProcessContents from "../process-contents"
 import ProcessTitle from "@/components/slots/process-title"
@@ -22,15 +21,8 @@ export function PromptExecutionView({
         prompt,
         numeroDoProcesso,
         dadosDoProcesso,
-        pieceContent,
-        setPieceContent,
-        allLibraryDocuments,
         setPrompt,
         setNumber,
-        source,
-        sinkFromURL,
-        sinkButtonText,
-        sourcePayload
     } = usePromptContext()
     
     if (!prompt) return null
@@ -48,16 +40,8 @@ export function PromptExecutionView({
                             <>
                                 <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
                                 <ProcessContents
-                                    prompt={prompt}
-                                    dadosDoProcesso={dadosDoProcesso}
-                                    pieceContent={pieceContent}
-                                    setPieceContent={setPieceContent}
                                     apiKeyProvided={apiKeyProvided}
                                     model={model}
-                                    allLibraryDocuments={allLibraryDocuments}
-                                    sinkFromURL={sinkFromURL}
-                                    sinkButtonText={sinkButtonText}
-                                    sourcePayload={sourcePayload}
                                 >
                                     <PromptHeader prompt={prompt} onPromptChange={() => setPrompt(null)} />
                                 </ProcessContents>
@@ -72,9 +56,9 @@ export function PromptExecutionView({
                     </div>
                 )
             ) : prompt.content.target === 'TEXTO' ? (
-                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sourcePayload={sourcePayload} />
+                <TargetText key={`${prompt}`} apiKeyProvided={apiKeyProvided} />
             ) : prompt.content.target === 'REFINAMENTO' ? (
-                <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sourcePayload={sourcePayload} />
+                <TargetText key={`${prompt}`} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
             ) : null}
         </Container>
     )

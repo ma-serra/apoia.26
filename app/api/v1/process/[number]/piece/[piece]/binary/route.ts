@@ -1,10 +1,10 @@
-import fetcher from "@/lib/utils/fetcher"
 import { NextResponse } from "next/server"
 import { getCurrentUser, assertApiUser } from "@/lib/user"
 import { decrypt } from "@/lib/utils/crypt"
 import { getInterop } from "@/lib/interop/interop"
 import * as Sentry from '@sentry/nextjs'
-import { UnauthorizedError, withErrorHandler } from '@/lib/utils/api-error'
+import { UnauthorizedError, withErrorHandler, ForbiddenError, NotFoundError } from '@/lib/utils/api-error'
+import { assertNivelDeSigilo } from "@/lib/proc/sigilo"
 
 export const maxDuration = 60
 // export const runtime = 'edge'
@@ -56,6 +56,29 @@ async function GET_HANDLER(
   const system = user?.system
   const interop = getInterop(system, username, password)
   await interop.init()
+
+  // Obter metadados do processo para verificar sigilo da peça
+  const arrayDeDadosDoProcesso = await interop.consultarProcesso(params.number)
+  if (!arrayDeDadosDoProcesso || arrayDeDadosDoProcesso.length === 0) {
+    throw new NotFoundError(`Processo ${params.number} não encontrado`)
+  }
+
+  // Localizar a peça nos dados do processo
+  let pecaEncontrada = null
+  for (const dadosDoProcesso of arrayDeDadosDoProcesso) {
+    const peca = dadosDoProcesso.pecas?.find(p => p.id === params.piece)
+    if (peca) {
+      pecaEncontrada = peca
+      break
+    }
+  }
+
+  if (!pecaEncontrada) {
+    throw new NotFoundError(`Peça ${params.piece} não encontrada no processo ${params.number}`)
+  }
+
+  // Validar nível de sigilo da peça
+  assertNivelDeSigilo(user, pecaEncontrada.sigilo, pecaEncontrada.descr)
 
   const { buffer, contentType } = await interop.obterPeca(params.number, params.piece, true)
 

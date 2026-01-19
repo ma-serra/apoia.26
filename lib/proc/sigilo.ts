@@ -1,3 +1,5 @@
+import 'server-only'
+
 // Nível de sigilo a ser aplicado ao processo. Dever-se-á utilizar os seguintes níveis:
 // - 0: públicos, acessíveis a todos os servidores do Judiciário e dos demais órgãos públicos de colaboração na administração da Justiça, assim como aos advogados e a qualquer cidadão
 // - 1: segredo de justiça, acessíveis aos servidores do Judiciário, aos servidores dos órgãos públicos de colaboração na administração da Justiça e às partes do processo.
@@ -5,21 +7,24 @@
 // - 3: sigilo médio, acessível aos servidores do órgão em que tramita o processo, à(s) parte(s) que provocou(ram) o incidente e àqueles que forem expressamente incluídos 
 // - 4: sigilo intenso, acessível a classes de servidores qualificados (magistrado, diretor de secretaria/escrivão, oficial de gabinete/assessor) do órgão em que tramita o processo, às partes que provocaram o incidente e àqueles que forem expressamente incluídos 
 
-import { envString } from "../utils/env"
+import { envString, envStringPrefixed } from "../utils/env"
+import { assertCourtId, UserType } from '../user'
 
 // - 5: sigilo absoluto, acessível apenas ao magistrado do órgão em que tramita, aos servidores e demais usuários por ele indicado e às partes que provocaram o incidente.
 
-export const nivelDeSigiloPermitido = (nivel: string, descrDaPeca?) => {
-    const nivelMax = parseInt(envString('CONFIDENTIALITY_LEVEL_MAX') as string || '0')
-    const n = parseInt(nivel)
-    return n <= nivelMax
+export const nivelDeSigiloPermitido = (user: UserType) => {
+    const nivelMax = parseInt(envStringPrefixed('CONFIDENTIALITY_LEVEL_MAX', `${assertCourtId(user)}`) as string || '0')
+    return nivelMax
 }
 
-export const assertNivelDeSigilo = (nivel, descrDaPeca?) => {
-    const nivelMax = parseInt(envString('CONFIDENTIALITY_LEVEL_MAX') as string || '0')
+export const isNivelDeSigiloPermitido = (user: UserType, nivel: string, descrDaPeca?) => {
     const n = parseInt(nivel)
-    if (n > nivelMax)
-        throw new Error(`Nível de sigilo '${n}'${descrDaPeca ? ' da peça ' + descrDaPeca : ''} maior que o máximo permitido '${nivelMax}'.`)
+    return n <= nivelDeSigiloPermitido(user)
+}
+
+export const assertNivelDeSigilo = (user: UserType, nivel: string, descrDaPeca?) => {
+    if (!isNivelDeSigiloPermitido(user, nivel, descrDaPeca))
+        throw new Error(`Nível de sigilo '${nivel}'${descrDaPeca ? ' da peça ' + descrDaPeca : ''} maior que o máximo permitido.`)
 }
 
 export const assertAnonimizacaoAutomatica = (nivel: string, descr?) => {

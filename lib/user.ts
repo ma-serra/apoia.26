@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import authOptions from '../app/api/auth/[...nextauth]/options'
 import { getServerSession } from 'next-auth'
@@ -91,7 +91,7 @@ export const isUserModerator = async (user: UserType): Promise<boolean> => {
     return envString('MODERATOR') && user.preferredUsername && envString('MODERATOR').split(',').includes(user.preferredUsername)
 }
 
-export const assertCourtId = async (user: UserType): Promise<number> => {
+export const assertCourtId = (user: UserType): number => {
     const mapping = envString('SYSTEM_MAPPING') // e.g. TRF2:4,TRF1:1
     if (mapping) {
         const map = mapping.split(',').map(m => m.split(':')).reduce((acc, [k, v]) => ({ ...acc, [k]: Number(v) }), {} as Record<string, number>)

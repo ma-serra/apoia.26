@@ -10,6 +10,7 @@ import { TipoDeSinteseMap } from '@/lib/proc/combinacoes'
 import { StatusDeLancamento } from '@/lib/proc/process-types'
 import { IAPromptList } from '@/lib/db/mysql-types'
 import { fixPromptList } from '@/lib/prompt-list'
+import { nivelDeSigiloPermitido } from '@/lib/proc/sigilo'
 
 export default async function ServerContents( params: { sidekick?: boolean } ) {
     const MINIMUM_NUMBER_OF_VOTES_TO_TURN_UNLISTED = 5
@@ -38,6 +39,8 @@ export default async function ServerContents( params: { sidekick?: boolean } ) {
         rating: ratingsMap.get(prompt.base_id || prompt.id) || null
     }))
 
+    const maxConfidentialityLevel = nivelDeSigiloPermitido(user)
+
     // Caso o prompt tenha share=PUBLICO e o rating tenha mais de 5 votos e a avg_laplace < 2, 
     // troca o share para NAO_LISTADO para evitar exposição de prompts mal avaliados
     for (const prompt of promptsWithRatings) {
@@ -49,5 +52,5 @@ export default async function ServerContents( params: { sidekick?: boolean } ) {
         }
     }
 
-    return <Contents prompts={promptsWithRatings} user={user} user_id={user_id} apiKeyProvided={!!apiKey} model={model} isModerator={isModerator} sidekick={params.sidekick} />
+    return <Contents prompts={promptsWithRatings} user={user} user_id={user_id} apiKeyProvided={!!apiKey} model={model} isModerator={isModerator} maxConfidentialityLevel={maxConfidentialityLevel} sidekick={params.sidekick} />
 }

@@ -15,13 +15,18 @@ import { anonymizeText } from "../anonym/anonym"
 import { isAllowedUser } from "../utils/env"
 import { assertAnonimizacaoAutomatica } from "../proc/sigilo"
 
-const anonymizeRecursively = (data: any): any => {
+const anonymizeRecursively = (data: any, seen: WeakSet<object> = new WeakSet()): any => {
     if (Array.isArray(data)) {
-        return data.map(item => anonymizeRecursively(item));
+        return data.map(item => anonymizeRecursively(item, seen));
     }
     if (data !== null && typeof data === 'object') {
+        // Protect against circular references
+        if (seen.has(data)) {
+            return '[Circular Reference]';
+        }
+        seen.add(data);
         return Object.entries(data).reduce((acc, [key, value]) => {
-            acc[key] = anonymizeRecursively(value);
+            acc[key] = anonymizeRecursively(value, seen);
             return acc;
         }, {} as { [key: string]: any });
     }
@@ -179,7 +184,7 @@ export const getTools = async (pUser: Promise<UserType>) => {
     try {
         // Check if the user is allowed to access the precedent tool, must be TRF2 and have a specific CPF
         const user = await pUser
-        const courtId = await assertCourtId(user)
+        const courtId = assertCourtId(user)
         if (courtId === 999998 || courtId === 999999 || courtId === 4) {
             if (isAllowedUser(user.preferredUsername, courtId)) {
                 (toools as any).getPrecedent = getPrecedentTool(pUser)

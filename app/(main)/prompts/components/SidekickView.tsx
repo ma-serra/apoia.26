@@ -36,16 +36,9 @@ export function SidekickView({
         prompt,
         numeroDoProcesso,
         dadosDoProcesso,
-        pieceContent,
-        setPieceContent,
-        allLibraryDocuments,
         setPrompt,
         setNumber,
-        source,
-        sinkFromURL,
-        sinkButtonText,
         promptInitialized,
-        sourcePayload
     } = usePromptContext()
     const [urlNovaAba, setUrlNovaAba] = useState('')
 
@@ -88,8 +81,6 @@ export function SidekickView({
         <Container className="mt-0 mb-3" fluid={true}>
             <div className="float-end"><a href={urlNovaAba} target="_blank" rel="noopener noreferrer" title="Abrir em nova aba"><FontAwesomeIcon icon={faExternalLink} /></a></div>
             <BreadCrumbs
-                numeroDoProcesso={numeroDoProcesso}
-                prompt={prompt}
                 resetToHome={resetToHome}
                 resetProcess={resetProcess}
                 resetPrompt={resetPrompt}
@@ -105,16 +96,9 @@ export function SidekickView({
                                     <>
                                         <ProcessTitle id={dadosDoProcesso?.numeroDoProcesso} />
                                         <ProcessContents
-                                            prompt={prompt}
-                                            dadosDoProcesso={dadosDoProcesso}
-                                            pieceContent={pieceContent}
-                                            setPieceContent={setPieceContent}
                                             apiKeyProvided={apiKeyProvided}
                                             model={model}
-                                            allLibraryDocuments={allLibraryDocuments}
                                             sidekick={true}
-                                            sinkFromURL={sinkFromURL}
-                                            sinkButtonText={sinkButtonText || undefined}
                                             promptButtons={
                                                 prompt?.kind === '^CHAT' ? (
                                                     <>
@@ -126,7 +110,6 @@ export function SidekickView({
                                                     </>
                                                 ) : undefined
                                             }
-                                            sourcePayload={sourcePayload}
                                         />
                                     </>
                                 ) : (
@@ -138,9 +121,9 @@ export function SidekickView({
                             </div>
                         )
                     ) : prompt.content.target === 'TEXTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} sourcePayload={sourcePayload} />
+                        <TargetText key={`${prompt}`} apiKeyProvided={apiKeyProvided} />
                     ) : prompt.content.target === 'REFINAMENTO' ? (
-                        <TargetText key={`${prompt};${!!source}`} prompt={prompt} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} source={source} sinkFromURL={sinkFromURL} sinkButtonText={sinkButtonText} sourcePayload={sourcePayload} />
+                        <TargetText key={`${prompt}`} apiKeyProvided={apiKeyProvided} visualization={VisualizationEnum.DIFF} />
                     ) : prompt.content.target === 'CHAT' ? (
                         <Chat
                             definition={{ ...prompt, kind: slugify(prompt.kind) }}

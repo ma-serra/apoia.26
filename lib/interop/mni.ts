@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 
 import * as soap from 'soap'
 import { envString, systems } from '@/lib/utils/env'
-import { assertCurrentUser } from '@/lib/user'
+import { assertCurrentUser, UserType } from '@/lib/user'
 
 import pLimit from 'p-limit'
 import { fixSigiloDePecas, Interop, ObterPecaType } from './interop'
@@ -115,13 +115,16 @@ const obterPecaSemLimite = async (numeroDoProcesso, idDaPeca, username: string, 
 export class InteropMNI implements Interop {
     private username: string
     private password: string
+    private user: UserType
 
     constructor(username: string, password: string) {
         this.username = username
         this.password = password
     }
 
-    public init = async () => { }
+    public init = async () => {
+        this.user = await assertCurrentUser()
+    }
 
     public autenticar = async (system: string): Promise<boolean> => {
         const client = await getClient(system)
@@ -167,7 +170,7 @@ export class InteropMNI implements Interop {
             throw new Error(`${respQuery[0].mensagem}`)
         const dadosBasicos = respQuery[0].processo.dadosBasicos
         const sigilo = '' + dadosBasicos.attributes.nivelSigilo
-        assertNivelDeSigilo(sigilo)
+        assertNivelDeSigilo(this.user, sigilo)
         const dataAjuizamento = dadosBasicos.attributes.dataAjuizamento
         const nomeOrgaoJulgador = dadosBasicos.orgaoJulgador.attributes.nomeOrgao
         const ajuizamento = parseYYYYMMDDHHMMSS(dataAjuizamento)

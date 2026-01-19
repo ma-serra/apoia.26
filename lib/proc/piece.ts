@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { pdfToText } from '../pdf/pdf'
 import { html2md } from '../utils/html2md'
@@ -15,6 +15,7 @@ import { PecaConteudoType } from './process-types'
 import { TEXTO_PECA_IMAGEM_JPEG, TEXTO_PECA_IMAGEM_PNG, TEXTO_PECA_PDF_OCR_ERRO, TEXTO_PECA_PDF_OCR_VAZIO, TEXTO_PECA_VIDEO_MP4, TEXTO_PECA_VIDEO_XMS_WMV, TEXTO_PECA_AUDIO_XMS_WMA } from './process-types'
 import devLog from '../utils/log'
 import { InvalidPieceContentTypeError } from '../utils/api-error'
+import { assertCurrentUser } from '../user'
 
 const limit = pLimit(envString('OCR_LIMIT') ? parseInt(envString('OCR_LIMIT')) : 1)
 
@@ -150,7 +151,8 @@ export const obterDocumentoGravado = async (dossier_id: number, numeroDoProcesso
 
 export const obterConteudoDaPeca = async (dossier_id: number, numeroDoProcesso: string, idDaPeca: string, descrDaPeca: string, sigiloDaPeca: string, interop: Interop): Promise<PecaConteudoType> => {
     try {
-        assertNivelDeSigilo(sigiloDaPeca, `${descrDaPeca} (${idDaPeca})`)
+        const user = await assertCurrentUser()
+        assertNivelDeSigilo(user, sigiloDaPeca, `${descrDaPeca} (${idDaPeca})`)
 
         const document = envString('DISABLE_DOCUMENT_CACHE') !== '1' ? await obterDocumentoGravado(dossier_id, numeroDoProcesso, idDaPeca, descrDaPeca) : undefined
         const document_id = document?.id

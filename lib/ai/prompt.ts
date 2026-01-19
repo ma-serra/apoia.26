@@ -184,30 +184,6 @@ export const promptDefinitionFromDefinitionAndOptions = (definition: PromptDefin
     }
 }
 
-type JsonSchemaPropertyType = {
-    type: string
-    description: string
-    properties?: Record<string, JsonSchemaPropertyType>
-}
-
-function mapToOrderedObject(value: any): any {
-    if (value instanceof Map) {
-        const orderedObj: Record<string, any> = {};
-        for (const [key, val] of value.entries()) {
-            orderedObj[key] = mapToOrderedObject(val); // chamada recursiva
-        }
-        return orderedObj;
-    } else if (Array.isArray(value)) {
-        return value.map(item => mapToOrderedObject(item)); // trata arrays que podem conter Maps
-    } else {
-        return value; // valor primitivo ou objeto comum
-    }
-}
-
-function mapToOrderedJson<T>(map: Map<string, T>, pretty: boolean = false): string {
-    const orderedObj = mapToOrderedObject(map);
-    return JSON.stringify(orderedObj, null, pretty ? 2 : 0);
-}
 
 export const promptDefinitionFromMarkdown = (slug, md: string): PromptDefinitionType => {
     const regex = /(?:^# (?<tag>METADATA|SYSTEM PROMPT|PROMPT|JSON SCHEMA|FORMAT)\s*)$/gms;
