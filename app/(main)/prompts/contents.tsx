@@ -12,6 +12,7 @@ import { filterPrompts, getPromptsPrincipais, getPromptsComunidade, getPromptsSi
 import { MainView } from "./components/MainView"
 import { SidekickView } from "./components/SidekickView"
 import { PromptExecutionView } from "./components/PromptExecutionView"
+import axios from "axios"
 
 export const copyPromptToClipboard = (prompt: IAPromptList) => {
     let s: string = prompt.content.system_prompt
@@ -51,7 +52,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         setTermosAceitos(raw === '1')
     }, [])
 
-    const promptOnClick = (kind: string, row: any) => {
+    const promptOnClick = async (kind: string, row: any) => {
         switch (kind) {
             case 'executar':
                 setPrompt(row)
@@ -67,6 +68,23 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
             case 'copiar link para favoritar':
                 navigator.clipboard.writeText(`Clique no link abaixo para adicionar o prompt ${row.name} aos favoritos:\n\n${window.location.origin}/prompts/prompt/${row.base_id}/set-favorite`)
                 toastMessage('Link copiado para a área de transferência', 'success')
+                break
+            case 'favoritar':
+                try {
+                    if (row.action === 'set') {
+                        await axios.post(`/api/v1/prompt/${row.base_id}/favorite`)
+                    } else if (row.action === 'reset') {
+                        await axios.delete(`/api/v1/prompt/${row.base_id}/favorite`)
+                    }
+
+                    row.callback && row.callback()
+
+                } catch (error) {
+                    console.error('Error updating favorite status:', error)
+                    toastMessage('Erro ao atualizar favoritos', 'danger')
+                }
+                break
+            default:
                 break
         }
     }
