@@ -20,6 +20,7 @@ import MessageFooter from './message-footer'
 import { html2md } from '@/lib/utils/html2md'
 import { formatHtmlToEprocStandard } from '@/lib/utils/messaging-helper'
 import { highlightCitationsLongestMatch } from '@/lib/n-grams'
+import { addLinkToPieces } from '@/lib/ui/link-to-piece'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -53,6 +54,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const [currentMessage, setCurrentMessage] = useState<UIMessage>({ id: null, role: 'assistant', parts: [] })
     const [copySuccess, setCopySuccess] = useState(false)
     const initialized = useRef(false)
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const reportError = (err: any, payload: any) => {
         if (err && typeof err === 'object' && 'message' in err && (err as Error).message === 'NEXT_REDIRECT') throw err
@@ -258,31 +260,6 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     let preprocessed = preprocess(current, params.definition, params.data, complete, visualizationId, params.diffSource)
 
-    preprocessed.text = preprocessed.text.replace(/evento\s+(\d+)([^;)]*)/gmi, (match, eventNumber, rest) => {
-        const eventNum = parseInt(eventNumber);
-        
-        // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
-        const labelRegex = /\b([A-Z]+\d+)\b/g;
-        let labelMatch;
-        let replacedRest = rest;
-        
-        while ((labelMatch = labelRegex.exec(rest)) !== null) {
-            const label = labelMatch[1];
-            const foundTexto = params.data.textos?.find((texto) => 
-                texto.event === String(eventNum) && 
-                texto.label?.toLowerCase().includes(label.toLowerCase())
-            );
-            
-            if (foundTexto) {
-                const link = `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${label}</a>`;
-                replacedRest = replacedRest.replace(label, link);
-            }
-        }
-        
-        return `evento ${eventNumber}${replacedRest}`;
-    })
-
-
     // Memoizar o processamento custoso das mensagens do prompt
     const processedText = useMemo(() => {
         let resultText = preprocessed.text
@@ -300,8 +277,34 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         //     }
         // }
 
+        resultText = addLinkToPieces(resultText, params.data.numeroDoProcesso, params.data.textos || [])
+
         return resultText
     }, [complete, visualizationId, currentMessage?.metadata, preprocessed.text])
+
+    useEffect(() => {
+        const container = contentRef.current;
+        if (!container) return;
+
+        const handleGlobalClick = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+
+            // Verifica se o clique foi em um span com a classe específica
+            if (target.classList.contains('widgetlinkdocumento')) {
+                const idPiece = target.getAttribute('data-idpiece');
+                const processNumber = target.getAttribute('data-numprocesso');
+                exibirPeca(processNumber, idPiece);
+            }
+        };
+
+        container.addEventListener('click', handleGlobalClick);
+        return () => container.removeEventListener('click', handleGlobalClick);
+    }, [current, errormsg]);
+
+    const exibirPeca = (processNumber: string, idPiece: string) => {
+        const url = `/api/v1/process/${processNumber}/piece/${idPiece}/binary`;
+        window.open(url, '_blank');
+    };
 
     return <>
         <MessageStatus message={currentMessage} />
@@ -324,14 +327,18 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
                     )}
                     {errormsg
                         ? <ErrorMessage message={errormsg} />
-                        : <div dangerouslySetInnerHTML={{ __html: spinner(processedText, complete) }} />}
+                        : <div ref={contentRef} dangerouslySetInnerHTML={{ __html: spinner(processedText, complete) }} />}
                     <EvaluationModal show={show} onClose={handleClose} />
                 </div>
                 {complete && <MessageFooter message={currentMessage} />}
                 {preprocessed.templateTable && showTemplateTable &&
                     <div className="h-print">
                         <h2 className="">Tabela de Expressões</h2>
-                        <div className="ai-content mb-3" dangerouslySetInnerHTML={{ __html: preprocessed.templateTable }} />
+                        <div
+                            key="content-id"
+                            className="ai-content mb-3"
+                            dangerouslySetInnerHTML={{ __html: preprocessed.templateTable }}
+                        />
                     </div>
                 }
             </div>

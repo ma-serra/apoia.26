@@ -550,3 +550,9 @@
         color: #000;
         background-color: #fffacd;
     }
+
+    span.widgetlinkdocumento {
+         cursor: pointer;
+         color: rgb(13, 110, 253);
+         text-decoration: underline;
+    }
