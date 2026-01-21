@@ -277,7 +277,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         //     }
         // }
 
-        resultText = addLinkToPieces(resultText, params.data.numeroDoProcesso, params.data.textos || [])
+        resultText = addLinkToPieces(resultText, params.data.textos || [])
 
         return resultText
     }, [complete, visualizationId, currentMessage?.metadata, preprocessed.text])
