@@ -8,18 +8,9 @@ import { Instance, Matter, Scope, Share } from "../proc/process-types"
 import { formatDateTime, formatDuration } from "../utils/date"
 import { RatingCell } from "@/components/RatingCell"
 import devLog from "../utils/log"
-import axios from "axios"
-import { useRouter } from 'next/navigation'
 
 
 const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void, options?: any) => {
-    const router = useRouter();
-
-    async function handleFavorites(base_id: string, action: 'set' | 'reset') {
-        await axios.get(`/prompts/prompt/${base_id}/${action}-favorite`)
-    
-        router.refresh();
-    }
     
     return {
         ChoosePieces: {
@@ -60,13 +51,16 @@ const tableSpecs = (pathname: string, onClick: (kind: string, row: any) => void,
         Prompts: {
             columns: [
                 {
-                    header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => data.row.original.is_favorite
-                        ? <span role="button" className="text-primary" onClick={() => handleFavorites(data.row.original.base_id, 'reset')}>
+                    header: ' ', accessorKey: '', style: { textAlign: "center", width: "1%" }, enableSorting: false, cell: data => {
+                        const isFavorite = data.row.original.is_favorite;
+
+                        return isFavorite
+                        ? <span role="button" className="text-primary" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'reset'})}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUserSolid : faHeartSolid} />
                         </span>
-                        : <span role="button" className="text-secondary opacity-50" onClick={() => handleFavorites(data.row.original.base_id, 'set')}>
+                        : <span role="button" className="text-secondary opacity-50" onClick={() => onClick('favoritar', {base_id: data.row.original.base_id, action: 'set'})}>
                             <FontAwesomeIcon className="me-1" icon={data.row.original.is_mine ? faUser : faHeart} />
-                        </span>
+                        </span>}
                 },
                 {
                     header: 'Prompt', accessorKey: 'name', enableSorting: true, cell: data => <>

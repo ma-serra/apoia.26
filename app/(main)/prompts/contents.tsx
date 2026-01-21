@@ -12,6 +12,7 @@ import { filterPrompts, getPromptsPrincipais, getPromptsComunidade, getPromptsSi
 import { MainView } from "./components/MainView"
 import { SidekickView } from "./components/SidekickView"
 import { PromptExecutionView } from "./components/PromptExecutionView"
+import axios from "axios"
 
 export const copyPromptToClipboard = (prompt: IAPromptList) => {
     let s: string = prompt.content.system_prompt
@@ -23,6 +24,7 @@ export const copyPromptToClipboard = (prompt: IAPromptList) => {
 function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModerator, sidekick, toastMessage }: { prompts: IAPromptList[], user: UserType, user_id: number, apiKeyProvided: boolean, model?: string, isModerator: boolean, sidekick?: boolean, toastMessage?: (message: string, variant: string) => void }) {
     const [termosAceitos, setTermosAceitos] = useState<boolean | null>(null)
     const [viewKey, setViewKey] = useState<number>(0)
+    const [promptsState, setPromptsState] = useState<IAPromptList[]>(prompts)
 
     const {
         prompt,
@@ -51,7 +53,7 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
         setTermosAceitos(raw === '1')
     }, [])
 
-    const promptOnClick = (kind: string, row: any) => {
+    const promptOnClick = async (kind: string, row: any) => {
         switch (kind) {
             case 'executar':
                 setPrompt(row)
@@ -67,6 +69,33 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
             case 'copiar link para favoritar':
                 navigator.clipboard.writeText(`Clique no link abaixo para adicionar o prompt ${row.name} aos favoritos:\n\n${window.location.origin}/prompts/prompt/${row.base_id}/set-favorite`)
                 toastMessage('Link copiado para a área de transferência', 'success')
+                break
+            case 'favoritar':
+                try {
+                    if (row.action === 'set') {
+                        await axios.post(`/api/v1/prompt/${row.base_id}/favorite`)
+                    } else if (row.action === 'reset') {
+                        await axios.delete(`/api/v1/prompt/${row.base_id}/favorite`)
+                    }
+
+                    setPromptsState(prevPrompts =>
+                        prevPrompts.map(p =>
+                            p.base_id === row.base_id
+                                ? {
+                                    ...p,
+                                    is_favorite: row.action === 'set' ? 1 : 0,
+                                    favorite_count: Number(p.favorite_count || 0) + (row.action === 'set' ? 1 : -1)
+                                }
+                                : p
+                        )
+                    )
+
+                } catch (error) {
+                    console.error('Error updating favorite status:', error)
+                    toastMessage('Erro ao atualizar favoritos', 'danger')
+                }
+                break
+            default:
                 break
         }
     }
@@ -103,8 +132,8 @@ function ContentsInner({ prompts, user, user_id, apiKeyProvided, model, isModera
     }
 
     const filteredPromptsBase = useMemo(
-        () => filterPrompts(prompts, { scope, instance, matter }),
-        [prompts, scope, instance, matter]
+        () => filterPrompts(promptsState, { scope, instance, matter }),
+        [promptsState, scope, instance, matter]
     )
 
     const promptsPrincipais = useMemo(
