@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Suspense, useState } from 'react'
+import { Suspense, use, useEffect, useState } from 'react'
 import AiContent from '@/components/ai-content'
 import { Button, Col, Row } from 'react-bootstrap'
 import { ContentType, PromptConfigType, PromptDefinitionType } from '@/lib/ai/prompt-types'
@@ -49,6 +49,12 @@ export default function TargetText({ visualization, apiKeyProvided }: { visualiz
         setHidden(true)
         setContent(undefined)
     }
+
+    useEffect(() => {
+        textChanged(source || '')
+        if (source)
+            setHidden(false)
+    }, [source])
 
     const definition: PromptDefinitionType = buildDefinition(prompt)
 
