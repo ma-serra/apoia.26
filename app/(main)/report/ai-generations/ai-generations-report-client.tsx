@@ -191,9 +191,9 @@ export default function AIGenerationsReportClient() {
                                 type="number"
                                 value={limit}
                                 onChange={e => setLimit(e.target.value)}
-                                min="100"
-                                max="50000"
-                                step="100"
+                                min="1000"
+                                max="200000"
+                                step="1000"
                             />
                         </Form.Group>
                     </Col>
@@ -223,6 +223,7 @@ export default function AIGenerationsReportClient() {
                         <div className="pivot-container">
                             <PivotTableUI
                                 data={pivotData}
+                                menuLimit={0}
                                 onChange={s => setPivotState(s)}
                                 renderers={renderers}
                                 {...pivotState}
