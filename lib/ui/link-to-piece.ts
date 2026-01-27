@@ -34,7 +34,7 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
         uf = 'ES';
     }
 
-    return html.replace(/evento\s+(\d+)([^;)]*)/gmi, (match, eventNumber, rest) => {
+    return html.replace(/([Ee]vento)\s+(\d+)((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, rest) => {
         const eventNum = parseInt(eventNumber);
 
         // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
@@ -66,6 +66,9 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
             }
         }
 
-        return `evento ${eventNumber}${replacedRest}`;
+        return `${eventWord} ${eventNumber}${replacedRest}`;
     })
 }
+
+// continuar com o regex
+// /[Ee]vento\s+(?<numero>\d+)(?<bloco>(?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm
