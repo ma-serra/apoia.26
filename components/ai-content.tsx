@@ -21,6 +21,7 @@ import { html2md } from '@/lib/utils/html2md'
 import { formatHtmlToEprocStandard } from '@/lib/utils/messaging-helper'
 import { highlightCitationsLongestMatch } from '@/lib/n-grams'
 import { addLinkToPieces } from '@/lib/ui/link-to-piece'
+import { usePromptContext } from '@/app/(main)/prompts/context/PromptContext'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -55,6 +56,8 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const [copySuccess, setCopySuccess] = useState(false)
     const initialized = useRef(false)
     const contentRef = useRef<HTMLDivElement>(null);
+
+    const {dadosDoProcesso} = usePromptContext()
 
     const reportError = (err: any, payload: any) => {
         if (err && typeof err === 'object' && 'message' in err && (err as Error).message === 'NEXT_REDIRECT') throw err
@@ -101,7 +104,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
 
     const handleCopy = () => {
         console.log('Copying content to clipboard...')
-        const prep = preprocess(current, params.definition, params.data, complete)
+        const prep = preprocess(processedText, params.definition, params.data, complete)
         console.log('Preprocessed for copy:', prep)
         const html = formatHtmlToEprocStandard(prep.text)
         const markdown = html2md(prep.text)
@@ -277,7 +280,7 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         //     }
         // }
 
-        resultText = addLinkToPieces(resultText, params.data.textos || [])
+        resultText = addLinkToPieces(resultText, params.data.textos || [], dadosDoProcesso)
 
         return resultText
     }, [complete, visualizationId, currentMessage?.metadata, preprocessed.text])
