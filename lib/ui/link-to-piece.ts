@@ -23,17 +23,6 @@ function extractDocumentType(mimeType: string): string {
 }
 
 export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProcesso: DadosDoProcessoType): string {
-    // Determinar is2g baseado na instância
-    const is2g = dadosDoProcesso.instancia === 'SEGUNDO_GRAU' ? true : false;
-
-    // Determinar UF baseado no nomeOrgaoJulgador
-    let uf = '';
-    if (dadosDoProcesso.nomeOrgaoJulgador?.includes('Rio de Janeiro')) {
-        uf = 'RJ';
-    } else if (dadosDoProcesso.nomeOrgaoJulgador?.includes('Espirito Santo')) {
-        uf = 'ES';
-    }
-
     return html.replace(/([Ee]vento)\s+(\d+)((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, rest) => {
         const eventNum = parseInt(eventNumber);
 
@@ -53,7 +42,11 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
                 // Buscar a peça correspondente para obter o tipoDoConteudo
                 const peca = dadosDoProcesso.pecas?.find((p) => p.id === foundTexto.id);
                 const mimeType = peca?.tipoDoConteudo || '';
-                const documentType = extractDocumentType(mimeType);
+                const documentType = extractDocumentType(mimeType); 
+                const location = peca.id.match(/([A-Z]+|[A-Z]+\d)_/)[1]
+                const uf = location.includes('JF') ? location.slice(-2) : ''
+                const is2g = location.includes('TRF') ? true : false
+
 
                 // const link = `<a href="/api/v1/process/${params.data.numeroDoProcesso}/piece/${foundTexto.id}/binary" target="_blank" title="${foundTexto.label}">${label}</a>`;
                 const splited = foundTexto.id.split('_', 2)
@@ -69,6 +62,3 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
         return `${eventWord} ${eventNumber}${replacedRest}`;
     })
 }
-
-// continuar com o regex
-// /[Ee]vento\s+(?<numero>\d+)(?<bloco>(?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm
