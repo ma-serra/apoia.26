@@ -4,12 +4,24 @@ import AiContent from "@/components/ai-content"
 import { getInternalPrompt } from "@/lib/ai/prompt"
 import { ContentType, GeneratedContent } from "@/lib/ai/prompt-types"
 import { P } from "@/lib/proc/combinacoes"
+import { DadosDoProcessoType } from "@/lib/proc/process-types"
 import { FormHelper } from "@/lib/ui/form-support"
 import { calcMd5 } from "@/lib/utils/hash"
 import { labelToName, maiusculasEMinusculas } from "@/lib/utils/utils"
 import { Button } from "react-bootstrap"
 
-export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextRequest, Frm, dossierCode, onBusy, onReady }: { pedidos: { proximoPrompt: string, pedidos: any[] }, request: GeneratedContent, nextRequest: GeneratedContent, Frm: FormHelper, dossierCode: string, onBusy?: () => void, onReady?: (content: ContentType) => void }) => {
+interface PedidosFundamentacoesEDispositivosProps {
+    pedidos: { proximoPrompt: string; pedidos: any[] };
+    request: GeneratedContent;
+    nextRequest: GeneratedContent;
+    Frm: FormHelper;
+    dossierCode: string;
+    onBusy?: () => void;
+    onReady?: (content: ContentType) => void;
+    dadosDoProcesso?: DadosDoProcessoType;
+}
+
+export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextRequest, Frm, dossierCode, onBusy, onReady, dadosDoProcesso }: PedidosFundamentacoesEDispositivosProps) => {
     const tiposDeLiminar = [
         { id: 'NAO', name: 'Não' },
         { id: 'SIM', name: 'Sim' },
@@ -78,7 +90,7 @@ export const PedidosFundamentacoesEDispositivos = ({ pedidos, request, nextReque
                 </div>
             </div>
             <h2>{nextRequest.produto === P.VOTO ? 'Voto' : 'Sentença'}</h2>
-            <AiContent definition={prompt} data={data} key={aiContentKey} dossierCode={dossierCode} onBusy={onBusy} onReady={onReady} />
+            <AiContent definition={prompt} data={data} key={aiContentKey} dossierCode={dossierCode} onBusy={onBusy} onReady={onReady} dadosDoProcesso={dadosDoProcesso} />
         </>
     }
 

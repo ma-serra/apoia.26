@@ -21,7 +21,7 @@ import { html2md } from '@/lib/utils/html2md'
 import { formatHtmlToEprocStandard } from '@/lib/utils/messaging-helper'
 import { highlightCitationsLongestMatch } from '@/lib/n-grams'
 import { addLinkToPieces } from '@/lib/ui/link-to-piece'
-import { usePromptContext } from '@/app/(main)/prompts/context/PromptContext'
+import { DadosDoProcessoType } from '@/lib/proc/process-types'
 
 export const getColor = (text, errormsg) => {
     let color = 'info'
@@ -44,7 +44,7 @@ export const spinner = (s: string, complete: boolean): string => {
 }
 
 
-export default function AiContent(params: { definition: PromptDefinitionType, data: PromptDataType, options?: PromptOptionsType, config?: PromptConfigType, visualization?: VisualizationEnum, dossierCode: string, diffSource?: string, onBusy?: () => void, onReady?: (content: ContentType) => void }) {
+export default function AiContent(params: { definition: PromptDefinitionType, data: PromptDataType, options?: PromptOptionsType, config?: PromptConfigType, visualization?: VisualizationEnum, dossierCode: string, diffSource?: string, onBusy?: () => void, onReady?: (content: ContentType) => void, dadosDoProcesso?: DadosDoProcessoType }) {
     const [current, setCurrent] = useState('')
     const [complete, setComplete] = useState(false)
     const [errormsg, setErrormsg] = useState('')
@@ -56,8 +56,6 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
     const [copySuccess, setCopySuccess] = useState(false)
     const initialized = useRef(false)
     const contentRef = useRef<HTMLDivElement>(null);
-
-    const {dadosDoProcesso} = usePromptContext()
 
     const reportError = (err: any, payload: any) => {
         if (err && typeof err === 'object' && 'message' in err && (err as Error).message === 'NEXT_REDIRECT') throw err
@@ -280,7 +278,8 @@ export default function AiContent(params: { definition: PromptDefinitionType, da
         //     }
         // }
 
-        resultText = addLinkToPieces(resultText, params.data.textos || [], dadosDoProcesso)
+        if (params.dadosDoProcesso)
+            resultText = addLinkToPieces(resultText, params.data.textos || [], params.dadosDoProcesso)
 
         return resultText
     }, [complete, visualizationId, currentMessage?.metadata, preprocessed.text])

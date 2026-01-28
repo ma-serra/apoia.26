@@ -5,6 +5,7 @@ import { getInternalPrompt } from "@/lib/ai/prompt"
 import { ContentType, GeneratedContent } from "@/lib/ai/prompt-types"
 import { PangeaResultadoItem, PangeaSearchRawResponse } from "@/lib/ai/tools-pangea"
 import { P } from "@/lib/proc/combinacoes"
+import { DadosDoProcessoType } from "@/lib/proc/process-types"
 import { FormHelper } from "@/lib/ui/form-support"
 import { calcMd5 } from "@/lib/utils/hash"
 import { labelToName, maiusculasEMinusculas } from "@/lib/utils/utils"
@@ -50,7 +51,18 @@ const formatarTemaSelecionado = (item: PangeaResultadoItem): string => {
     return partes.join(' - ') || item.id
 }
 
-export const PedidosViabilidadeRecurso = ({ pedidos, request, nextRequest, Frm, dossierCode, onBusy, onReady }: { pedidos: { proximoPrompt: string, pedidos: any[] }, request: GeneratedContent, nextRequest: GeneratedContent, Frm: FormHelper, dossierCode: string, onBusy?: () => void, onReady?: (content: ContentType) => void }) => {
+interface PedidosViabilidadeRecursoProps {
+    pedidos: { proximoPrompt: string; pedidos: any[] };
+    request: GeneratedContent;
+    nextRequest: GeneratedContent;
+    Frm: FormHelper;
+    dossierCode: string;
+    onBusy?: () => void;
+    onReady?: (content: ContentType) => void;
+    dadosDoProcesso?: DadosDoProcessoType;
+}
+
+export const PedidosViabilidadeRecurso = ({ pedidos, request, nextRequest, Frm, dossierCode, onBusy, onReady, dadosDoProcesso }: PedidosViabilidadeRecursoProps) => {
     const tiposDeDispositivo = [
         { id: '', name: '' },
         { id: 'SUSPENDER', name: 'Suspender' }, // tema
@@ -81,7 +93,7 @@ export const PedidosViabilidadeRecurso = ({ pedidos, request, nextRequest, Frm, 
     if (pedidosAnalisados) {
         const aPedidos = [...Frm.get('pedidos').pedidos].filter(p => p.dispositivo && p.dispositivo !== 'DESCONSIDERAR')
         const data = { ...request.data }
-        data.textos = [...request.data.textos, { numeroDoProcesso: data?.numeroDoProcesso || '', slug: 'pedidos', descr: 'Pedidos', texto: JSON.stringify(aPedidos), sigilo: '0', event:'-', label: 'Trecho encontrado no formulário preenchido pelo usuário' }]
+        data.textos = [...request.data.textos, { numeroDoProcesso: data?.numeroDoProcesso || '', slug: 'pedidos', descr: 'Pedidos', texto: JSON.stringify(aPedidos), sigilo: '0', event: '-', label: 'Trecho encontrado no formulário preenchido pelo usuário' }]
         const prompt = getInternalPrompt(nextRequest.produto === P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO ? 'decisao-viabilidade-recurso-extraordinario' : 'decisao-viabilidade-recurso-especial')
         const aiContentKey = `prompt: ${prompt}, data: ${calcMd5(data)}}`
 
@@ -110,7 +122,7 @@ export const PedidosViabilidadeRecurso = ({ pedidos, request, nextRequest, Frm, 
                 </div>
             </div>
             <h2>{nextRequest.produto === P.DECISAO_VIABILIDADE_RECURSO_EXTRAORDINARIO ? 'Decisão de Viabilidade de Recurso Extraordinário' : 'Decisão de Viabilidade de Recurso Especial'}</h2>
-            <AiContent definition={prompt} data={data} key={aiContentKey} dossierCode={dossierCode} onBusy={onBusy} onReady={onReady} />
+            <AiContent definition={prompt} data={data} key={aiContentKey} dossierCode={dossierCode} onBusy={onBusy} onReady={onReady} dadosDoProcesso={dadosDoProcesso} />
         </>
     }
 
