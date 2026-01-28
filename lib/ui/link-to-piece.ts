@@ -24,7 +24,7 @@ function extractDocumentType(mimeType: string): string {
 
 export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProcesso: DadosDoProcessoType): string {
     console.log('Adding links to pieces in HTML content');
-    return html.replace(/([Ee]vento)\s+(\d+)(,\s+\d+º?\s+ Grau)?((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, instance, rest) => {
+    return html.replace(/([Ee]vento)\s+(\d+)(,\s+\d+º?\s*Grau)?((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, instance, rest) => {
         const eventNum = parseInt(eventNumber);
 
         // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
@@ -62,6 +62,6 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
             }
         }
 
-        return `${eventWord} ${eventNumber}${replacedRest}`;
+        return `${eventWord} ${eventNumber}${instance || ''}${replacedRest}`;
     })
 }
