@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react"
 import TableRecords from '@/components/table-records'
 import { PecaType } from "@/lib/proc/process-types";
 import { Button } from "react-bootstrap";
+import { TreeModal } from "./tree-modal";
 // Removed unused imports and helpers
 
 const canonicalPieces = (pieces: string[]) => pieces.sort((a, b) => a.localeCompare(b)).join(',')
@@ -16,6 +17,7 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
     const originalPieces: string[] = selectedPieces.map(p => p.id)
     const [selectedIds, setSelectedIds] = useState(originalPieces)
     const [canonicalOriginalPieces, setCanonicalOriginalPieces] = useState(canonicalPieces(originalPieces))
+    const [showTreeModal, setShowTreeModal] = useState(false)
 
     const onSelectedIdsChanged = (ids: string[]) => {
         if (canonicalPieces(ids) !== canonicalPieces(selectedIds))
@@ -24,23 +26,27 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
 
     const alteredPieces = canonicalPieces(selectedIds) !== canonicalOriginalPieces
 
-    return <div className="mt-4 mb-4 h-print">
-        <div className="alert alert-warning pt-0">
-            <div className="row">
-                <div className="col-12">
-                    <TableRecords records={[...allPieces].reverse()} spec="ChoosePieces" options={{ dossierNumber, apenasSelecionadas: true }} pageSize={10} selectedIds={selectedIds} onSelectdIdsChanged={onSelectedIdsChanged}>
-                        <div className="col col-auto mt-3 mb-0">
-                            {alteredPieces
-                                ? <Button onClick={() => onSave(alteredPieces ? selectedIds : [])} variant="primary" disabled={selectedIds.length === 0}><FontAwesomeIcon icon={faRotateRight} className="me-2" />Salvar Alterações e Refazer</Button>
-                                : readyToStartAI
-                                    ? <Button onClick={() => onClose()} variant="secondary"><FontAwesomeIcon icon={faClose} className="me-1" />Fechar</Button>
-                                    : <Button onClick={() => onClose()} variant="primary" disabled={selectedIds.length === 0}><FontAwesomeIcon icon={faPlay} className="me-1" />Prosseguir</Button>
-                            }
-                        </div></TableRecords>
+    return <>
+        <div className="mt-4 mb-4 h-print">
+            <div className="alert alert-warning pt-0">
+                <div className="row">
+                    <div className="col-12">
+                        <TableRecords records={[...allPieces].reverse()} spec="ChoosePieces" options={{ dossierNumber, apenasSelecionadas: true }} pageSize={10} selectedIds={selectedIds} onSelectdIdsChanged={onSelectedIdsChanged} modalActions={{ onClick: () => setShowTreeModal(true) }}>
+                            <div className="col col-auto mt-3 mb-0">
+                                {alteredPieces
+                                    ? <Button onClick={() => onSave(alteredPieces ? selectedIds : [])} variant="primary" disabled={selectedIds.length === 0}><FontAwesomeIcon icon={faRotateRight} className="me-2" />Salvar Alterações e Refazer</Button>
+                                    : readyToStartAI
+                                        ? <Button onClick={() => onClose()} variant="secondary"><FontAwesomeIcon icon={faClose} className="me-1" />Fechar</Button>
+                                        : <Button onClick={() => onClose()} variant="primary" disabled={selectedIds.length === 0}><FontAwesomeIcon icon={faPlay} className="me-1" />Prosseguir</Button>
+                                }
+                            </div></TableRecords>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        <TreeModal show={showTreeModal} onClose={() => setShowTreeModal(false)} />
+    </>
+
 }
 
 export const ChoosePiecesLoading = () => {
