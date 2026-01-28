@@ -23,7 +23,7 @@ function extractDocumentType(mimeType: string): string {
 }
 
 export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProcesso: DadosDoProcessoType): string {
-    return html.replace(/([Ee]vento)\s+(\d+)((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, rest) => {
+    return html.replace(/([Ee]vento)\s+(\d+)[\s\S]*?((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, rest) => {
         const eventNum = parseInt(eventNumber);
 
         // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
