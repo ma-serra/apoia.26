@@ -23,7 +23,8 @@ function extractDocumentType(mimeType: string): string {
 }
 
 export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProcesso: DadosDoProcessoType): string {
-    return html.replace(/([Ee]vento)\s+(\d+)[\s\S]*?((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, rest) => {
+    console.log('Adding links to pieces in HTML content');
+    return html.replace(/([Ee]vento)\s+(\d+)(,\s+\d+º?\s+ Grau)?((?:\s*(?:,|e)?\s*[A-Z]+\d+)+)/gm, (match, eventWord, eventNumber, instance, rest) => {
         const eventNum = parseInt(eventNumber);
 
         // Find all uppercase labels followed by numbers (e.g., EMENDAINIC1, PET1, INIC1)
@@ -33,16 +34,18 @@ export function addLinkToPieces(html: string, textos: TextoType[], dadosDoProces
 
         while ((labelMatch = labelRegex.exec(rest)) !== null) {
             const label = labelMatch[1];
-            const foundTexto = textos?.find((texto) =>
-                texto.event === String(eventNum) &&
-                texto.label?.toLowerCase().includes(label.toLowerCase())
-            );
+            const foundTexto = textos?.find((texto) => {
+                const eventFromTexto = texto.event?.match(/^\d+/)?.[0]
+                if (!eventFromTexto || eventFromTexto !== String(eventNum)) return false
+                if (!texto.event?.startsWith(String(eventNum))) return false
+                return texto.label?.toLowerCase() === label.toLowerCase()
+            });
 
             if (foundTexto) {
                 // Buscar a peça correspondente para obter o tipoDoConteudo
                 const peca = dadosDoProcesso.pecas?.find((p) => p.id === foundTexto.id);
                 const mimeType = peca?.tipoDoConteudo || '';
-                const documentType = extractDocumentType(mimeType); 
+                const documentType = extractDocumentType(mimeType);
                 const location = peca.id.match(/([A-Z]+|[A-Z]+\d)_/)[1]
                 const uf = location.includes('JF') ? location.slice(-2) : ''
                 const is2g = location.includes('TRF') ? true : false
