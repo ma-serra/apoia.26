@@ -1,27 +1,67 @@
 import axios from "axios";
 import { useState } from "react";
 import { Modal } from "react-bootstrap";
+import { TreeView, type TreeNode } from "@/components/tree-view";
 
 export function TreeModal({ show, onClose }) {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
 
-    const documents = [
+    const treeData: TreeNode[] = [
         {
-            id: 1,
-            title: 'Sentença (E.64)',
-            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511689697247503551497996299901/binary'
-        },
-        {
-            id: 2,
-            title: 'Laudo Pericial (E.56)',
-            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511686430340829713925176244142/binary'
-        },
-        {
-            id: 3,
-            title: 'Certidão (E.45)',
-            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
+            id: 'processo-1',
+            label: 'Processo 50013566520224025113',
+            children: [
+                {
+                    id: 'categoria-1',
+                    label: 'Decisões',
+                    children: [
+                        {
+                            id: 'doc-1',
+                            label: 'Sentença (E.64)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511689697247503551497996299901/binary'
+                        },
+                        {
+                            id: 'doc-2',
+                            label: 'Despacho (E.50)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511689697247503551497996299901/binary'
+                        }
+                    ]
+                },
+                {
+                    id: 'categoria-2',
+                    label: 'Provas',
+                    children: [
+                        {
+                            id: 'doc-3',
+                            label: 'Laudo Pericial (E.56)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511686430340829713925176244142/binary'
+                        },
+                        {
+                            id: 'doc-4',
+                            label: 'Parecer Técnico (E.48)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
+                        }
+                    ]
+                },
+                {
+                    id: 'categoria-3',
+                    label: 'Documentação',
+                    children: [
+                        {
+                            id: 'doc-5',
+                            label: 'Certidão (E.45)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
+                        },
+                        {
+                            id: 'doc-6',
+                            label: 'Documentos Juntados (E.35)',
+                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
+                        }
+                    ]
+                }
+            ]
         }
     ];
 
@@ -49,6 +89,13 @@ export function TreeModal({ show, onClose }) {
         setData(blobUrl);
         setIsVisible(true);
     }
+
+    const handleNodeClick = (node: TreeNode) => {
+        if (node.url) {
+            setPdfUrl(node.url);
+            fetchAndDisplayPDF(node.url);
+        }
+    };
 
     return (
         <Modal 
@@ -82,21 +129,19 @@ export function TreeModal({ show, onClose }) {
                         padding: '1rem'
                     }}>
                         <h5>Documentos</h5>
-                        <div className="list-group">
-                            {documents.map((doc) => (
-                                <button
-                                    key={doc.id}
-                                    type="button"
-                                    className={`list-group-item list-group-item-action ${pdfUrl === doc.url ? 'active' : ''}`}
-                                    onClick={() => {
-                                        setPdfUrl(doc.url);
-                                        fetchAndDisplayPDF(doc.url);
-                                    }}
-                                >
-                                    {doc.title}
-                                </button>
-                            ))}
-                        </div>
+                        <TreeView 
+                            data={treeData}
+                            onNodeClick={handleNodeClick}
+                            renderLabel={(node) => (
+                                <span style={{
+                                    fontWeight: node.url ? 'normal' : 'bold',
+                                    color: pdfUrl === node.url ? '#0d6efd' : 'inherit',
+                                    cursor: node.url ? 'pointer' : 'default'
+                                }}>
+                                    {node.label}
+                                </span>
+                            )}
+                        />
                     </div>
 
                     {/* Seção Direita - PDF Viewer */}
