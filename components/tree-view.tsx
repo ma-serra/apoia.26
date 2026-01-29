@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight, faChevronDown, faSquare, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
+import next from 'next';
 
 export interface TreeNode {
   id: string | number;
@@ -21,17 +22,26 @@ interface TreeViewProps {
   renderLabel?: (node: TreeNode) => React.ReactNode;
 }
 
-const TreeNodeComponent: React.FC<{
+interface TreeNodeComponentProps {
   node: TreeNode;
   level: number;
   onNodeClick?: (node: TreeNode) => void;
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
   checkedNodes?: Set<string | number>;
   renderLabel?: (node: TreeNode) => React.ReactNode;
-}> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = new Set(), renderLabel }) => {
+}
+
+const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = new Set(), renderLabel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const hasChildren = node.children && node.children.length > 0;
+  const hasChildren = node.children ? node.children.length > 0 : false;
+  const nextLevelIsLeaf = node.children ? node.children[0].children ? node.children[0].children.length === 0 : true : false;
   const isChecked = checkedNodes.has(node.id);
+
+  console.log({
+    node,
+    hasChildren,
+    nextLevelIsLeaf,
+  })
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,7 +76,7 @@ const TreeNodeComponent: React.FC<{
         {hasChildren && (
           <button
             onClick={handleToggle}
-            className="btn btn-sm p-0 me-2"
+            className="btn btn-sm p-0"
             style={{
               width: '24px',
               height: '24px',
@@ -85,12 +95,14 @@ const TreeNodeComponent: React.FC<{
           </button>
         )}
         {!hasChildren && (
-          <button
+          <input
+            type="checkbox"
+            checked={isChecked}
+            // onChange={handleCheckboxClick}
             onClick={handleCheckboxClick}
-            className="btn btn-sm p-0 me-2"
             style={{
-              width: '24px',
-              height: '24px',
+              width: '12px',
+              height: '12px',
               display: 'flex',
               marginLeft: '8px',
               alignItems: 'center',
@@ -99,18 +111,16 @@ const TreeNodeComponent: React.FC<{
               background: 'transparent',
               color: isChecked ? '#0d6efd' : 'inherit',
             }}
-          >
-            <FontAwesomeIcon icon={isChecked ? faCheckSquare : faSquare} size="sm" />
-          </button>
+          />
         )}
         
-        <span className="tree-label">
+        <span style={{ marginLeft: '4px' }}>
           {renderLabel ? renderLabel(node) : node.label}
         </span>
       </div>
 
       {hasChildren && isExpanded && (
-        <div style={{ borderLeft: '1px solid #e0e0e0', marginLeft: `${level * 16 + 12}px` }}>
+        <div style={{ borderLeft: nextLevelIsLeaf ? 'none' : '1px solid #e0e0e0', marginLeft: `${level * 16 + 12}px` }}>
           {node.children!.map((child) => (
             <TreeNodeComponent
               key={child.id}
