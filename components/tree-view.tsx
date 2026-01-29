@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faChevronRight, faChevronDown, faSquare, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 
 export interface TreeNode {
   id: string | number;
@@ -14,6 +14,8 @@ export interface TreeNode {
 interface TreeViewProps {
   data: TreeNode[];
   onNodeClick?: (node: TreeNode) => void;
+  onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
+  checkedNodes?: Set<string | number>;
   defaultExpanded?: boolean;
   className?: string;
   renderLabel?: (node: TreeNode) => React.ReactNode;
@@ -23,10 +25,13 @@ const TreeNodeComponent: React.FC<{
   node: TreeNode;
   level: number;
   onNodeClick?: (node: TreeNode) => void;
+  onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
+  checkedNodes?: Set<string | number>;
   renderLabel?: (node: TreeNode) => React.ReactNode;
-}> = ({ node, level, onNodeClick, renderLabel }) => {
+}> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = new Set(), renderLabel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = node.children && node.children.length > 0;
+  const isChecked = checkedNodes.has(node.id);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -37,7 +42,12 @@ const TreeNodeComponent: React.FC<{
     onNodeClick?.(node);
   };
 
-  const paddingLeft = level * 24;
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCheckboxChange?.(node.id, !isChecked);
+  };
+
+  const paddingLeft = level * 32;
 
   return (
     <div>
@@ -46,7 +56,7 @@ const TreeNodeComponent: React.FC<{
           paddingLeft: `${paddingLeft}px`,
           display: 'flex',
           alignItems: 'center',
-          padding: '6px 0',
+          padding: '8px 0 8px 0',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -74,7 +84,25 @@ const TreeNodeComponent: React.FC<{
             )}
           </button>
         )}
-        {!hasChildren && <span style={{ width: '24px' }} />}
+        {!hasChildren && (
+          <button
+            onClick={handleCheckboxClick}
+            className="btn btn-sm p-0 me-2"
+            style={{
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              marginLeft: '8px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: isChecked ? '#0d6efd' : 'inherit',
+            }}
+          >
+            <FontAwesomeIcon icon={isChecked ? faCheckSquare : faSquare} size="sm" />
+          </button>
+        )}
         
         <span className="tree-label">
           {renderLabel ? renderLabel(node) : node.label}
@@ -82,13 +110,15 @@ const TreeNodeComponent: React.FC<{
       </div>
 
       {hasChildren && isExpanded && (
-        <div>
+        <div style={{ borderLeft: '1px solid #e0e0e0', marginLeft: `${level * 16 + 12}px` }}>
           {node.children!.map((child) => (
             <TreeNodeComponent
               key={child.id}
               node={child}
               level={level + 1}
               onNodeClick={onNodeClick}
+              onCheckboxChange={onCheckboxChange}
+              checkedNodes={checkedNodes}
               renderLabel={renderLabel}
             />
           ))}
@@ -101,6 +131,8 @@ const TreeNodeComponent: React.FC<{
 export const TreeView: React.FC<TreeViewProps> = ({
   data,
   onNodeClick,
+  onCheckboxChange,
+  checkedNodes = new Set(),
   defaultExpanded = false,
   className = '',
   renderLabel,
@@ -121,6 +153,8 @@ export const TreeView: React.FC<TreeViewProps> = ({
           node={node}
           level={0}
           onNodeClick={onNodeClick}
+          onCheckboxChange={onCheckboxChange}
+          checkedNodes={checkedNodes}
           renderLabel={renderLabel}
         />
       ))}
