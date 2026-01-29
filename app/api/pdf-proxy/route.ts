@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
             finalContentType = 'application/pdf';
         }
 
+        const isVisible = response.headers.get('content-type') === 'application/octet-stream' ? false : true
+
         console.log('Final Content-Type:', finalContentType);
         
         return new NextResponse(buffer, {
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
             headers: {
                 'Content-Type': finalContentType,
                 'Content-Disposition': 'inline',
+                'X-Visible': isVisible ? 'true' : 'false'
             },
         });
     } catch (error) {
