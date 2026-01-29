@@ -11,9 +11,18 @@ import { Button } from "react-bootstrap";
 import { TreeModal } from "./tree-modal";
 // Removed unused imports and helpers
 
+interface ChoosePiecesFormProps {
+    allPieces: PecaType[],
+    selectedPieces: PecaType[],
+    onSave: (pieces: string[]) => void,
+    onClose: () => void,
+    dossierNumber: string,
+    readyToStartAI: boolean
+}
+
 const canonicalPieces = (pieces: string[]) => pieces.sort((a, b) => a.localeCompare(b)).join(',')
 
-function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierNumber, readyToStartAI }: { allPieces: PecaType[], selectedPieces: PecaType[], onSave: (pieces: string[]) => void, onClose: () => void, dossierNumber: string, readyToStartAI: boolean }) {
+function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierNumber, readyToStartAI }: ChoosePiecesFormProps) {
     const originalPieces: string[] = selectedPieces.map(p => p.id)
     const [selectedIds, setSelectedIds] = useState(originalPieces)
     const [canonicalOriginalPieces, setCanonicalOriginalPieces] = useState(canonicalPieces(originalPieces))
