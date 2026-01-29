@@ -53,7 +53,7 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
                 </div>
             </div>
         </div>
-        <TreeModal show={showTreeModal} onClose={() => setShowTreeModal(false)} />
+        <TreeModal show={showTreeModal} onClose={() => setShowTreeModal(false)} pieces={allPieces} onSave={onSave} />
     </>
 
 }

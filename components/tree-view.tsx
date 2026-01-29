@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight, faChevronDown, faSquare, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
-import next from 'next';
 
 export interface TreeNode {
   id: string | number;
@@ -36,12 +35,6 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
   const hasChildren = node.children ? node.children.length > 0 : false;
   const nextLevelIsLeaf = node.children ? node.children[0].children ? node.children[0].children.length === 0 : true : false;
   const isChecked = checkedNodes.has(node.id);
-
-  console.log({
-    node,
-    hasChildren,
-    nextLevelIsLeaf,
-  })
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();

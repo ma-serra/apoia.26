@@ -2,8 +2,16 @@ import axios from "axios";
 import { useState } from "react";
 import { Modal } from "react-bootstrap";
 import { TreeView, type TreeNode } from "@/components/tree-view";
+import { PecaType } from "@/lib/proc/process-types";
 
-export function TreeModal({ show, onClose }) {
+interface TreeModalProps {
+    show: boolean;
+    onClose: () => void;
+    pieces: PecaType[];
+    onSave: (pieces: string[]) => void;
+}
+
+export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
