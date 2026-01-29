@@ -77,7 +77,7 @@ export function TreeModal({ show, onClose }) {
                     }}>
                         {pdfUrl ? (
                             <iframe
-                                src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                                src={`/api/pdf-proxy?url=${encodeURIComponent(pdfUrl)}#toolbar=1&navpanes=1&scrollbar=1`}
                                 style={{
                                     width: '100%',
                                     height: '100%',
