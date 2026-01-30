@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal, Spinner } from "react-bootstrap";
 import { TreeView, type TreeNode } from "@/components/tree-view";
 import { PecaType } from "@/lib/proc/process-types";
 
@@ -16,6 +16,7 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
     const [checkedNodes, setCheckedNodes] = useState<Set<string | number>>(new Set());
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     // Agrupar peças por número do evento
     const groupedByEvent = pieces.reduce((acc, piece) => {
@@ -40,26 +41,37 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     }));
 
     async function fetchAndDisplayPDF(url: string) {
-        // Construir URL absoluta para passar ao proxy
-        const absoluteUrl = `${window.location.origin}${url}`;
-        const response = await axios.get(`/api/pdf-proxy?url=${encodeURIComponent(absoluteUrl)}#toolbar=1&navpanes=1&scrollbar=1`, { responseType: 'arraybuffer' });
-
-        // Convert buffer to Blob URL
-        const uint8Array = new Uint8Array(response.data);
-        const blob = new Blob([uint8Array], { type: response.headers["content-type"] });
-        const blobUrl = URL.createObjectURL(blob);
-
-        // Get visibility flag from response header
-        const isVisibleFlag = response.headers['x-visible']
-
-        if(isVisibleFlag === 'false') {
+        try {
+            setIsLoading(true);
             setData(null);
-            setIsVisible(false);
-            return;
-        }
 
-        setData(blobUrl);
-        setIsVisible(true);
+            // Construir URL absoluta para passar ao proxy
+            const absoluteUrl = `${window.location.origin}${url}`;
+            const response = await axios.get(`/api/pdf-proxy?url=${encodeURIComponent(absoluteUrl)}#toolbar=1&navpanes=1&scrollbar=1`, { 
+                responseType: 'arraybuffer'
+            });
+
+            // Convert buffer to Blob URL
+            const uint8Array = new Uint8Array(response.data);
+            const blob = new Blob([uint8Array], { type: response.headers["content-type"] });
+            const blobUrl = URL.createObjectURL(blob);
+
+            // Get visibility flag from response header
+            const isVisibleFlag = response.headers['x-visible']
+
+            if(isVisibleFlag === 'false') {
+                setData(null);
+                setIsVisible(false);
+            } else {
+                setData(blobUrl);
+                setIsVisible(true);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar PDF:', error);
+            setIsVisible(false);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const handleNodeClick = (node: TreeNode) => {
@@ -137,7 +149,19 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
                         flexDirection: 'column',
                         backgroundColor: '#f8f9fa'
                     }}>
-                        {pdfUrl ? 
+                        {isLoading ? (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                                padding: '2rem'
+                            }}>
+                                <p className="text-muted mb-3">Carregando documento...</p>
+                                <Spinner animation="border" role="status" />
+                            </div>
+                        ) : pdfUrl ? 
                             (isVisible ? (
                                 <iframe
                                     src={data}
