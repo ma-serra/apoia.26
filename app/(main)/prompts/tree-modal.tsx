@@ -15,6 +15,7 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
+    const [checkedNodes, setCheckedNodes] = useState<Set<string | number>>(new Set());
 
     // Agrupar peças por número do evento
     const groupedByEvent = pieces.reduce((acc, piece) => {
@@ -68,6 +69,17 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
         }
     };
 
+    const handleCheckboxChange = (nodeId: string | number, checked: boolean) => {
+        const newCheckedNodes = new Set(checkedNodes);
+        if (checked) {
+            newCheckedNodes.add(nodeId);
+        } else {
+            newCheckedNodes.delete(nodeId);
+        }
+        setCheckedNodes(newCheckedNodes);
+        console.log('Nós selecionados:', Array.from(newCheckedNodes));
+    };
+
     return (
         <Modal 
             show={show} 
@@ -103,6 +115,8 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
                         <TreeView 
                             data={treeData}
                             onNodeClick={handleNodeClick}
+                            onCheckboxChange={handleCheckboxChange}
+                            checkedNodes={checkedNodes}
                             renderLabel={(node) => (
                                 <span style={{
                                     fontWeight: node.url ? 'normal' : 'bold',
