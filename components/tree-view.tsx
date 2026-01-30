@@ -82,7 +82,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
     return checkedNodes.has(child.id);
   });
 
-  const paddingLeft = level * 32;
+  const paddingLeft = level * 24;
 
   return (
     <div>
@@ -91,7 +91,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
           paddingLeft: `${paddingLeft}px`,
           display: 'flex',
           alignItems: 'center',
-          padding: '8px 0 8px 0',
+          padding: '4px 0 4px 0',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -141,24 +141,25 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
             style={{
               width: '12px',
               height: '12px',
+              paddingLeft: '18px',
               display: 'flex',
               marginLeft: '8px',
               alignItems: 'center',
               justifyContent: 'center',
-              border: 'none',
+              borderLeft: '1px solid gray',
               background: 'transparent',
               color: isChecked ? '#0d6efd' : 'inherit',
             }}
           />
         )}
         
-        <span style={{ marginLeft: '4px' }}>
+        <span style={{ marginLeft: '4px', fontSize: '12px' }}>
           {renderLabel ? renderLabel(node) : node.label}
         </span>
       </div>
 
       {hasChildren && isExpanded && (
-        <div style={{ borderLeft: nextLevelIsLeaf ? 'none' : '1px solid #e0e0e0', marginLeft: `${level * 16 + 12}px` }}>
+        <div style={{ borderLeft: !nextLevelIsLeaf ? 'none' : '1px solid #e0e0e0', marginLeft: `${level * 16 + 12}px` }}>
           {node.children!.map((child) => (
             <TreeNodeComponent
               key={child.id}
