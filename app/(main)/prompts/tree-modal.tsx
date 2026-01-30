@@ -16,23 +16,23 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
 
-    // Agrupar peças por categoria
-    const groupedByCategory = pieces.reduce((acc, piece) => {
-        const category = piece.categoria || 'Sem Categoria';
-        if (!acc[category]) {
-            acc[category] = [];
+    // Agrupar peças por número do evento
+    const groupedByEvent = pieces.reduce((acc, piece) => {
+        const eventNumber = piece.numeroDoEvento || 'Sem Evento';
+        if (!acc[eventNumber]) {
+            acc[eventNumber] = [];
         }
-        acc[category].push(piece);
+        acc[eventNumber].push(piece);
         return acc;
     }, {} as Record<string, PecaType[]>);
 
     // Construir tree data a partir das peças
-    const treeData: TreeNode[] = Object.entries(groupedByCategory).map(([category, piecesInCategory], categoryIndex) => ({
-        id: `categoria-${categoryIndex}`,
-        label: category,
-        children: piecesInCategory.map((piece) => ({
+    const treeData: TreeNode[] = Object.entries(groupedByEvent).map(([eventNumber, piecesInEvent], eventIndex) => ({
+        id: `evento-${eventIndex}`,
+        label: `Evento ${eventNumber}`,
+        children: piecesInEvent.map((piece) => ({
             id: piece.id,
-            label: `${piece.descr} (E.${piece.numeroDoEvento})`,
+            label: piece.descr,
             url: `/api/v1/process/${piece.numeroDoProcesso}/piece/${piece.id}/binary`,
             piece: piece
         }))
@@ -99,7 +99,7 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
                         overflowY: 'auto',
                         padding: '1rem'
                     }}>
-                        <h5>Documentos</h5>
+                        <h5>Processo {pieces.length > 0 ? pieces[0].numeroDoProcesso : ''}</h5>
                         <TreeView 
                             data={treeData}
                             onNodeClick={handleNodeClick}
