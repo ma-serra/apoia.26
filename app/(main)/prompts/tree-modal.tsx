@@ -16,67 +16,32 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
 
-    const treeData: TreeNode[] = [
-        {
-            id: 'processo-1',
-            label: 'Processo 50013566520224025113',
-            children: [
-                {
-                    id: 'categoria-1',
-                    label: 'Decisões',
-                    children: [
-                        {
-                            id: 'doc-1',
-                            label: 'Sentença (E.64)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511689697247503551497996299901/binary'
-                        },
-                        {
-                            id: 'doc-2',
-                            label: 'Despacho (E.50)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511689697247503551497996299901/binary'
-                        }
-                    ]
-                },
-                {
-                    id: 'categoria-2',
-                    label: 'Provas',
-                    children: [
-                        {
-                            id: 'doc-3',
-                            label: 'Laudo Pericial (E.56)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511686430340829713925176244142/binary'
-                        },
-                        {
-                            id: 'doc-4',
-                            label: 'Parecer Técnico (E.48)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
-                        }
-                    ]
-                },
-                {
-                    id: 'categoria-3',
-                    label: 'Documentação',
-                    children: [
-                        {
-                            id: 'doc-5',
-                            label: 'Certidão (E.45)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
-                        },
-                        {
-                            id: 'doc-6',
-                            label: 'Documentos Juntados (E.35)',
-                            url: 'http://localhost:8081/api/v1/process/50013566520224025113/piece/JFRJ_511677601065077174439716340625/binary'
-                        }
-                    ]
-                }
-            ]
+    // Agrupar peças por categoria
+    const groupedByCategory = pieces.reduce((acc, piece) => {
+        const category = piece.categoria || 'Sem Categoria';
+        if (!acc[category]) {
+            acc[category] = [];
         }
-    ];
+        acc[category].push(piece);
+        return acc;
+    }, {} as Record<string, PecaType[]>);
+
+    // Construir tree data a partir das peças
+    const treeData: TreeNode[] = Object.entries(groupedByCategory).map(([category, piecesInCategory], categoryIndex) => ({
+        id: `categoria-${categoryIndex}`,
+        label: category,
+        children: piecesInCategory.map((piece) => ({
+            id: piece.id,
+            label: `${piece.descr} (E.${piece.numeroDoEvento})`,
+            url: `/api/v1/process/${piece.numeroDoProcesso}/piece/${piece.id}/binary`,
+            piece: piece
+        }))
+    }));
 
     async function fetchAndDisplayPDF(url: string) {
-        const response = await axios.get(`/api/pdf-proxy?url=${encodeURIComponent(url)}#toolbar=1&navpanes=1&scrollbar=1`, { responseType: 'arraybuffer' });
-
-        console.log(response.headers)
+        // Construir URL absoluta para passar ao proxy
+        const absoluteUrl = `${window.location.origin}${url}`;
+        const response = await axios.get(`/api/pdf-proxy?url=${encodeURIComponent(absoluteUrl)}#toolbar=1&navpanes=1&scrollbar=1`, { responseType: 'arraybuffer' });
 
         // Convert buffer to Blob URL
         const uint8Array = new Uint8Array(response.data);
@@ -85,8 +50,6 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
 
         // Get visibility flag from response header
         const isVisibleFlag = response.headers['x-visible']
-
-        console.log(isVisibleFlag)
 
         if(isVisibleFlag === 'false') {
             setData(null);
