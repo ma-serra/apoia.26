@@ -45,7 +45,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
     onNodeClick?.(node);
   };
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
+  const handleCheckboxClick = (e: React.MouseEvent | React.ChangeEvent) => {
     e.stopPropagation();
     
     // Se tem filhos, marcar/desmarcar todos os filhos recursivamente
@@ -89,9 +89,10 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
       <div
         style={{
           paddingLeft: `${paddingLeft}px`,
+          paddingTop: '4px',
+          paddingBottom: '4px',
           display: 'flex',
           alignItems: 'center',
-          padding: '4px 0 4px 0',
           cursor: 'pointer',
           userSelect: 'none',
         }}
@@ -122,6 +123,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
             <input
               type="checkbox"
               checked={allChildrenChecked}
+              onChange={handleCheckboxClick}
               onClick={handleCheckboxClick}
               style={{
                 width: '12px',
@@ -136,19 +138,13 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
           <input
             type="checkbox"
             checked={isChecked}
-            // onChange={handleCheckboxClick}
+            onChange={handleCheckboxClick}
             onClick={handleCheckboxClick}
             style={{
               width: '12px',
               height: '12px',
-              paddingLeft: '18px',
-              display: 'flex',
               marginLeft: '8px',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderLeft: '1px solid gray',
-              background: 'transparent',
-              color: isChecked ? '#0d6efd' : 'inherit',
+              cursor: 'pointer',
             }}
           />
         )}
