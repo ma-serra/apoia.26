@@ -47,8 +47,40 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onCheckboxChange?.(node.id, !isChecked);
+    
+    // Se tem filhos, marcar/desmarcar todos os filhos recursivamente
+    if (hasChildren) {
+      const allChildIds = getAllChildIds(node);
+      // Se está marcando (pelo menos um filho não está marcado), marcar todos
+      const shouldCheck = allChildIds.some(id => !checkedNodes.has(id));
+      allChildIds.forEach(id => {
+        onCheckboxChange?.(id, shouldCheck);
+      });
+    } else {
+      // Se é folha, apenas toggle o próprio
+      onCheckboxChange?.(node.id, !isChecked);
+    }
   };
+
+  // Função auxiliar para pegar todos os IDs dos filhos recursivamente
+  const getAllChildIds = (node: TreeNode): (string | number)[] => {
+    if (!node.children || node.children.length === 0) {
+      return [node.id];
+    }
+    const ids: (string | number)[] = [];
+    node.children.forEach(child => {
+      ids.push(...getAllChildIds(child));
+    });
+    return ids;
+  };
+
+  // Verificar se todos os filhos estão marcados (para mostrar checkbox parcialmente marcado)
+  const allChildrenChecked = hasChildren && node.children?.every(child => {
+    if (child.children && child.children.length > 0) {
+      return child.children.every(grandchild => checkedNodes.has(grandchild.id));
+    }
+    return checkedNodes.has(child.id);
+  });
 
   const paddingLeft = level * 32;
 
@@ -67,25 +99,38 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
         className="tree-node"
       >
         {hasChildren && (
-          <button
-            onClick={handleToggle}
-            className="btn btn-sm p-0"
-            style={{
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              background: 'transparent',
-            }}
-          >
-            {isExpanded ? (
-              <FontAwesomeIcon icon={faChevronDown} size="sm" />
-            ) : (
-              <FontAwesomeIcon icon={faChevronRight} size="sm" />
-            )}
-          </button>
+          <>
+            <button
+              onClick={handleToggle}
+              className="btn btn-sm p-0"
+              style={{
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                background: 'transparent',
+              }}
+            >
+              {isExpanded ? (
+                <FontAwesomeIcon icon={faChevronDown} size="sm" />
+              ) : (
+                <FontAwesomeIcon icon={faChevronRight} size="sm" />
+              )}
+            </button>
+            <input
+              type="checkbox"
+              checked={allChildrenChecked}
+              onClick={handleCheckboxClick}
+              style={{
+                width: '12px',
+                height: '12px',
+                marginLeft: '4px',
+                cursor: 'pointer',
+              }}
+            />
+          </>
         )}
         {!hasChildren && (
           <input

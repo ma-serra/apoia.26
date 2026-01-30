@@ -70,14 +70,15 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
     };
 
     const handleCheckboxChange = (nodeId: string | number, checked: boolean) => {
-        const newCheckedNodes = new Set(checkedNodes);
-        if (checked) {
-            newCheckedNodes.add(nodeId);
-        } else {
-            newCheckedNodes.delete(nodeId);
-        }
-        setCheckedNodes(newCheckedNodes);
-        console.log('Nós selecionados:', Array.from(newCheckedNodes));
+        setCheckedNodes(prevChecked => {
+            const newCheckedNodes = new Set(prevChecked);
+            if (checked) {
+                newCheckedNodes.add(nodeId);
+            } else {
+                newCheckedNodes.delete(nodeId);
+            }
+            return newCheckedNodes;
+        });
     };
 
     return (
