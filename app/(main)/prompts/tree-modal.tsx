@@ -1,9 +1,8 @@
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Spinner } from "react-bootstrap";
 import { TreeView, type TreeNode } from "@/components/tree-view";
 import { PecaType } from "@/lib/proc/process-types";
-import { formatBrazilianDateTime } from "@/lib/utils/utils";
 
 interface TreeModalProps {
     show: boolean;
