@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Modal, Spinner } from "react-bootstrap";
 import { TreeView, type TreeNode } from "@/components/tree-view";
 import { PecaType } from "@/lib/proc/process-types";
+import { formatBrazilianDateTime } from "@/lib/utils/utils";
 
 interface TreeModalProps {
     show: boolean;
@@ -136,7 +137,17 @@ export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
                                     color: pdfUrl === node.url ? '#0d6efd' : 'inherit',
                                     cursor: node.url ? 'pointer' : 'default'
                                 }}>
-                                    {node.label}
+                                    {node.children && node.children.length > 0 
+                                        ? `(${node.label.replace(/\D/g, '')}) - ${node.children[0].label.toLowerCase()} - 
+                                        ${new Intl.DateTimeFormat('pt-BR', { 
+                                            day: '2-digit', 
+                                            month: '2-digit', 
+                                            year: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        }).format(new Date(node.children[0].piece.dataHora))}`
+                                        : `${node.label}`
+                                    }
                                 </span>
                             )}
                         />

@@ -31,7 +31,7 @@ interface TreeNodeComponentProps {
 }
 
 const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = new Set(), renderLabel }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children ? node.children.length > 0 : false;
   const nextLevelIsLeaf = node.children ? node.children[0].children ? node.children[0].children.length === 0 : true : false;
   const isChecked = checkedNodes.has(node.id);
