@@ -4,7 +4,7 @@ import { maiusculasEMinusculas } from "@/lib/utils/utils";
 import { faClose, faEdit, faPlay, faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import TableRecords from '@/components/table-records'
 import { PecaType } from "@/lib/proc/process-types";
 import { Button } from "react-bootstrap";
@@ -28,10 +28,10 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
     const [canonicalOriginalPieces, setCanonicalOriginalPieces] = useState(canonicalPieces(originalPieces))
     const [showTreeModal, setShowTreeModal] = useState(false)
 
-    const onSelectedIdsChanged = (ids: string[]) => {
+    const onSelectedIdsChanged = useCallback((ids: string[]) => {
         if (canonicalPieces(ids) !== canonicalPieces(selectedIds))
             setSelectedIds(ids)
-    }
+    }, [selectedIds])
 
     const alteredPieces = canonicalPieces(selectedIds) !== canonicalOriginalPieces
 
@@ -53,7 +53,14 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
                 </div>
             </div>
         </div>
-        <TreeModal show={showTreeModal} onClose={() => setShowTreeModal(false)} pieces={allPieces} onSave={onSave} />
+        <TreeModal 
+            show={showTreeModal} 
+            onClose={() => setShowTreeModal(false)} 
+            pieces={allPieces} 
+            onSave={onSave}
+            selectedIds={selectedIds}
+            onSelectedIdsChanged={onSelectedIdsChanged}
+        />
     </>
 
 }

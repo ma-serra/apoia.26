@@ -9,14 +9,30 @@ interface TreeModalProps {
     onClose: () => void;
     pieces: PecaType[];
     onSave: (pieces: string[]) => void;
+    selectedIds: string[];
+    onSelectedIdsChanged: (ids: string[]) => void;
 }
 
-export function TreeModal({ show, onClose, pieces, onSave }: TreeModalProps) {
+export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelectedIdsChanged }: TreeModalProps) {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
-    const [checkedNodes, setCheckedNodes] = useState<Set<string | number>>(new Set());
+    const [checkedNodes, setCheckedNodes] = useState<Set<string | number>>(new Set(selectedIds));
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const prevCheckedNodesRef = useRef<Set<string | number>>(new Set(selectedIds));
+
+    // Sincronizar mudanças em checkedNodes de volta para selectedIds
+    useEffect(() => {
+        // Comparar com o valor anterior para evitar chamadas desnecessárias
+        const currentIds = Array.from(checkedNodes).filter(id => typeof id === 'string').sort().join(',');
+        const prevIds = Array.from(prevCheckedNodesRef.current).filter(id => typeof id === 'string').sort().join(',');
+        
+        if (currentIds !== prevIds) {
+            const newSelectedIds = Array.from(checkedNodes).filter(id => typeof id === 'string') as string[];
+            onSelectedIdsChanged(newSelectedIds);
+            prevCheckedNodesRef.current = checkedNodes;
+        }
+    }, [checkedNodes, onSelectedIdsChanged]);
 
     // Agrupar peças por número do evento
     const groupedByEvent = pieces.reduce((acc, piece) => {
