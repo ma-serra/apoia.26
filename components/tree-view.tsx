@@ -15,7 +15,7 @@ interface TreeViewProps {
   data: TreeNode[];
   onNodeClick?: (node: TreeNode) => void;
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
-  checkedNodes?: Set<string | number>;
+  checkedNodes?: (string | number)[];
   defaultExpanded?: boolean;
   className?: string;
   renderLabel?: (node: TreeNode) => React.ReactNode;
@@ -26,15 +26,15 @@ interface TreeNodeComponentProps {
   level: number;
   onNodeClick?: (node: TreeNode) => void;
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
-  checkedNodes?: Set<string | number>;
+  checkedNodes?: (string | number)[];
   renderLabel?: (node: TreeNode) => React.ReactNode;
 }
 
-const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = new Set(), renderLabel }) => {
+const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = [], renderLabel }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children ? node.children.length > 0 : false;
   const nextLevelIsLeaf = node.children ? node.children[0].children ? node.children[0].children.length === 0 : true : false;
-  const isChecked = checkedNodes.has(node.id);
+  const isChecked = checkedNodes.includes(node.id);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,7 +52,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
     if (hasChildren) {
       const allChildIds = getAllChildIds(node);
       // Se está marcando (pelo menos um filho não está marcado), marcar todos
-      const shouldCheck = allChildIds.some(id => !checkedNodes.has(id));
+      const shouldCheck = allChildIds.some(id => !checkedNodes.includes(id));
       allChildIds.forEach(id => {
         onCheckboxChange?.(id, shouldCheck);
       });
@@ -77,9 +77,9 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
   // Verificar se todos os filhos estão marcados (para mostrar checkbox parcialmente marcado)
   const allChildrenChecked = hasChildren && node.children?.every(child => {
     if (child.children && child.children.length > 0) {
-      return child.children.every(grandchild => checkedNodes.has(grandchild.id));
+      return child.children.every(grandchild => checkedNodes.includes(grandchild.id));
     }
-    return checkedNodes.has(child.id);
+    return checkedNodes.includes(child.id);
   });
 
   const paddingLeft = level * 24;
@@ -177,7 +177,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   data,
   onNodeClick,
   onCheckboxChange,
-  checkedNodes = new Set(),
+  checkedNodes = [],
   defaultExpanded = false,
   className = '',
   renderLabel,

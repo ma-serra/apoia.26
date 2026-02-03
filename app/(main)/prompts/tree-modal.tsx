@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Modal, Spinner } from "react-bootstrap";
 import { TreeView, type TreeNode } from "@/components/tree-view";
 import { PecaType } from "@/lib/proc/process-types";
@@ -17,22 +17,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [data, setData] = useState<string | null>(null);
     const [isVisible, setIsVisible] = useState<boolean>(true);
-    const [checkedNodes, setCheckedNodes] = useState<Set<string | number>>(new Set(selectedIds));
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const prevCheckedNodesRef = useRef<Set<string | number>>(new Set(selectedIds));
-
-    // Sincronizar mudanças em checkedNodes de volta para selectedIds
-    useEffect(() => {
-        // Comparar com o valor anterior para evitar chamadas desnecessárias
-        const currentIds = Array.from(checkedNodes).filter(id => typeof id === 'string').sort().join(',');
-        const prevIds = Array.from(prevCheckedNodesRef.current).filter(id => typeof id === 'string').sort().join(',');
-        
-        if (currentIds !== prevIds) {
-            const newSelectedIds = Array.from(checkedNodes).filter(id => typeof id === 'string') as string[];
-            onSelectedIdsChanged(newSelectedIds);
-            prevCheckedNodesRef.current = checkedNodes;
-        }
-    }, [checkedNodes, onSelectedIdsChanged]);
 
     // Agrupar peças por número do evento
     const groupedByEvent = pieces.reduce((acc, piece) => {
@@ -98,15 +83,13 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
     };
 
     const handleCheckboxChange = (nodeId: string | number, checked: boolean) => {
-        setCheckedNodes(prevChecked => {
-            const newCheckedNodes = new Set(prevChecked);
-            if (checked) {
-                newCheckedNodes.add(nodeId);
-            } else {
-                newCheckedNodes.delete(nodeId);
-            }
-            return newCheckedNodes;
-        });
+        if (typeof nodeId !== 'string') return;
+        
+        const newSelectedIds = checked 
+            ? [...selectedIds, nodeId]
+            : selectedIds.filter(id => id !== nodeId);
+        
+        onSelectedIdsChanged(newSelectedIds);
     };
 
     return (
@@ -145,7 +128,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                             data={treeData}
                             onNodeClick={handleNodeClick}
                             onCheckboxChange={handleCheckboxChange}
-                            checkedNodes={checkedNodes}
+                            checkedNodes={selectedIds}
                             renderLabel={(node) => (
                                 <span style={{
                                     fontWeight: node.url ? 'normal' : 'bold',
