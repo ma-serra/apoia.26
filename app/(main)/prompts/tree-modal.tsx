@@ -19,6 +19,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
     const [isVisible, setIsVisible] = useState<boolean>(true);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [leftWidth, setLeftWidth] = useState<number>(400);
+    const [isResizing, setIsResizing] = useState<boolean>(false);
     const isResizingRef = useRef(false);
     const leftPaneRef = useRef<HTMLDivElement | null>(null);
 
@@ -111,6 +112,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
         const handlePointerUp = () => {
             if (isResizingRef.current) {
                 isResizingRef.current = false;
+                setIsResizing(false);
             }
         };
 
@@ -200,6 +202,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                         onPointerDown={(event) => {
                             event.preventDefault();
                             isResizingRef.current = true;
+                            setIsResizing(true);
                         }}
                         style={{
                             width: '6px',
@@ -235,7 +238,8 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                                     style={{
                                         width: '100%',
                                         height: '100%',
-                                        border: 'none'
+                                        border: 'none',
+                                        pointerEvents: isResizing ? 'none' : 'auto'
                                     }}
                                     title="PDF Viewer"
                                 />
