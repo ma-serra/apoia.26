@@ -102,6 +102,21 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
         onSelectedIdsChanged(newSelectedIds);
     };
 
+    const handleCheckboxChangeBulk = (nodeIds: (string | number)[], checked: boolean) => {
+        const nextSet = new Set(selectedIds);
+        nodeIds.forEach((nodeId) => {
+            if (typeof nodeId !== 'string') return;
+            if (checked) {
+                nextSet.add(nodeId);
+            } else {
+                nextSet.delete(nodeId);
+            }
+        });
+
+        const newSelectedIds = Array.from(nextSet).sort((a, b) => a.localeCompare(b));
+        onSelectedIdsChanged(newSelectedIds);
+    };
+
     useEffect(() => {
         const handlePointerMove = (event: PointerEvent) => {
             if (!isResizingRef.current) return;
@@ -173,6 +188,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                             data={treeData}
                             onNodeClick={handleNodeClick}
                             onCheckboxChange={handleCheckboxChange}
+                            onCheckboxChangeBulk={handleCheckboxChangeBulk}
                             checkedNodes={selectedIds}
                             renderLabel={(node) => (
                                 <span style={{

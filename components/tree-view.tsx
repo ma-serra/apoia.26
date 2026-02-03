@@ -15,6 +15,7 @@ interface TreeViewProps {
   data: TreeNode[];
   onNodeClick?: (node: TreeNode) => void;
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
+  onCheckboxChangeBulk?: (nodeIds: (string | number)[], checked: boolean) => void;
   checkedNodes?: (string | number)[];
   defaultExpanded?: boolean;
   className?: string;
@@ -26,11 +27,12 @@ interface TreeNodeComponentProps {
   level: number;
   onNodeClick?: (node: TreeNode) => void;
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
+  onCheckboxChangeBulk?: (nodeIds: (string | number)[], checked: boolean) => void;
   checkedNodes?: (string | number)[];
   renderLabel?: (node: TreeNode) => React.ReactNode;
 }
 
-const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, checkedNodes = [], renderLabel }) => {
+const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNodeClick, onCheckboxChange, onCheckboxChangeBulk, checkedNodes = [], renderLabel }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children ? node.children.length > 0 : false;
   const nextLevelIsLeaf = node.children ? node.children[0].children ? node.children[0].children.length === 0 : true : false;
@@ -53,9 +55,13 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
       const allChildIds = getAllChildIds(node);
       // Se está marcando (pelo menos um filho não está marcado), marcar todos
       const shouldCheck = allChildIds.some(id => !checkedNodes.includes(id));
-      allChildIds.forEach(id => {
-        onCheckboxChange?.(id, shouldCheck);
-      });
+      if (onCheckboxChangeBulk) {
+        onCheckboxChangeBulk(allChildIds, shouldCheck);
+      } else {
+        allChildIds.forEach(id => {
+          onCheckboxChange?.(id, shouldCheck);
+        });
+      }
     } else {
       // Se é folha, apenas toggle o próprio
       onCheckboxChange?.(node.id, !isChecked);
@@ -173,6 +179,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   data,
   onNodeClick,
   onCheckboxChange,
+  onCheckboxChangeBulk,
   checkedNodes = [],
   defaultExpanded = false,
   className = '',
@@ -195,6 +202,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
           level={0}
           onNodeClick={onNodeClick}
           onCheckboxChange={onCheckboxChange}
+          onCheckboxChangeBulk={onCheckboxChangeBulk}
           checkedNodes={checkedNodes}
           renderLabel={renderLabel}
         />
