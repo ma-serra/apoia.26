@@ -150,7 +150,7 @@ export default function Table({ records, spec, linkToAdd, linkToBack, pageSize, 
                 {options?.apenasSelecionadas &&
                     <div className="col col-auto ms-auto mt-3 mb-0">
                         <div className="d-flex align-items-center gap-2 d-print-none">
-                            <Button onClick={modalActions.onClick}>Árvore</Button> 
+                            <Button onClick={modalActions.onClick} variant='outline-secondary'>Árvore</Button> 
                             <div className="btn-group" role="group" aria-label="Filtro de seleção">
                                 <input
                                     type="radio"
