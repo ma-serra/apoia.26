@@ -17,7 +17,6 @@ interface TreeViewProps {
   onCheckboxChange?: (nodeId: string | number, checked: boolean) => void;
   onCheckboxChangeBulk?: (nodeIds: (string | number)[], checked: boolean) => void;
   checkedNodes?: (string | number)[];
-  defaultExpanded?: boolean;
   className?: string;
   renderLabel?: (node: TreeNode) => React.ReactNode;
 }
@@ -41,10 +40,6 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
-  };
-
-  const handleClick = () => {
-    onNodeClick?.(node);
   };
 
   const handleCheckboxClick = (e: React.MouseEvent | React.ChangeEvent) => {
@@ -91,7 +86,9 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
   const paddingLeft = level * 24;
 
   return (
-    <div>
+    <div style={{
+      minWidth: '400px',
+    }}>
       <div
         style={{
           paddingLeft: `${paddingLeft}px`,
@@ -108,6 +105,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
           <>
             <button
               className="btn btn-sm p-0"
+              onClick={handleToggle}
               style={{
                 width: '24px',
                 height: '24px',
@@ -181,7 +179,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
   onCheckboxChange,
   onCheckboxChangeBulk,
   checkedNodes = [],
-  defaultExpanded = false,
   className = '',
   renderLabel,
 }) => {

@@ -8,9 +8,6 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 });
         }
 
-        console.log('=== PDF PROXY REQUEST ===');
-        console.log('Target URL:', url);
-
         // Get authentication headers
         const cookie = request.headers.get('cookie');
         const authorization = request.headers.get('authorization');
@@ -19,13 +16,8 @@ export async function GET(request: NextRequest) {
         if (cookie) headers['Cookie'] = cookie;
         if (authorization) headers['Authorization'] = authorization;
 
-        console.log('Request headers:', headers);
-
         // Fetch the document
         const response = await fetch(url, { headers });
-
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
             return NextResponse.json({ error: 'Failed to fetch document' }, { status: response.status });
@@ -46,16 +38,14 @@ export async function GET(request: NextRequest) {
 
         // Override incorrect Content-Type when PDF detected
         if (isPDF && !responseContentType.includes('application/pdf')) {
-            console.log('Content-Type mismatch detected!');
-            console.log('Server returned:', responseContentType);
-            console.log('Actual content: PDF (detected by magic bytes)');
-            console.log('Overriding Content-Type to application/pdf');
+            // console.log('Content-Type mismatch detected!');
+            // console.log('Server returned:', responseContentType);
+            // console.log('Actual content: PDF (detected by magic bytes)');
+            // console.log('Overriding Content-Type to application/pdf');
             finalContentType = 'application/pdf';
         }
 
         const isVisible = response.headers.get('content-type') === 'application/octet-stream' ? false : true
-
-        console.log('Final Content-Type:', finalContentType);
         
         return new NextResponse(buffer, {
             status: 200,

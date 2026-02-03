@@ -183,7 +183,9 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                             padding: '1rem'
                         }}>
 
-                        <h5>Processo {pieces.length > 0 ? pieces[0].numeroDoProcesso : ''}</h5>
+                        <h5 style={{ whiteSpace: 'nowrap', justifyContent: 'flex-start', display: 'flex' }}>
+                            Processo {pieces.length > 0 ? pieces[0].numeroDoProcesso : ''}
+                        </h5>
                         <TreeView 
                             data={treeData}
                             onNodeClick={handleNodeClick}
