@@ -20,7 +20,7 @@ interface ChoosePiecesFormProps {
     readyToStartAI: boolean
 }
 
-const canonicalPieces = (pieces: string[]) => pieces.sort((a, b) => a.localeCompare(b)).join(',')
+const canonicalPieces = (pieces: string[]) => [...pieces].sort((a, b) => a.localeCompare(b)).join(',')
 
 function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierNumber, readyToStartAI }: ChoosePiecesFormProps) {
     const originalPieces: string[] = selectedPieces.map(p => p.id)
@@ -29,9 +29,8 @@ function ChoosePiecesForm({ allPieces, selectedPieces, onSave, onClose, dossierN
     const [showTreeModal, setShowTreeModal] = useState(false)
 
     const onSelectedIdsChanged = useCallback((ids: string[]) => {
-        if (canonicalPieces(ids) !== canonicalPieces(selectedIds))
-            setSelectedIds(ids)
-    }, [selectedIds])
+        setSelectedIds(prev => canonicalPieces(ids) !== canonicalPieces(prev) ? ids : prev)
+    }, [])
 
     const alteredPieces = canonicalPieces(selectedIds) !== canonicalOriginalPieces
 

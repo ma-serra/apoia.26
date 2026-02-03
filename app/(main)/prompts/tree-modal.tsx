@@ -84,11 +84,15 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
 
     const handleCheckboxChange = (nodeId: string | number, checked: boolean) => {
         if (typeof nodeId !== 'string') return;
-        
-        const newSelectedIds = checked 
-            ? [...selectedIds, nodeId]
-            : selectedIds.filter(id => id !== nodeId);
-        
+
+        const nextSet = new Set(selectedIds);
+        if (checked) {
+            nextSet.add(nodeId);
+        } else {
+            nextSet.delete(nodeId);
+        }
+
+        const newSelectedIds = Array.from(nextSet).sort((a, b) => a.localeCompare(b));
         onSelectedIdsChanged(newSelectedIds);
     };
 

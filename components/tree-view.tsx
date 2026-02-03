@@ -124,7 +124,6 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
               type="checkbox"
               checked={allChildrenChecked}
               onChange={handleCheckboxClick}
-              onClick={handleCheckboxClick}
               style={{
                 width: '12px',
                 height: '12px',
@@ -139,7 +138,6 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
             type="checkbox"
             checked={isChecked}
             onChange={handleCheckboxClick}
-            onClick={handleCheckboxClick}
             style={{
               width: '12px',
               height: '12px',
