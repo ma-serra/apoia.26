@@ -171,7 +171,8 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                                     fontWeight: node.url ? 'normal' : 'bold',
                                     color: pdfUrl === node.url ? '#0d6efd' : 'inherit',
                                     cursor: node.url ? 'pointer' : 'default'
-                                }}>
+                                }}
+                                onClick={() => handleNodeClick(node)}>
                                     {node.children && node.children.length > 0 
                                         ? `(${node.label.replace(/\D/g, '')}) - ${node.children[0].label.toLowerCase()} - 
                                         ${new Intl.DateTimeFormat('pt-BR', { 

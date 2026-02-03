@@ -96,13 +96,11 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = ({ node, level, onNo
           cursor: 'pointer',
           userSelect: 'none',
         }}
-        onClick={handleClick}
         className="tree-node"
       >
         {hasChildren && (
           <>
             <button
-              onClick={handleToggle}
               className="btn btn-sm p-0"
               style={{
                 width: '24px',
