@@ -20,6 +20,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [leftWidth, setLeftWidth] = useState<number>(400);
     const isResizingRef = useRef(false);
+    const leftPaneRef = useRef<HTMLDivElement | null>(null);
 
     // Agrupar peças por número do evento
     const groupedByEvent = pieces.reduce((acc, piece) => {
@@ -33,14 +34,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
 
     // Construir tree data a partir das peças
     const treeData: TreeNode[] = Object.entries(groupedByEvent)
-        .sort(([a], [b]) => {
-            const aNum = Number(a);
-            const bNum = Number(b);
-            if (Number.isNaN(aNum) && Number.isNaN(bNum)) return b.localeCompare(a);
-            if (Number.isNaN(aNum)) return 1;
-            if (Number.isNaN(bNum)) return -1;
-            return bNum - aNum;
-        })
+        .sort(([a], [b]) => a.localeCompare(b))
         .map(([eventNumber, piecesInEvent], eventIndex) => ({
         id: `evento-${eventIndex}`,
         label: `Evento ${eventNumber}`,
@@ -129,6 +123,15 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
         };
     }, []);
 
+    useEffect(() => {
+        if (!show) return;
+        const pane = leftPaneRef.current;
+        if (!pane) return;
+        setTimeout(() => {
+            pane.scrollTop = pane.scrollHeight;
+        }, 0);
+    }, [show]);
+
     return (
         <Modal 
             show={show} 
@@ -154,12 +157,15 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                 
                 <Modal.Body className="p-0" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                     {/* Seção Esquerda */}
-                    <div style={{
-                        width: `${leftWidth}px`,
-                        borderRight: '1px solid #dee2e6',
-                        overflow: 'auto',
-                        padding: '1rem'
-                    }}>
+                    <div
+                        ref={leftPaneRef}
+                        style={{
+                            width: `${leftWidth}px`,
+                            borderRight: '1px solid #dee2e6',
+                            overflow: 'auto',
+                            padding: '1rem'
+                        }}>
+
                         <h5>Processo {pieces.length > 0 ? pieces[0].numeroDoProcesso : ''}</h5>
                         <TreeView 
                             data={treeData}
