@@ -152,7 +152,7 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                 borderRadius: 0
             }}>
                 <Modal.Header closeButton style={{ flexShrink: 0 }}>
-                    <Modal.Title>Visualização de Documento</Modal.Title>
+                    <Modal.Title>Árvore de Documentos</Modal.Title>
                 </Modal.Header>
                 
                 <Modal.Body className="p-0" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -176,7 +176,8 @@ export function TreeModal({ show, onClose, pieces, onSave, selectedIds, onSelect
                                 <span style={{
                                     fontWeight: node.url ? 'normal' : 'bold',
                                     color: pdfUrl === node.url ? '#0d6efd' : 'inherit',
-                                    cursor: node.url ? 'pointer' : 'default'
+                                    cursor: node.url ? 'pointer' : 'default',
+                                    whiteSpace: 'nowrap',
                                 }}
                                 onClick={() => handleNodeClick(node)}>
                                     {node.children && node.children.length > 0 
